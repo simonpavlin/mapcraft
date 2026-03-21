@@ -251,87 +251,164 @@ export function addFloorOverlay(group, x, z, w, d, y = 0, material = MAT.floorDa
 }
 
 // ════════════════════════════════════════════════
-// STAIRS — U-turn
+// STAIR FLIGHT — single straight run of steps
 // ════════════════════════════════════════════════
 
-export function addStairs(group, opts) {
+/**
+ * Build a single flight of stairs from point A to point B.
+ * Steps are generated between (startX, startZ) at startY and (endX, endZ) at endY.
+ *
+ * @param {THREE.Group} group
+ * @param {object} opts
+ * @param {number} opts.startX, opts.startZ - bottom of flight (3D x, z)
+ * @param {number} opts.endX, opts.endZ - top of flight (3D x, z)
+ * @param {number} opts.startY - Y at bottom (floor level)
+ * @param {number} opts.endY - Y at top
+ * @param {number} opts.width - step width (perpendicular to direction)
+ * @param {number} opts.steps - number of steps (default: auto from height)
+ */
+export function addStairFlight(group, opts) {
   const {
-    x, z, width, depth, floorHeight,
-    y = 0, direction = 'south',
-    stepsPerFlight = 10,
+    startX, startZ, endX, endZ,
+    startY, endY, width,
+    steps: stepsOpt,
     material = MAT.stairs,
     railMaterial = MAT.stairRail,
   } = opts;
 
-  const stepH = floorHeight / (stepsPerFlight * 2);
-  const margin = 0.2;
-  const stepW = width - 0.4;
-  const isSouthNorth = direction === 'south' || direction === 'north';
-  const flightLen = (isSouthNorth ? depth : width) / 2 - margin;
-  const stepD = flightLen / stepsPerFlight;
-  const cx = x + width / 2;
-  const cz = z + depth / 2;
-  const goPositive = direction === 'south' || direction === 'east';
+  const rise = endY - startY;
+  const dx = endX - startX;
+  const dz = endZ - startZ;
+  const runLen = Math.sqrt(dx * dx + dz * dz);
+  const steps = stepsOpt || Math.max(3, Math.round(rise / 0.18)); // ~18cm per step
+  const stepH = rise / steps;
+  const stepD = runLen / steps;
 
-  for (let flight = 0; flight < 2; flight++) {
-    const baseY = y + flight * floorHeight / 2;
-    const reverse = flight === 1;
+  // Direction unit vector
+  const dirX = dx / runLen;
+  const dirZ = dz / runLen;
+  // Perpendicular (for width)
+  const perpX = -dirZ;
+  const perpZ = dirX;
 
-    for (let s = 0; s < stepsPerFlight; s++) {
-      const sy = baseY + s * stepH + stepH / 2;
-      const offset = margin + s * stepD;
+  for (let s = 0; s < steps; s++) {
+    const cx = startX + dirX * (s + 0.5) * stepD;
+    const cz = startZ + dirZ * (s + 0.5) * stepD;
+    const cy = startY + s * stepH + stepH / 2;
 
-      const step = box(
-        isSouthNorth ? stepW : stepD,
-        stepH,
-        isSouthNorth ? stepD : stepW,
-        material
-      );
-
-      if (isSouthNorth) {
-        const forward = goPositive !== reverse;
-        const sz = forward ? (z + offset + stepD / 2) : (z + depth - offset - stepD / 2);
-        step.position.set(cx, sy, sz);
-      } else {
-        const forward = goPositive !== reverse;
-        const sx2 = forward ? (x + offset + stepD / 2) : (x + width - offset - stepD / 2);
-        step.position.set(sx2, sy, cz);
-      }
-      group.add(step);
-    }
-
-    // Landing after first flight
-    if (flight === 0) {
-      const landing = box(stepW, 0.15, isSouthNorth ? flightLen * 0.4 : stepW, material);
-      const landY = y + floorHeight / 2;
-      if (isSouthNorth) {
-        const lz = goPositive ? (z + depth - flightLen * 0.2 - margin) : (z + flightLen * 0.2 + margin);
-        landing.position.set(cx, landY, lz);
-      } else {
-        const lx = goPositive ? (x + width - flightLen * 0.2 - margin) : (x + flightLen * 0.2 + margin);
-        landing.position.set(lx, landY, cz);
-      }
-      group.add(landing);
-    }
+    // Step is a box: width along perpendicular, depth along direction
+    const stepMesh = box(width, stepH, stepD, material);
+    // Rotate to face the direction
+    stepMesh.rotation.y = -Math.atan2(dirX, dirZ);
+    stepMesh.position.set(cx, cy, cz);
+    group.add(stepMesh);
   }
 
-  // Railings
+  // Railings on both sides
   for (const side of [-1, 1]) {
-    const rOff = side * (stepW / 2 + 0.05);
-    for (let s = 0; s <= stepsPerFlight; s += 3) {
-      const postY = y + s * stepH + 0.45;
-      const offset = margin + s * stepD;
+    const rOff = side * (width / 2 + 0.05);
+    for (let s = 0; s <= steps; s += Math.max(1, Math.floor(steps / 5))) {
+      const rx = startX + dirX * s * stepD + perpX * rOff;
+      const rz = startZ + dirZ * s * stepD + perpZ * rOff;
+      const ry = startY + s * stepH;
       const p = box(0.04, 0.9, 0.04, railMaterial);
-      if (isSouthNorth) {
-        const pz = goPositive ? (z + offset) : (z + depth - offset);
-        p.position.set(cx + rOff, postY, pz);
-      } else {
-        const px2 = goPositive ? (x + offset) : (x + width - offset);
-        p.position.set(px2, postY, cz + rOff);
-      }
+      p.position.set(rx, ry + 0.45, rz);
       group.add(p);
     }
   }
+}
+
+/**
+ * Build a landing platform.
+ *
+ * @param {number} opts.x, opts.z - center position
+ * @param {number} opts.y - height
+ * @param {number} opts.width, opts.depth - platform size
+ */
+export function addStairLanding(group, opts) {
+  const { x, z, y, width, depth, material = MAT.stairs } = opts;
+  group.add(pos(box(width, 0.15, depth, material), x, y, z));
+}
+
+/**
+ * Convenience: build a U-turn staircase from entry/exit points.
+ * Entry and exit are on the SAME side. Stairs go away, turn on landing, come back.
+ *
+ * @param {object} opts
+ * @param {number} opts.x, opts.z - stairwell origin (top-left corner)
+ * @param {number} opts.width - stairwell width (along the entry side)
+ * @param {number} opts.depth - stairwell depth (perpendicular to entry)
+ * @param {number} opts.entryY - Y at entry (lower floor)
+ * @param {number} opts.exitY - Y at exit (upper floor)
+ * @param {string} opts.entrySide - 'north'|'south'|'east'|'west' — which side has entry/exit
+ * @param {number} opts.entryX - entry position along the entry side (relative to stairwell origin along that side)
+ * @param {number} opts.exitX - exit position along the entry side
+ * @param {number} opts.flightWidth - width of each flight (default: width/2 - 0.2)
+ */
+export function addUTurnStairs(group, opts) {
+  const {
+    x, z, width, depth,
+    entryY, exitY,
+    entrySide = 'north',
+    flightWidth: fw,
+    material = MAT.stairs,
+    railMaterial = MAT.stairRail,
+  } = opts;
+
+  const midY = (entryY + exitY) / 2;
+  const flightW = fw || (width / 2 - 0.15);
+
+  // Compute start/end/landing positions based on entry side
+  let f1Start, f1End, f2Start, f2End, landCenter;
+
+  if (entrySide === 'north') {
+    // Entry at z=z (north), flights go south then back north
+    f1Start = { x: x + width * 0.25, z: z + 0.3 };
+    f1End = { x: x + width * 0.25, z: z + depth - 0.5 };
+    landCenter = { x: x + width / 2, z: z + depth - 0.5 };
+    f2Start = { x: x + width * 0.75, z: z + depth - 0.5 };
+    f2End = { x: x + width * 0.75, z: z + 0.3 };
+  } else if (entrySide === 'south') {
+    f1Start = { x: x + width * 0.25, z: z + depth - 0.3 };
+    f1End = { x: x + width * 0.25, z: z + 0.5 };
+    landCenter = { x: x + width / 2, z: z + 0.5 };
+    f2Start = { x: x + width * 0.75, z: z + 0.5 };
+    f2End = { x: x + width * 0.75, z: z + depth - 0.3 };
+  } else if (entrySide === 'west') {
+    f1Start = { x: x + 0.3, z: z + depth * 0.25 };
+    f1End = { x: x + width - 0.5, z: z + depth * 0.25 };
+    landCenter = { x: x + width - 0.5, z: z + depth / 2 };
+    f2Start = { x: x + width - 0.5, z: z + depth * 0.75 };
+    f2End = { x: x + 0.3, z: z + depth * 0.75 };
+  } else { // east
+    f1Start = { x: x + width - 0.3, z: z + depth * 0.25 };
+    f1End = { x: x + 0.5, z: z + depth * 0.25 };
+    landCenter = { x: x + 0.5, z: z + depth / 2 };
+    f2Start = { x: x + 0.5, z: z + depth * 0.75 };
+    f2End = { x: x + width - 0.3, z: z + depth * 0.75 };
+  }
+
+  // Flight 1: entry → landing
+  addStairFlight(group, {
+    startX: f1Start.x, startZ: f1Start.z, startY: entryY,
+    endX: f1End.x, endZ: f1End.z, endY: midY,
+    width: flightW, material, railMaterial,
+  });
+
+  // Landing
+  const landW = (entrySide === 'north' || entrySide === 'south') ? width - 0.4 : depth * 0.3;
+  const landD = (entrySide === 'north' || entrySide === 'south') ? depth * 0.3 : depth - 0.4;
+  addStairLanding(group, {
+    x: landCenter.x, z: landCenter.z, y: midY,
+    width: landW, depth: landD, material,
+  });
+
+  // Flight 2: landing → exit
+  addStairFlight(group, {
+    startX: f2Start.x, startZ: f2Start.z, startY: midY,
+    endX: f2End.x, endZ: f2End.z, endY: exitY,
+    width: flightW, material, railMaterial,
+  });
 }
 
 // ════════════════════════════════════════════════

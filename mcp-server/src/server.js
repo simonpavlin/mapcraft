@@ -36,10 +36,10 @@ x = left→right, y = top→bottom on plan. Maps to 3D: plan-x → 3D x, plan-y 
 
 ## Metadata
 Every object can carry arbitrary key-value metadata for 3D generation:
-- Stairs: { direction: "south", type: "u_turn", from_floor: 0, to_floor: 1 }
 - Doors: { style: "sliding", connects: ["obyvak", "terasa"] }
-- Windows: { sill_height: 0.8, type: "panorama" }
+- Windows: { sill_height: 0.8, win_height: 1.5, type: "panorama" }
 - Furniture: { material: "wood", color: "#8a7050" }
+- Stairs: see Stairs section below
 
 ## Workflow — plan EVERYTHING before generating 3D
 1. init_space — root space in meters
@@ -64,9 +64,50 @@ Every object can carry arbitrary key-value metadata for 3D generation:
 - Small items (chairs, lamps, decorations) can be added directly in 3D code
 - Use get_ascii on the room to visually verify layout before 3D generation
 
+## Stairs — plan entry and exit points explicitly
+Stairs are the hardest element to get right. DO NOT just place a box with "direction: south".
+Instead, plan stairs as a CONTAINER with explicit entry/exit points:
+
+### How to plan stairs in MCP:
+Place a container for the stairwell, then inside it place:
+1. **entry** — where the player enters from the lower floor (a door-like marker)
+2. **exit** — where the player exits onto the upper floor (a door-like marker)
+3. Optionally: **landing** — the mid-point turn platform
+
+Example for a U-turn stairwell (3×5m, going up from north to south and back):
+```
+place_objects(path="building/prizemi/schody", objects=[
+  { id: "entry", x: 0.5, y: 0, width: 2, height: 0.3, char: "E",
+    tags: ["stair_entry"], metadata: {"side": "north", "floor_y": 0} },
+  { id: "flight1", x: 0.3, y: 0.5, width: 2.4, height: 2, char: "|",
+    tags: ["stair_flight"], metadata: {"direction": "south", "rise": 1.5} },
+  { id: "landing", x: 0.3, y: 2.8, width: 2.4, height: 1, char: "_",
+    tags: ["stair_landing"], metadata: {"floor_y": 1.5} },
+  { id: "flight2", x: 0.3, y: 2.5, width: 2.4, height: 2, char: "|",
+    tags: ["stair_flight"], metadata: {"direction": "north", "rise": 1.5} },
+  { id: "exit", x: 0.5, y: 0, width: 2, height: 0.3, char: "X",
+    tags: ["stair_exit"], metadata: {"side": "north", "floor_y": 3.0} }
+])
+```
+
+### Key rules:
+- Entry and exit positions must match door positions on the stairwell walls
+- Entry is at the lower floor level, exit at the upper floor level
+- Both entry and exit should be accessible from the hallway/corridor
+- For U-turn stairs: entry and exit are on the SAME side (player goes down, turns, comes back)
+- For straight stairs: entry and exit are on OPPOSITE sides
+- The 3D generator reads entry/exit positions and builds flights between them
+
+### 3D generation reads these markers to:
+- Build flight 1 from entry toward landing
+- Build landing platform
+- Build flight 2 from landing toward exit
+- Place railings along flights
+- Ensure the stair geometry actually connects the two floor levels
+
 ## 3D generation notes for doors and windows
 - Doors and windows require REAL OPENINGS in walls (for player walkthrough / visibility)
-- In 3D: build wall segments AROUND each door/window gap, not solid walls
+- In 3D: use wallWithOpenings() to create holes, then addWindow/addDoor for visuals
 - Door metadata should include: style (hinged/sliding/open), direction, connects
 - Window metadata should include: sill_height, win_height, type (fixed/panorama)
 - Always place doors/windows ON the wall line (x or y matching the wall position)

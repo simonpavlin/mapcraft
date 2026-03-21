@@ -6,6 +6,7 @@ import { createVila } from './vila.js';
 import { createRezidence } from './rezidence.js';
 import { createDumGaraz } from './dum-garaz.js';
 import { createHrad } from './hrad.js';
+import { createMrakodrap } from './mrakodrap.js';
 
 export function createWorld(scene) {
   createGround(scene);
@@ -16,6 +17,7 @@ export function createWorld(scene) {
   createRezidence(scene, -70, 40);
   createDumGaraz(scene, 10, -25);
   createHrad(scene, 30, -80);
+  createMrakodrap(scene, 50, -30);
   createTrees(scene);
   createPaths(scene);
 }

@@ -105,13 +105,38 @@ addDoor(group, {
 - Door/window at MCP `x=0` → on wall at `x=0` (west wall), axis='z'
 - Door/window at MCP `x=maxX` → on wall at `x=maxX` (east wall), axis='z'
 
-### Stairs
+### Stairs — use entry/exit based API
+
+Three functions available:
+- `addStairFlight(group, opts)` — single straight flight from point A to point B
+- `addStairLanding(group, opts)` — platform at a given height
+- `addUTurnStairs(group, opts)` — convenience for U-turn (entry and exit on same side)
+
 ```js
-addStairs(group, {
-  x: 8.5, z: 0.5,       // from MCP position
-  width: 2.5, depth: 4,  // from MCP size
-  floorHeight: 3,
-  direction: 'south',    // from MCP metadata
+// Option 1: U-turn staircase (most common)
+// Entry at north side, stairs go south, turn, come back north
+addUTurnStairs(group, {
+  x: 8.5, z: 0.5,        // stairwell top-left corner
+  width: 3, depth: 5,     // stairwell size
+  entryY: 0,              // lower floor Y
+  exitY: 3,               // upper floor Y
+  entrySide: 'north',     // entry/exit both on north side
+});
+
+// Option 2: Manual flights (full control)
+// Flight 1: from entry going south, rising to landing
+addStairFlight(group, {
+  startX: 9.5, startZ: 1, startY: 0,    // bottom of flight
+  endX: 9.5, endZ: 4, endY: 1.5,        // top of flight
+  width: 1.8,
+});
+// Landing
+addStairLanding(group, { x: 10, z: 4.5, y: 1.5, width: 2.5, depth: 1.2 });
+// Flight 2: from landing going north, rising to exit
+addStairFlight(group, {
+  startX: 10.5, startZ: 4, startY: 1.5,
+  endX: 10.5, endZ: 1, endY: 3,
+  width: 1.8,
 });
 ```
 
@@ -127,6 +152,6 @@ addFlatRoof(group, 0, 0, 12, 12, 6);           // roof at top
 ## Common mistakes to avoid
 1. **Furniture blocking doors** — always plan furniture in MCP first, verify with get_ascii
 2. **Forgetting wall openings** — every door/window needs a matching opening in wallWithOpenings
-3. **Stairs direction wrong** — always set direction in MCP metadata, use it in addStairs
+3. **Stairs not connecting floors** — plan entry/exit in MCP with exact positions, use addUTurnStairs or manual addStairFlight with explicit startY/endY matching floor heights
 4. **Window not visible from outside** — use wallWithOpenings to create the hole, then addWindow for glass
 5. **Overlapping rooms on same floor** — verify with check_collision after placing rooms
