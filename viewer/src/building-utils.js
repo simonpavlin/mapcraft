@@ -38,36 +38,32 @@ export function plane(w, h, mat) {
 }
 
 // ════════════════════════════════════════════════
-// WALL WITH OPENINGS
+// WALL WITH OPENINGS — 2D grid subtraction approach
 // ════════════════════════════════════════════════
 
 /**
- * Build a wall along one axis with holes for doors/windows.
+ * Build a wall with holes for doors and windows.
+ * Works by dividing the wall face into a 2D grid (length × height)
+ * and subtracting openings, then generating minimal box segments.
  *
- * @param {THREE.Group} group - parent group
+ * @param {THREE.Group} group
  * @param {object} opts
- * @param {string} opts.axis - 'x' (wall runs along X, face Z) or 'z' (wall runs along Z, face X)
- * @param {number} opts.x - wall X position
- * @param {number} opts.z - wall Z position
- * @param {number} opts.length - total wall length (along the axis)
+ * @param {string} opts.axis - 'x' (wall along X, thin in Z) or 'z' (wall along Z, thin in X)
+ * @param {number} opts.x - wall position X
+ * @param {number} opts.z - wall position Z
+ * @param {number} opts.length - wall length along axis
  * @param {number} opts.height - wall height
  * @param {number} opts.y - floor Y offset (default 0)
  * @param {number} opts.thickness - wall thickness (default 0.15)
- * @param {THREE.Material} opts.material - wall material
- * @param {Array} opts.openings - array of {start, end, bottom?, top?}
- *   start/end = position along the wall (0..length)
- *   bottom = bottom of opening from floor (default 0)
- *   top = top of opening from floor (default height)
+ * @param {THREE.Material} opts.material
+ * @param {Array} opts.openings - array of opening specs:
+ *   { start, end, bottom?, top? }
+ *   start/end = position along wall (0..length)
+ *   bottom = bottom of hole from floor (default 0 = floor level)
+ *   top = top of hole from floor (default = wall height = full cut)
  *
- * Example - wall along Z axis at x=10, 8m long, 3m high, with a door at 2-3m and a window at 5-6.5m:
- *   wallWithOpenings(group, {
- *     axis: 'z', x: 10, z: 0, length: 8, height: 3,
- *     material: MAT.wallOuter,
- *     openings: [
- *       { start: 2, end: 3 },                    // door: full height opening
- *       { start: 5, end: 6.5, bottom: 0.8, top: 2.2 }  // window: partial height
- *     ]
- *   });
+ * Handles any combination: doors (bottom=0), windows (bottom=sill),
+ * multiple openings at different heights on the same wall, overlapping ranges, etc.
  */
 export function wallWithOpenings(group, opts) {
   const {
@@ -77,80 +73,92 @@ export function wallWithOpenings(group, opts) {
     openings = []
   } = opts;
 
-  // Sort openings by start position
-  const sorted = [...openings].sort((a, b) => a.start - b.start);
-
-  // Build solid segments between openings (full height parts)
-  let cursor = 0;
-  for (const op of sorted) {
-    const start = Math.max(0, op.start);
-    const end = Math.min(length, op.end);
-    if (start < 0 || end > length || start >= end) continue;
-
-    // Solid wall before this opening
-    if (cursor < start) {
-      addWallSegment(group, axis, x, z, cursor, start - cursor, height, 0, y, thickness, material);
-    }
-
-    const opBottom = op.bottom ?? 0;
-    const opTop = op.top ?? height;
-
-    // Wall below opening (e.g. below window sill)
-    if (opBottom > 0) {
-      addWallSegment(group, axis, x, z, start, end - start, opBottom, 0, y, thickness, material);
-    }
-
-    // Wall above opening (e.g. above window/door)
-    if (opTop < height) {
-      addWallSegment(group, axis, x, z, start, end - start, height - opTop, opTop, y, thickness, material);
-    }
-
-    cursor = end;
+  if (openings.length === 0) {
+    addWallSeg(group, axis, x, z, 0, length, 0, height, y, thickness, material);
+    return;
   }
 
-  // Solid wall after last opening
-  if (cursor < length) {
-    addWallSegment(group, axis, x, z, cursor, length - cursor, height, 0, y, thickness, material);
+  // Collect all unique horizontal split points
+  const hSplits = new Set([0, length]);
+  // Collect all unique vertical split points
+  const vSplits = new Set([0, height]);
+
+  for (const op of openings) {
+    const s = Math.max(0, op.start);
+    const e = Math.min(length, op.end);
+    const b = Math.max(0, op.bottom ?? 0);
+    const t = Math.min(height, op.top ?? height);
+    hSplits.add(s);
+    hSplits.add(e);
+    vSplits.add(b);
+    vSplits.add(t);
+  }
+
+  const hs = [...hSplits].sort((a, b) => a - b);
+  const vs = [...vSplits].sort((a, b) => a - b);
+
+  // For each cell in the grid, check if it's inside any opening
+  for (let hi = 0; hi < hs.length - 1; hi++) {
+    for (let vi = 0; vi < vs.length - 1; vi++) {
+      const cellLeft = hs[hi];
+      const cellRight = hs[hi + 1];
+      const cellBottom = vs[vi];
+      const cellTop = vs[vi + 1];
+
+      const cellW = cellRight - cellLeft;
+      const cellH = cellTop - cellBottom;
+      if (cellW <= 0.001 || cellH <= 0.001) continue;
+
+      // Check if this cell is inside any opening
+      let isOpen = false;
+      for (const op of openings) {
+        const os = Math.max(0, op.start);
+        const oe = Math.min(length, op.end);
+        const ob = Math.max(0, op.bottom ?? 0);
+        const ot = Math.min(height, op.top ?? height);
+
+        if (cellLeft >= os && cellRight <= oe && cellBottom >= ob && cellTop <= ot) {
+          isOpen = true;
+          break;
+        }
+      }
+
+      if (!isOpen) {
+        addWallSeg(group, axis, x, z, cellLeft, cellW, cellBottom, cellH, y, thickness, material);
+      }
+    }
   }
 }
 
-function addWallSegment(group, axis, wx, wz, offset, segLen, segH, segBottom, floorY, thickness, material) {
-  if (segLen <= 0 || segH <= 0) return;
+function addWallSeg(group, axis, wx, wz, offset, segLen, segBottom, segH, floorY, thickness, material) {
+  if (segLen <= 0.001 || segH <= 0.001) return;
 
-  if (axis === 'z') {
-    // Wall runs along Z, thin in X
-    const w = box(thickness, segH, segLen, material);
-    w.position.set(wx, floorY + segBottom + segH / 2, wz + offset + segLen / 2);
-    group.add(w);
-  } else {
+  if (axis === 'x') {
     // Wall runs along X, thin in Z
     const w = box(segLen, segH, thickness, material);
     w.position.set(wx + offset + segLen / 2, floorY + segBottom + segH / 2, wz);
     group.add(w);
+  } else {
+    // Wall runs along Z, thin in X
+    const w = box(thickness, segH, segLen, material);
+    w.position.set(wx, floorY + segBottom + segH / 2, wz + offset + segLen / 2);
+    group.add(w);
   }
 }
 
 // ════════════════════════════════════════════════
-// WINDOW
+// WINDOW — glass + frame on wall surface
 // ════════════════════════════════════════════════
 
 /**
- * Add a window (glass + frame) on a wall surface.
- * Place this AFTER wallWithOpenings — the wall already has the hole,
- * this adds the visual glass and frame.
- *
- * @param {THREE.Group} group
  * @param {object} opts
- * @param {string} opts.axis - 'x' or 'z' (which wall face)
- * @param {number} opts.x - wall X position
- * @param {number} opts.z - wall Z position
- * @param {number} opts.at - position along the wall where window CENTER is
+ * @param {string} opts.axis - 'x' or 'z'
+ * @param {number} opts.x, opts.z - wall position
+ * @param {number} opts.at - center position along wall
  * @param {number} opts.width - window width
- * @param {number} opts.sillHeight - bottom of glass from floor
- * @param {number} opts.winHeight - height of glass
+ * @param {number} opts.sillHeight - bottom from floor
+ * @param {number} opts.winHeight - glass height
  * @param {number} opts.y - floor Y offset (default 0)
- * @param {THREE.Material} opts.glassMat - glass material (default MAT.window)
- * @param {THREE.Material} opts.frameMat - frame material (default MAT.windowFrame)
  */
 export function addWindow(group, opts) {
   const {
@@ -161,58 +169,50 @@ export function addWindow(group, opts) {
   } = opts;
 
   const fy = y + sillHeight;
+  const off = 0.08;
 
   if (axis === 'x') {
-    // Window on a wall that runs along X (face is in Z direction)
-    const off = 0.08;
     const glass = plane(w, h, glassMat);
     glass.position.set(x + at, fy + h / 2, z + off);
     group.add(glass);
-    // Frame
-    addFrameX(group, x + at, fy, z + off, w, h, frameMat);
+    frameBox(group, x + at, fy, z + off, w, h, 'x', frameMat);
   } else {
-    // Window on a wall that runs along Z (face is in X direction)
-    const off = 0.08;
     const glass = plane(w, h, glassMat);
     glass.rotation.y = Math.PI / 2;
     glass.position.set(x + off, fy + h / 2, z + at);
     group.add(glass);
-    addFrameZ(group, x + off, fy, z + at, w, h, frameMat);
+    frameBox(group, x + off, fy, z + at, w, h, 'z', frameMat);
   }
 }
 
-function addFrameX(group, cx, cy, cz, w, h, mat) {
-  const t = box(w + 0.04, 0.03, 0.05, mat); t.position.set(cx, cy + h, cz); group.add(t);
-  const b = box(w + 0.04, 0.03, 0.05, mat); b.position.set(cx, cy, cz); group.add(b);
-  const l = box(0.03, h, 0.05, mat); l.position.set(cx - w / 2, cy + h / 2, cz); group.add(l);
-  const r = box(0.03, h, 0.05, mat); r.position.set(cx + w / 2, cy + h / 2, cz); group.add(r);
+function frameBox(group, cx, cy, cz, w, h, axis, mat) {
+  if (axis === 'x') {
+    group.add(pos(box(w + 0.04, 0.03, 0.05, mat), cx, cy + h, cz));
+    group.add(pos(box(w + 0.04, 0.03, 0.05, mat), cx, cy, cz));
+    group.add(pos(box(0.03, h, 0.05, mat), cx - w / 2, cy + h / 2, cz));
+    group.add(pos(box(0.03, h, 0.05, mat), cx + w / 2, cy + h / 2, cz));
+  } else {
+    group.add(pos(box(0.05, 0.03, w + 0.04, mat), cx, cy + h, cz));
+    group.add(pos(box(0.05, 0.03, w + 0.04, mat), cx, cy, cz));
+    group.add(pos(box(0.05, h, 0.03, mat), cx, cy + h / 2, cz - w / 2));
+    group.add(pos(box(0.05, h, 0.03, mat), cx, cy + h / 2, cz + w / 2));
+  }
 }
 
-function addFrameZ(group, cx, cy, cz, w, h, mat) {
-  const t = box(0.05, 0.03, w + 0.04, mat); t.position.set(cx, cy + h, cz); group.add(t);
-  const b = box(0.05, 0.03, w + 0.04, mat); b.position.set(cx, cy, cz); group.add(b);
-  const l = box(0.05, h, 0.03, mat); l.position.set(cx, cy + h / 2, cz - w / 2); group.add(l);
-  const r = box(0.05, h, 0.03, mat); r.position.set(cx, cy + h / 2, cz + w / 2); group.add(r);
-}
+function pos(mesh, x, y, z) { mesh.position.set(x, y, z); return mesh; }
 
 // ════════════════════════════════════════════════
-// DOOR
+// DOOR — panel in opening
 // ════════════════════════════════════════════════
 
 /**
- * Add a door panel inside a wall opening.
- * The wall should already have an opening at this position.
- *
- * @param {THREE.Group} group
  * @param {object} opts
  * @param {string} opts.axis - 'x' or 'z'
- * @param {number} opts.x - wall X position
- * @param {number} opts.z - wall Z position
- * @param {number} opts.at - position along wall where door CENTER is
+ * @param {number} opts.x, opts.z - wall position
+ * @param {number} opts.at - center along wall
  * @param {number} opts.width - door width
- * @param {number} opts.doorHeight - door height (default 2.1)
+ * @param {number} opts.doorHeight - (default 2.1)
  * @param {number} opts.y - floor Y offset (default 0)
- * @param {THREE.Material} opts.material - door material (default MAT.door)
  */
 export function addDoor(group, opts) {
   const {
@@ -222,13 +222,9 @@ export function addDoor(group, opts) {
   } = opts;
 
   if (axis === 'x') {
-    const d = box(w, doorHeight, 0.06, material);
-    d.position.set(x + at, y + doorHeight / 2, z);
-    group.add(d);
+    group.add(pos(box(w, doorHeight, 0.06, material), x + at, y + doorHeight / 2, z));
   } else {
-    const d = box(0.06, doorHeight, w, material);
-    d.position.set(x, y + doorHeight / 2, z + at);
-    group.add(d);
+    group.add(pos(box(0.06, doorHeight, w, material), x, y + doorHeight / 2, z + at));
   }
 }
 
@@ -237,9 +233,7 @@ export function addDoor(group, opts) {
 // ════════════════════════════════════════════════
 
 export function addFloor(group, x, z, w, d, y = 0, material = MAT.floor) {
-  const f = box(w, 0.15, d, material);
-  f.position.set(x + w / 2, y + 0.075, z + d / 2);
-  group.add(f);
+  group.add(pos(box(w, 0.15, d, material), x + w / 2, y + 0.075, z + d / 2));
 }
 
 export function addCeiling(group, x, z, w, d, floorHeight, y = 0, material = MAT.ceiling) {
@@ -257,23 +251,9 @@ export function addFloorOverlay(group, x, z, w, d, y = 0, material = MAT.floorDa
 }
 
 // ════════════════════════════════════════════════
-// STAIRS
+// STAIRS — U-turn
 // ════════════════════════════════════════════════
 
-/**
- * Build a U-turn staircase.
- *
- * @param {THREE.Group} group
- * @param {object} opts
- * @param {number} opts.x - stairwell X origin
- * @param {number} opts.z - stairwell Z origin
- * @param {number} opts.width - stairwell width (along X)
- * @param {number} opts.depth - stairwell depth (along Z)
- * @param {number} opts.floorHeight - height to climb
- * @param {number} opts.y - starting Y (default 0)
- * @param {string} opts.direction - 'south'|'north'|'east'|'west' — direction of first flight
- * @param {number} opts.stepsPerFlight - steps per flight (default 10)
- */
 export function addStairs(group, opts) {
   const {
     x, z, width, depth, floorHeight,
@@ -285,89 +265,71 @@ export function addStairs(group, opts) {
 
   const stepH = floorHeight / (stepsPerFlight * 2);
   const margin = 0.2;
-  const stepW = width - 0.4; // leave space for rails
-
-  // Determine flight axis based on direction
+  const stepW = width - 0.4;
   const isSouthNorth = direction === 'south' || direction === 'north';
   const flightLen = (isSouthNorth ? depth : width) / 2 - margin;
   const stepD = flightLen / stepsPerFlight;
-
   const cx = x + width / 2;
   const cz = z + depth / 2;
-
   const goPositive = direction === 'south' || direction === 'east';
 
-  for (let s = 0; s < stepsPerFlight; s++) {
-    const sy = y + s * stepH + stepH / 2;
-    const offset = margin + s * stepD;
+  for (let flight = 0; flight < 2; flight++) {
+    const baseY = y + flight * floorHeight / 2;
+    const reverse = flight === 1;
 
-    const step = box(
-      isSouthNorth ? stepW : stepD,
-      stepH,
-      isSouthNorth ? stepD : stepW,
-      material
-    );
+    for (let s = 0; s < stepsPerFlight; s++) {
+      const sy = baseY + s * stepH + stepH / 2;
+      const offset = margin + s * stepD;
 
-    if (isSouthNorth) {
-      const sz = goPositive ? (z + offset + stepD / 2) : (z + depth - offset - stepD / 2);
-      step.position.set(cx, sy, sz);
-    } else {
-      const sx = goPositive ? (x + offset + stepD / 2) : (x + width - offset - stepD / 2);
-      step.position.set(sx, sy, cz);
+      const step = box(
+        isSouthNorth ? stepW : stepD,
+        stepH,
+        isSouthNorth ? stepD : stepW,
+        material
+      );
+
+      if (isSouthNorth) {
+        const forward = goPositive !== reverse;
+        const sz = forward ? (z + offset + stepD / 2) : (z + depth - offset - stepD / 2);
+        step.position.set(cx, sy, sz);
+      } else {
+        const forward = goPositive !== reverse;
+        const sx2 = forward ? (x + offset + stepD / 2) : (x + width - offset - stepD / 2);
+        step.position.set(sx2, sy, cz);
+      }
+      group.add(step);
     }
-    group.add(step);
-  }
 
-  // Landing
-  const landH = 0.15;
-  const landing = box(stepW, landH, isSouthNorth ? flightLen * 0.5 : stepW, material);
-  const landY = y + floorHeight / 2;
-  if (isSouthNorth) {
-    const lz = goPositive ? (z + depth - flightLen * 0.25 - margin) : (z + flightLen * 0.25 + margin);
-    landing.position.set(cx, landY, lz);
-  } else {
-    const lx = goPositive ? (x + width - flightLen * 0.25 - margin) : (x + flightLen * 0.25 + margin);
-    landing.position.set(lx, landY, cz);
-  }
-  group.add(landing);
-
-  // Second flight (return)
-  for (let s = 0; s < stepsPerFlight; s++) {
-    const sy = y + floorHeight / 2 + s * stepH + stepH / 2;
-    const offset = margin + s * stepD;
-
-    const step = box(
-      isSouthNorth ? stepW : stepD,
-      stepH,
-      isSouthNorth ? stepD : stepW,
-      material
-    );
-
-    if (isSouthNorth) {
-      const sz = goPositive ? (z + depth - offset - stepD / 2) : (z + offset + stepD / 2);
-      step.position.set(cx, sy, sz);
-    } else {
-      const sx = goPositive ? (x + width - offset - stepD / 2) : (x + offset + stepD / 2);
-      step.position.set(sx, sy, cz);
+    // Landing after first flight
+    if (flight === 0) {
+      const landing = box(stepW, 0.15, isSouthNorth ? flightLen * 0.4 : stepW, material);
+      const landY = y + floorHeight / 2;
+      if (isSouthNorth) {
+        const lz = goPositive ? (z + depth - flightLen * 0.2 - margin) : (z + flightLen * 0.2 + margin);
+        landing.position.set(cx, landY, lz);
+      } else {
+        const lx = goPositive ? (x + width - flightLen * 0.2 - margin) : (x + flightLen * 0.2 + margin);
+        landing.position.set(lx, landY, cz);
+      }
+      group.add(landing);
     }
-    group.add(step);
   }
 
-  // Railing posts
+  // Railings
   for (const side of [-1, 1]) {
-    const rOffset = side * (stepW / 2 + 0.05);
+    const rOff = side * (stepW / 2 + 0.05);
     for (let s = 0; s <= stepsPerFlight; s += 3) {
       const postY = y + s * stepH + 0.45;
       const offset = margin + s * stepD;
-      const post = box(0.04, 0.9, 0.04, railMaterial);
+      const p = box(0.04, 0.9, 0.04, railMaterial);
       if (isSouthNorth) {
-        const pz = goPositive ? (z + offset + stepD / 2) : (z + depth - offset - stepD / 2);
-        post.position.set(cx + rOffset, postY, pz);
+        const pz = goPositive ? (z + offset) : (z + depth - offset);
+        p.position.set(cx + rOff, postY, pz);
       } else {
-        const px = goPositive ? (x + offset + stepD / 2) : (x + width - offset - stepD / 2);
-        post.position.set(px, postY, cz + rOffset);
+        const px2 = goPositive ? (x + offset) : (x + width - offset);
+        p.position.set(px2, postY, cz + rOff);
       }
-      group.add(post);
+      group.add(p);
     }
   }
 }
@@ -377,7 +339,5 @@ export function addStairs(group, opts) {
 // ════════════════════════════════════════════════
 
 export function addFlatRoof(group, x, z, w, d, y, overhang = 0.3, material = MAT.roof) {
-  const r = box(w + overhang * 2, 0.25, d + overhang * 2, material);
-  r.position.set(x + w / 2, y + 0.125, z + d / 2);
-  group.add(r);
+  group.add(pos(box(w + overhang * 2, 0.25, d + overhang * 2, material), x + w / 2, y + 0.125, z + d / 2));
 }

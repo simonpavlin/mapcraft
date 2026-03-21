@@ -63,10 +63,16 @@ wallWithOpenings(group, {
 });
 ```
 
-The function automatically builds solid wall segments around each opening, including:
-- Wall below window (sill)
-- Wall above window/door (lintel)
-- Wall segments between openings
+The function uses 2D grid subtraction — it splits the wall face into cells based on opening boundaries,
+then generates solid segments only for cells NOT inside any opening. This correctly handles:
+- Doors (bottom=0, top=doorHeight) — lintel auto-generated above
+- Windows (bottom=sill, top=sill+winHeight) — parapet below + lintel above
+- Multiple openings at different heights on the same wall
+- Door NEXT TO a window with different heights
+- Any number of openings
+
+**IMPORTANT for doors:** Always specify `top` explicitly (e.g. top: 2.1 for a standard door).
+If omitted, top defaults to wall height = no lintel above the door.
 
 ### Add visual glass and door panels
 
