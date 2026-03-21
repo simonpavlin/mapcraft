@@ -1,7 +1,8 @@
 import http from 'http';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, statSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, '../../data');
@@ -147,6 +148,12 @@ const server = http.createServer((req, res) => {
       isContainer: !!node.children,
       scaleInfo, ascii, legend, children, floors, path,
     });
+  }
+
+  if (url.pathname === '/api/ui-hash') {
+    const content = readFileSync(UI_FILE, 'utf-8');
+    const hash = crypto.createHash('md5').update(content).digest('hex');
+    return json(res, { hash });
   }
 
   if (url.pathname === '/api/raw') {

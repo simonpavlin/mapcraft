@@ -90,13 +90,24 @@ async function fetchTree() {
 async function fetchNode(path) {
   try { nodeData = await (await fetch(`/api/node?path=${encodeURIComponent(path)}`)).json(); renderContent(); } catch {}
 }
+let navHistory = ['/'];
 function navigateTo(path) {
+  if (currentPath !== path) navHistory.push(currentPath);
   currentPath = path; selectedFloor = null;
   const parts = path.split('/').filter(Boolean);
   let p = ''; expandedPaths.add('/');
   for (const part of parts) { p = p ? `${p}/${part}` : part; expandedPaths.add(p); }
   fetchNode(path); renderTree();
 }
+function navigateBack() {
+  if (currentPath === '/') return;
+  const parts = currentPath.split('/').filter(Boolean);
+  parts.pop();
+  navigateTo(parts.length === 0 ? '/' : parts.join('/'));
+}
+// Mouse back button + Backspace
+window.addEventListener('mouseup', (e) => { if (e.button === 3) { e.preventDefault(); navigateBack(); } });
+window.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !['INPUT','TEXTAREA'].includes(e.target.tagName)) { e.preventDefault(); navigateBack(); } });
 function treeClick(e, path, hasChildren) {
   e.stopPropagation();
   if (hasChildren) { expandedPaths.has(path) ? expandedPaths.delete(path) : expandedPaths.add(path); }
@@ -340,6 +351,16 @@ function infoCard(title, value, sub) {
 
 async function refresh() { await fetchTree(); await fetchNode(currentPath); }
 setInterval(() => { if (document.getElementById('auto-refresh-check').checked) refresh(); }, 2000);
+// Auto-reload UI on code change
+let lastUiHash = null;
+setInterval(async () => {
+  try {
+    const res = await fetch('/api/ui-hash');
+    const { hash } = await res.json();
+    if (lastUiHash && hash !== lastUiHash) location.reload();
+    lastUiHash = hash;
+  } catch {}
+}, 1500);
 refresh();
 </script>
 </body>
