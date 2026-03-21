@@ -12,46 +12,34 @@ export class MapStore {
     this.root = this._load();
   }
 
-  initSpace(name, width, height, cellSize, description) {
+  initSpace(name, width, height, description) {
     this.root = {
       id: '_root',
       name,
       description: description || '',
-      x: 0,
-      y: 0,
-      width,
-      height,
+      // Bounds in meters
+      x: 0, y: 0,
+      width,  // meters
+      height, // meters
       char: '.',
       tags: [],
       children: {},
-      grid: { width, height, cell_size: cellSize },
     };
     this.save();
   }
 
-  /**
-   * Resolve a path like "building_a/floor_1/kitchen" to a node.
-   * "/" or "" returns root.
-   */
   resolve(path) {
     if (!this.root) return null;
     if (!path || path === '/') return this.root;
-
     const parts = path.split('/').filter(Boolean);
     let node = this.root;
-
-    for (const part of parts) {
-      if (!node.children || !node.children[part]) return null;
-      node = node.children[part];
+    for (const p of parts) {
+      if (!node.children || !node.children[p]) return null;
+      node = node.children[p];
     }
-
     return node;
   }
 
-  /**
-   * Find objects in parent that overlap with the given rectangle.
-   * Optionally exclude one object by id (for move operations).
-   */
   findCollisions(parent, x, y, w, h, excludeId) {
     const collisions = [];
     for (const child of Object.values(parent.children || {})) {
@@ -64,42 +52,56 @@ export class MapStore {
   }
 
   /**
-   * Render ASCII grid for a node.
+   * Render ASCII with automatic scaling.
+   * maxCols/maxRows define the max terminal size.
+   * The view auto-scales so everything fits.
    */
-  renderAscii(node) {
-    const grid = node.grid;
-    if (!grid) return { ascii: [], legend: [] };
+  renderAscii(node, maxCols = 60, maxRows = 30) {
+    const children = Object.values(node.children || {});
+    if (children.length === 0) {
+      return { ascii: [`(empty space: ${node.width}m × ${node.height}m)`], legend: [], scaleInfo: '' };
+    }
 
-    // Initialize grid with dots
-    const rows = [];
-    for (let r = 0; r < grid.height; r++) {
-      rows.push(new Array(grid.width).fill('.'));
+    // Compute scale: how many meters per ASCII cell
+    const scaleX = node.width / maxCols;
+    const scaleY = node.height / maxRows;
+    const scale = Math.max(scaleX, scaleY, 0.1); // at least 0.1m per cell
+
+    const cols = Math.min(maxCols, Math.ceil(node.width / scale));
+    const rows = Math.min(maxRows, Math.ceil(node.height / scale));
+
+    // Initialize grid
+    const grid = [];
+    for (let r = 0; r < rows; r++) {
+      grid.push(new Array(cols).fill('.'));
     }
 
     const legend = [];
 
-    // Fill in children
-    for (const child of Object.values(node.children || {})) {
+    // Place children
+    for (const child of children) {
       legend.push({ char: child.char, id: child.id, name: child.name });
 
-      for (let dy = 0; dy < child.height; dy++) {
-        for (let dx = 0; dx < child.width; dx++) {
-          const gy = child.y + dy;
-          const gx = child.x + dx;
-          if (gy >= 0 && gy < grid.height && gx >= 0 && gx < grid.width) {
-            rows[gy][gx] = child.char;
+      const startCol = Math.floor(child.x / scale);
+      const startRow = Math.floor(child.y / scale);
+      const endCol = Math.ceil((child.x + child.width) / scale);
+      const endRow = Math.ceil((child.y + child.height) / scale);
+
+      for (let r = startRow; r < endRow && r < rows; r++) {
+        for (let c = startCol; c < endCol && c < cols; c++) {
+          if (r >= 0 && c >= 0) {
+            grid[r][c] = child.char;
           }
         }
       }
     }
 
-    const ascii = rows.map(row => row.join(''));
-    return { ascii, legend };
+    const ascii = grid.map(row => row.join(''));
+    const scaleInfo = `1 cell = ${scale.toFixed(2)}m | view: ${cols}×${rows} cells | real: ${node.width}m × ${node.height}m`;
+
+    return { ascii, legend, scaleInfo };
   }
 
-  /**
-   * Export the entire tree as JSON.
-   */
   exportJSON() {
     return this.root;
   }
@@ -109,9 +111,7 @@ export class MapStore {
   }
 
   _load() {
-    if (!existsSync(MAP_FILE)) {
-      return null;
-    }
+    if (!existsSync(MAP_FILE)) return null;
     try {
       return JSON.parse(readFileSync(MAP_FILE, 'utf-8'));
     } catch {

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "mapcraft": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/mnt/c/Users/simip/Workspaces/projects/mapcraft/mcp-server/src/server.js"
+      ],
+      "env": {}
+    }
+  }
+}

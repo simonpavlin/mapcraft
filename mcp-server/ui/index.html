@@ -396,6 +396,7 @@
     <div class="tab active" data-tab="overview" onclick="switchTab('overview')">Přehled</div>
     <div class="tab" data-tab="ascii" onclick="switchTab('ascii')">ASCII Plánek</div>
     <div class="tab" data-tab="grid" onclick="switchTab('grid')">Grafický plánek</div>
+    <div class="tab" data-tab="floorplan" onclick="switchTab('floorplan')">Půdorys</div>
     <div class="tab" data-tab="objects" onclick="switchTab('objects')">Objekty</div>
   </div>
   <div id="content">
@@ -536,6 +537,7 @@ function renderContent() {
     case 'overview': renderOverview(); break;
     case 'ascii': renderAscii(); break;
     case 'grid': renderGrid(); break;
+    case 'floorplan': renderFloorplan(); break;
     case 'objects': renderObjects(); break;
   }
 }
@@ -563,10 +565,9 @@ function renderOverview() {
   html += infoCard('Název', d.name, d.description || '');
   html += infoCard('Znak', `<span style="font-family:monospace;font-size:28px;color:${getCharColor(d.char)}">${escHtml(d.char || '-')}</span>`, '');
 
-  if (d.grid) {
-    html += infoCard('Mřížka', `${d.grid.width} × ${d.grid.height}`, `${d.grid.cell_size}m na buňku`);
-    const totalArea = d.grid.width * d.grid.height * d.grid.cell_size * d.grid.cell_size;
-    html += infoCard('Plocha', `${totalArea.toFixed(0)} m²`, `${d.grid.width * d.grid.cell_size}m × ${d.grid.height * d.grid.cell_size}m`);
+  if (d.width && d.height) {
+    html += infoCard('Rozměry', `${d.width}m × ${d.height}m`, d.scaleInfo || '');
+    html += infoCard('Plocha', `${(d.width * d.height).toFixed(0)} m²`, '');
   }
 
   html += infoCard('Objekty', d.children.length.toString(), d.children.length > 0 ? 'Klikni na "Objekty" pro detail' : 'Prázdný prostor');
@@ -578,7 +579,7 @@ function renderOverview() {
   html += '</div>';
 
   // Quick ASCII preview
-  if (d.grid && d.ascii && d.ascii.length > 0) {
+  if (d.ascii && d.ascii.length > 0) {
     html += '<h3 style="margin-bottom:12px;font-size:14px;color:var(--text2)">Náhled</h3>';
     html += '<div id="ascii-view" style="max-height:400px;overflow:auto">';
     html += `<div id="ascii-grid">${colorizeAscii(d.ascii)}</div>`;
@@ -602,26 +603,16 @@ function renderOverview() {
 
 function renderAscii() {
   const d = nodeData;
-  if (!d.grid || !d.ascii) {
-    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná mřížka</h2><p>Tento objekt nemá vnitřní prostor</p></div>';
+  if (!d.ascii || d.ascii.length === 0) {
+    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2><p>Tento objekt nemá podřízené objekty k zobrazení</p></div>';
     return;
   }
 
   let html = '<div id="ascii-view">';
-
-  // Header with numbers
-  const w = d.grid.width;
-  if (w <= 120) {
-    let tens = '    ';
-    let ones = '    ';
-    for (let i = 0; i < w; i++) {
-      tens += i >= 10 ? Math.floor(i / 10).toString() : ' ';
-      ones += (i % 10).toString();
-    }
-    html += `<div id="ascii-grid"><span style="color:var(--text2)">${tens}\n${ones}</span>\n`;
-  } else {
-    html += '<div id="ascii-grid">';
+  if (d.scaleInfo) {
+    html += `<p style="margin-bottom:8px;font-size:11px;color:var(--text2)">${escHtml(d.scaleInfo)}</p>`;
   }
+  html += '<div id="ascii-grid">';
 
   for (let r = 0; r < d.ascii.length; r++) {
     const label = `<span style="color:var(--text2)">${r.toString().padStart(3)} </span>`;
@@ -649,17 +640,19 @@ function renderAscii() {
 
 function renderGrid() {
   const d = nodeData;
-  if (!d.grid || !d.ascii) {
-    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná mřížka</h2></div>';
+  if (!d.ascii || d.ascii.length === 0) {
+    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2></div>';
     return;
   }
 
-  const cellSize = Math.max(4, Math.min(24, Math.floor(800 / Math.max(d.grid.width, d.grid.height))));
-  const canvasW = d.grid.width * cellSize;
-  const canvasH = d.grid.height * cellSize;
+  const gridW = d.ascii[0].length;
+  const gridH = d.ascii.length;
+  const cellSize = Math.max(4, Math.min(24, Math.floor(800 / Math.max(gridW, gridH))));
+  const canvasW = gridW * cellSize;
+  const canvasH = gridH * cellSize;
 
   let html = '<div id="grid-canvas-container">';
-  html += `<p style="margin-bottom:12px;font-size:12px;color:var(--text2)">Grafický pohled — ${d.grid.width}×${d.grid.height} buněk, ${cellSize}px/buňka</p>`;
+  html += `<p style="margin-bottom:12px;font-size:12px;color:var(--text2)">${escHtml(d.scaleInfo || `${gridW}×${gridH} cells`)}</p>`;
   html += `<canvas id="grid-canvas" width="${canvasW}" height="${canvasH}"></canvas>`;
 
   if (d.legend.length > 0) {
@@ -742,6 +735,139 @@ function renderGrid() {
     }
   };
   canvas.style.cursor = 'pointer';
+}
+
+function renderFloorplan() {
+  const d = nodeData;
+  if (!d.children || d.children.length === 0) {
+    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádné objekty</h2><p>Tento prostor je prázdný</p></div>';
+    return;
+  }
+
+  const PAD = 40;
+  const maxCanvasW = 900;
+  const maxCanvasH = 600;
+
+  // Compute scale to fit all children
+  const parentW = d.width || 1;
+  const parentH = d.height || 1;
+  const scaleX = (maxCanvasW - PAD * 2) / parentW;
+  const scaleY = (maxCanvasH - PAD * 2) / parentH;
+  const scale = Math.min(scaleX, scaleY);
+
+  const canvasW = Math.ceil(parentW * scale + PAD * 2);
+  const canvasH = Math.ceil(parentH * scale + PAD * 2);
+
+  let html = '<div id="grid-canvas-container">';
+  html += `<p style="margin-bottom:8px;font-size:12px;color:var(--text2)">Půdorys — ${parentW}m × ${parentH}m | 1px = ${(1/scale).toFixed(3)}m</p>`;
+  html += `<canvas id="floorplan-canvas" width="${canvasW}" height="${canvasH}" style="border:1px solid var(--border);border-radius:4px;cursor:pointer"></canvas>`;
+  html += '</div>';
+
+  document.getElementById('content').innerHTML = html;
+
+  const canvas = document.getElementById('floorplan-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, canvasW, canvasH);
+
+  // Draw parent outline
+  ctx.strokeStyle = '#3a3a5a';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeRect(PAD, PAD, parentW * scale, parentH * scale);
+  ctx.setLineDash([]);
+
+  // Sort: larger objects first (background), smaller on top
+  const sorted = [...d.children].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+
+  for (const c of sorted) {
+    const rx = PAD + c.x * scale;
+    const ry = PAD + c.y * scale;
+    const rw = c.width * scale;
+    const rh = c.height * scale;
+    const color = getCharColor(c.char);
+
+    // Fill
+    ctx.fillStyle = color + '30';
+    ctx.fillRect(rx, ry, rw, rh);
+
+    // Border
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(rx, ry, rw, rh);
+
+    // Door-tagged objects get different style
+    if (c.tags && c.tags.includes('door')) {
+      ctx.fillStyle = color + '60';
+      ctx.fillRect(rx, ry, rw, rh);
+      continue; // no label for doors
+    }
+
+    // Label
+    const label = c.name;
+    const dimLabel = `${c.width}×${c.height}m`;
+
+    // Determine font size based on rect size
+    const maxFontSize = Math.min(rw / (label.length * 0.55), rh / 3, 16);
+    const fontSize = Math.max(8, Math.floor(maxFontSize));
+
+    if (fontSize >= 8 && rw > 20 && rh > 15) {
+      ctx.fillStyle = color;
+      ctx.font = `bold ${fontSize}px 'Segoe UI', system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, rx + rw / 2, ry + rh / 2 - (fontSize > 10 ? fontSize * 0.4 : 0), rw - 4);
+
+      // Dimensions below name
+      if (fontSize > 10 && rh > 30) {
+        const dimSize = Math.max(7, fontSize - 3);
+        ctx.font = `${dimSize}px 'Segoe UI', system-ui, sans-serif`;
+        ctx.fillStyle = color + 'aa';
+        ctx.fillText(dimLabel, rx + rw / 2, ry + rh / 2 + fontSize * 0.5, rw - 4);
+      }
+    }
+  }
+
+  // Dimension labels on edges
+  ctx.fillStyle = '#606080';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(`${parentW}m`, PAD + parentW * scale / 2, PAD + parentH * scale + 6);
+  ctx.save();
+  ctx.translate(PAD - 8, PAD + parentH * scale / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(`${parentH}m`, 0, 0);
+  ctx.restore();
+
+  // Click to navigate into container children
+  canvas.onclick = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left - PAD;
+    const my = e.clientY - rect.top - PAD;
+    const wx = mx / scale;
+    const wy = my / scale;
+
+    // Find smallest container child at click position
+    let best = null;
+    let bestArea = Infinity;
+    for (const c of d.children) {
+      if (wx >= c.x && wx <= c.x + c.width && wy >= c.y && wy <= c.y + c.height) {
+        const area = c.width * c.height;
+        if (c.hasGrid && area < bestArea) {
+          best = c;
+          bestArea = area;
+        }
+      }
+    }
+    if (best) {
+      const childPath = currentPath === '/' ? best.id : `${currentPath}/${best.id}`;
+      navigateTo(childPath);
+    }
+  };
 }
 
 function renderObjects() {

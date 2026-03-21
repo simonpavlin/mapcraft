@@ -1,7 +1,8 @@
 import http from 'http';
-import { readFileSync, existsSync, watchFile } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { MapStore } from './store.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, '../../data');
@@ -30,33 +31,50 @@ function resolveNode(root, path) {
   return node;
 }
 
-function renderAscii(node) {
-  if (!node || !node.grid) return { ascii: [], legend: [] };
-  const g = node.grid;
-  const rows = [];
-  for (let r = 0; r < g.height; r++) rows.push(new Array(g.width).fill('.'));
+function renderAscii(node, maxCols = 60, maxRows = 30) {
+  const children = Object.values(node.children || {});
+  if (children.length === 0) {
+    return { ascii: [], legend: [], scaleInfo: `${node.width}m × ${node.height}m — empty` };
+  }
+
+  const scaleX = node.width / maxCols;
+  const scaleY = node.height / maxRows;
+  const scale = Math.max(scaleX, scaleY, 0.1);
+
+  const cols = Math.min(maxCols, Math.ceil(node.width / scale));
+  const rows = Math.min(maxRows, Math.ceil(node.height / scale));
+
+  const grid = [];
+  for (let r = 0; r < rows; r++) grid.push(new Array(cols).fill('.'));
+
   const legend = [];
-  for (const child of Object.values(node.children || {})) {
+  for (const child of children) {
     legend.push({ char: child.char, id: child.id, name: child.name });
-    for (let dy = 0; dy < child.height; dy++) {
-      for (let dx = 0; dx < child.width; dx++) {
-        const gy = child.y + dy;
-        const gx = child.x + dx;
-        if (gy >= 0 && gy < g.height && gx >= 0 && gx < g.width) {
-          rows[gy][gx] = child.char;
-        }
+    const startCol = Math.floor(child.x / scale);
+    const startRow = Math.floor(child.y / scale);
+    const endCol = Math.ceil((child.x + child.width) / scale);
+    const endRow = Math.ceil((child.y + child.height) / scale);
+    for (let r = startRow; r < endRow && r < rows; r++) {
+      for (let c = startCol; c < endCol && c < cols; c++) {
+        if (r >= 0 && c >= 0) grid[r][c] = child.char;
       }
     }
   }
-  return { ascii: rows.map(r => r.join('')), legend };
+
+  return {
+    ascii: grid.map(r => r.join('')),
+    legend,
+    scaleInfo: `1 cell = ${scale.toFixed(2)}m | ${cols}×${rows} cells | ${node.width}m × ${node.height}m`,
+  };
 }
 
 function collectTree(node, path = '') {
+  const hasChildren = node.children && Object.keys(node.children).length > 0;
   const entry = {
     id: node.id,
     name: node.name,
     path: path || '/',
-    hasGrid: !!node.grid,
+    hasGrid: hasChildren || !!node.children, // container = has children dict
     childCount: Object.keys(node.children || {}).length,
     children: [],
   };
@@ -69,8 +87,6 @@ function collectTree(node, path = '') {
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
-
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   if (url.pathname === '/' || url.pathname === '/index.html') {
@@ -83,7 +99,7 @@ const server = http.createServer((req, res) => {
     const root = loadMap();
     if (!root) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'No map data. Use MCP to init_space first.' }));
+      res.end(JSON.stringify({ error: 'No map data.' }));
       return;
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -101,7 +117,11 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    const { ascii, legend } = renderAscii(node);
+    const maxCols = parseInt(url.searchParams.get('cols')) || 60;
+    const maxRows = parseInt(url.searchParams.get('rows')) || 30;
+    const { ascii, legend, scaleInfo } = renderAscii(node, maxCols, maxRows);
+
+    const isContainer = !!node.children;
     const children = Object.values(node.children || {}).map(c => ({
       id: c.id,
       name: c.name,
@@ -110,8 +130,7 @@ const server = http.createServer((req, res) => {
       width: c.width, height: c.height,
       description: c.description,
       tags: c.tags,
-      hasGrid: !!c.grid,
-      gridSize: c.grid ? `${c.grid.width}×${c.grid.height}` : null,
+      hasGrid: !!c.children,
       childCount: Object.keys(c.children || {}).length,
     }));
 
@@ -120,9 +139,13 @@ const server = http.createServer((req, res) => {
       id: node.id,
       name: node.name,
       description: node.description,
-      grid: node.grid,
+      width: node.width,
+      height: node.height,
       char: node.char,
       tags: node.tags,
+      isContainer,
+      scaleInfo,
+      grid: isContainer ? { width: node.width, height: node.height, cell_size: 1 } : null,
       ascii,
       legend,
       children,
