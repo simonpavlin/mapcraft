@@ -104,6 +104,7 @@ function serializeChild(c) {
     char: c.char,
     x: c.x, y: c.y,
     width: c.width, height: c.height,
+    shape: c.shape || null,
     description: c.description || '',
     tags: c.tags || [],
     metadata: c.metadata || {},

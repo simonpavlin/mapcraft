@@ -28,6 +28,28 @@ Objects can overlap freely — collision is advisory only (use check_collision w
 ## Coordinate system
 x = left→right, y = top→bottom on plan. Maps to 3D: plan-x → 3D x, plan-y → 3D z.
 
+## Walls are IMPLICIT — rooms touch edge-to-edge
+- Room dimensions represent INTERIOR space, not including walls
+- Adjacent rooms share a boundary — the wall is generated in 3D on that boundary line
+- Do NOT leave gaps between rooms for walls — rooms touch directly
+- Example: loznice (0,0) 3.5×4.5 and koupelna (0,4.5) 3.5×3.5 — they meet at y=4.5, 3D generates a wall there
+- Furniture at (0.2, 0.3) inside a room = 0.2m from the west wall inner face — always consistent
+- The 3D generator adds wall thickness OUTSIDE the room boundaries
+
+## Non-rectangular rooms — use zones
+Rooms are not limited to rectangles. For L-shaped, T-shaped, or irregular rooms,
+make the room a CONTAINER and place rectangular ZONES inside it:
+
+Example — L-shaped obývák:
+  obyvak/                     (container, bounding box 10×8m)
+    zona_hlavni  (0,0) 10×5   tag:zone — main area
+    zona_jidelna (6,5) 4×3    tag:zone — dining nook extension
+    pohovka      (1,1) 2.5×1  tag:furniture
+    jid_stul     (7,5.5) 2×1  tag:furniture — in the L extension
+
+The ASCII view shows the L-shape. In 3D, generate walls along the outer perimeter
+of the zone union (multiple wallWithOpenings calls for each straight segment).
+
 ## Overlapping is OK
 - Multiple floors at the same position? Fine — name them "prizemi", "patro_2", etc.
 - Door on the boundary of a room? Fine — doors are just markers.
@@ -165,22 +187,23 @@ server.tool(
 
 server.tool(
   'place_object',
-  'Place an object. All dimensions in METERS relative to parent. Overlaps are allowed — no collision enforcement. Use metadata for 3D-relevant properties (direction, style, material, etc).',
+  'Place an object. All dimensions in METERS relative to parent. Overlaps allowed. Optionally use shape for non-rectangular rooms.',
   {
     path: z.string().optional().describe('Parent path. "/" = root'),
     id: z.string().describe('Unique ID within parent'),
     name: z.string(),
     x: z.number().min(0),
     y: z.number().min(0),
-    width: z.number().min(0.01),
-    height: z.number().min(0.01),
+    width: z.number().min(0.01).optional().describe('Width in meters. Auto-calculated from shape if shape is provided.'),
+    height: z.number().min(0.01).optional().describe('Height in meters. Auto-calculated from shape if shape is provided.'),
     char: z.string().max(1),
+    shape: z.string().optional().describe('Optional polygon shape as JSON: [[x1,y1],[x2,y2],...] — coordinates relative to (x,y). If provided, width/height are auto-calculated as bounding box.'),
     is_container: z.boolean().optional().describe('Can hold sub-objects (default: false)'),
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
-    metadata: z.string().optional().describe('JSON string of key-value data for 3D generation, e.g. {"direction":"south","style":"sliding"}'),
+    metadata: z.string().optional().describe('JSON string of key-value data for 3D generation'),
   },
-  async ({ path, id, name, x, y, width, height, char, is_container, description, tags, metadata }) => {
+  async ({ path, id, name, x, y, width, height, char, shape, is_container, description, tags, metadata }) => {
     const parent = store.resolve(path || '/');
     if (!parent) return err(`Parent "${path}" not found`);
 
@@ -189,11 +212,22 @@ server.tool(
     }
 
     const meta = parseMeta(metadata);
+    const parsedShape = parseShape(shape);
+
+    // Auto-calculate width/height from shape bounding box
+    let w = width, h = height;
+    if (parsedShape) {
+      const bbox = shapeBBox(parsedShape);
+      w = w || bbox.w;
+      h = h || bbox.h;
+    }
+    if (!w || !h) return err('width and height required (or provide shape)');
 
     parent.children[id] = {
       id, name,
-      x, y, width, height,
+      x, y, width: w, height: h,
       char: char || '#',
+      shape: parsedShape || undefined,
       description: description || '',
       tags: tags || [],
       metadata: meta,
@@ -202,7 +236,7 @@ server.tool(
 
     store.save();
     const type = is_container ? 'container' : 'leaf';
-    return ok(`Placed "${name}" [${char}] at (${x},${y}) ${width}×${height}m (${type})${metadata ? ' +metadata' : ''}`);
+    return ok(`Placed "${name}" [${char}] at (${x},${y}) ${w}×${h}m (${type})${metadata ? ' +metadata' : ''}${parsedShape ? ' shape:' + parsedShape.length + 'pts' : ''}`);
   }
 );
 
@@ -318,24 +352,32 @@ server.tool(
 
 server.tool(
   'update_object',
-  'Update ANY properties of an existing object — position, size, name, char, tags, metadata. Only provided fields are changed. Children are preserved.',
+  'Update ANY properties of an existing object — position, size, shape, name, char, tags, metadata. Only provided fields are changed. Children are preserved.',
   {
     path: z.string(),
     x: z.number().min(0).optional(),
     y: z.number().min(0).optional(),
     width: z.number().min(0.01).optional(),
     height: z.number().min(0.01).optional(),
+    shape: z.string().optional().describe('Polygon shape as JSON: [[x1,y1],[x2,y2],...]. Set to "null" to remove shape.'),
     name: z.string().optional(),
     char: z.string().max(1).optional(),
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
     metadata: z.string().optional().describe('Merged with existing metadata'),
   },
-  async ({ path, x, y, width, height, name, char, description, tags, metadata }) => {
+  async ({ path, x, y, width, height, shape, name, char, description, tags, metadata }) => {
     const node = store.resolve(path);
     if (!node || node === store.root) return err('Not found or root');
     if (x !== undefined) node.x = x;
     if (y !== undefined) node.y = y;
+    if (shape !== undefined) {
+      if (shape === 'null' || shape === '') { node.shape = undefined; }
+      else {
+        const parsed = parseShape(shape);
+        if (parsed) { node.shape = parsed; const bb = shapeBBox(parsed); node.width = bb.w; node.height = bb.h; }
+      }
+    }
     if (width !== undefined) node.width = width;
     if (height !== undefined) node.height = height;
     if (name !== undefined) node.name = name;
@@ -495,6 +537,46 @@ function parseMeta(s) {
   if (!s) return {};
   if (typeof s === 'object') return s;
   try { return JSON.parse(s); } catch { return {}; }
+}
+function parseShape(s) {
+  if (!s) return null;
+  // Already an array of points
+  if (Array.isArray(s)) {
+    if (s.length >= 3 && s.every(p => Array.isArray(p) && p.length === 2)) return s;
+    return null;
+  }
+  // String — parse JSON
+  if (typeof s === 'string') {
+    try {
+      const arr = JSON.parse(s);
+      return parseShape(arr); // recurse to validate
+    } catch { return null; }
+  }
+  // Object with numeric keys (SDK might convert array to object)
+  if (typeof s === 'object') {
+    const keys = Object.keys(s);
+    if (keys.length >= 3) {
+      const arr = keys.sort((a,b) => Number(a) - Number(b)).map(k => {
+        const v = s[k];
+        if (Array.isArray(v)) return v;
+        if (typeof v === 'object') return [v[0] ?? v.x ?? 0, v[1] ?? v.y ?? 0];
+        return null;
+      }).filter(Boolean);
+      if (arr.length >= 3 && arr.every(p => p.length === 2)) return arr;
+    }
+    return null;
+  }
+  return null;
+}
+function shapeBBox(points) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [px, py] of points) {
+    if (px < minX) minX = px;
+    if (py < minY) minY = py;
+    if (px > maxX) maxX = px;
+    if (py > maxY) maxY = py;
+  }
+  return { w: maxX - minX, h: maxY - minY };
 }
 
 async function main() {

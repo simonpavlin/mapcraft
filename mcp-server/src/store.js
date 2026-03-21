@@ -63,7 +63,7 @@ export class MapStore {
       for (const child of Object.values(parent.children || {})) {
         const absX = offsetX + child.x;
         const absY = offsetY + child.y;
-        objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: absY, width: child.width, height: child.height });
+        objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: absY, width: child.width, height: child.height, shape: child.shape });
         if (recursive && child.children) {
           collect(child, absX, absY);
         }
@@ -101,9 +101,25 @@ export class MapStore {
       const startRow = Math.floor(child.y / scale);
       const endCol = Math.ceil((child.x + child.width) / scale);
       const endRow = Math.ceil((child.y + child.height) / scale);
-      for (let r = startRow; r < endRow && r < rows; r++) {
-        for (let c = startCol; c < endCol && c < cols; c++) {
-          if (r >= 0 && c >= 0) grid[r][c] = child.char;
+
+      if (child.shape) {
+        // Polygon fill — absolute shape points
+        const absShape = child.shape.map(([px, py]) => [child.x + px, child.y + py]);
+        for (let r = startRow; r < endRow && r < rows; r++) {
+          for (let c = startCol; c < endCol && c < cols; c++) {
+            if (r >= 0 && c >= 0) {
+              const px = (c + 0.5) * scale;
+              const py = (r + 0.5) * scale;
+              if (pointInPolygon(px, py, absShape)) grid[r][c] = child.char;
+            }
+          }
+        }
+      } else {
+        // Rectangle fill
+        for (let r = startRow; r < endRow && r < rows; r++) {
+          for (let c = startCol; c < endCol && c < cols; c++) {
+            if (r >= 0 && c >= 0) grid[r][c] = child.char;
+          }
         }
       }
     }
@@ -130,4 +146,17 @@ export class MapStore {
 
 function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2) {
   return !(x1 + w1 <= x2 || x2 + w2 <= x1 || y1 + h1 <= y2 || y2 + h2 <= y1);
+}
+
+// Ray casting point-in-polygon test
+function pointInPolygon(px, py, polygon) {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [xi, yi] = polygon[i];
+    const [xj, yj] = polygon[j];
+    if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }

@@ -260,6 +260,19 @@ function renderFloorplan() {
   ctx.strokeStyle = '#3a3a5a'; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
   ctx.strokeRect(PAD, PAD, pw*scale, ph*scale); ctx.setLineDash([]);
 
+  // Helper: draw shape path (polygon or rect)
+  function shapePath(ctx, obj, ox, oy, s) {
+    if (obj.shape && obj.shape.length >= 3) {
+      ctx.beginPath();
+      ctx.moveTo(ox + obj.shape[0][0]*s, oy + obj.shape[0][1]*s);
+      for (let i = 1; i < obj.shape.length; i++) ctx.lineTo(ox + obj.shape[i][0]*s, oy + obj.shape[i][1]*s);
+      ctx.closePath();
+    } else {
+      ctx.beginPath();
+      ctx.rect(ox, oy, obj.width*s, obj.height*s);
+    }
+  }
+
   const sorted = [...children].sort((a,b) => (b.width*b.height) - (a.width*a.height));
   for (const c of sorted) {
     const rx = PAD + c.x*scale, ry = PAD + c.y*scale, rw = c.width*scale, rh = c.height*scale;
@@ -270,8 +283,10 @@ function renderFloorplan() {
     if (isDoor) { ctx.fillStyle = color + '80'; ctx.fillRect(rx, ry, rw, rh); continue; }
     if (isWindow) { ctx.fillStyle = '#88ccee44'; ctx.fillRect(rx, ry, rw, rh); continue; }
 
-    ctx.fillStyle = color + '25'; ctx.fillRect(rx, ry, rw, rh);
-    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.strokeRect(rx, ry, rw, rh);
+    ctx.fillStyle = color + '25';
+    shapePath(ctx, c, rx, ry, scale); ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    shapePath(ctx, c, rx, ry, scale); ctx.stroke();
 
     // Label
     const label = c.name;
@@ -313,12 +328,12 @@ function renderFloorplan() {
       if (isWindow) { ctx.fillStyle = '#88ccee' + Math.round(opacity).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh); continue; }
 
       ctx.fillStyle = color + Math.round(opacity * 0.6).toString(16).padStart(2,'0');
-      ctx.fillRect(rx, ry, rw, rh);
+      shapePath(ctx, dc, rx, ry, scale); ctx.fill();
       const dashSize = isFurniture ? [2,2] : [4,3];
       ctx.strokeStyle = color + Math.round(opacity * 2).toString(16).padStart(2,'0');
       ctx.lineWidth = isFurniture ? 0.5 : 1;
       ctx.setLineDash(dashSize);
-      ctx.strokeRect(rx, ry, rw, rh);
+      shapePath(ctx, dc, rx, ry, scale); ctx.stroke();
       ctx.setLineDash([]);
 
       // Label — smaller for deeper objects
