@@ -513,7 +513,9 @@ function treeClick(e, path, hasChildren) {
     if (expandedPaths.has(path)) expandedPaths.delete(path);
     else expandedPaths.add(path);
   }
-  navigateTo(path);
+  currentPath = path;
+  fetchNode(path);
+  renderTree();
 }
 
 function switchTab(tab) {
