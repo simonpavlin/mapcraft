@@ -7,7 +7,7 @@ const store = new MapStore();
 
 const server = new McpServer({
   name: 'mapcraft',
-  version: '0.3.0',
+  version: '0.4.0',
 });
 
 // ──────────────────────────────────────────────
@@ -16,38 +16,37 @@ const server = new McpServer({
 
 server.tool(
   'get_guide',
-  'Get the MapCraft usage guide — read this first',
+  'Get the MapCraft usage guide',
   {},
   async () => ok(`
-# MapCraft — Spatial Object Planner
+# MapCraft v0.4 — Spatial Object Planner
 
 ## Core concept
-A hierarchical spatial database. All coordinates are in METERS (real-world scale).
-Objects are placed into spaces using (x, y, width, height) in meters.
-Objects can contain sub-objects — zoom in to design interiors.
+Hierarchical spatial database. All coordinates in METERS.
+Objects can overlap freely — collision is advisory only (use check_collision when needed).
 
 ## Coordinate system
-- x = horizontal (left to right), y = vertical (top to bottom) on the plan view
-- These map directly to 3D: plan-x → 3D x, plan-y → 3D z
-- Use the SAME scale you'd use in the 3D viewer (meters)
+x = left→right, y = top→bottom on plan. Maps to 3D: plan-x → 3D x, plan-y → 3D z.
+
+## Overlapping is OK
+- Multiple floors at the same position? Fine — name them "prizemi", "patro_2", etc.
+- Door on the boundary of a room? Fine — doors are just markers.
+- Carpet under a table? Fine — they coexist.
+- Use check_collision only when you WANT to verify (e.g. "will these two rooms fit side by side?").
+
+## Metadata
+Every object can carry arbitrary key-value metadata for 3D generation:
+- Stairs: { direction: "south", type: "u_turn", from_floor: 0, to_floor: 1 }
+- Doors: { style: "sliding", connects: ["obyvak", "terasa"] }
+- Windows: { sill_height: 0.8, type: "panorama" }
+- Furniture: { material: "wood", color: "#8a7050" }
 
 ## Workflow
-1. init_space — create root space with size in meters
-2. place_object — place buildings, roads, etc. with real meter coordinates
-3. get_ascii — view the plan (auto-scales to fit terminal, shows scale info)
-4. zoom into an object by placing sub-objects inside it (coordinates relative to parent)
-5. Repeat: rooms → furniture → details
-
-## ASCII view
-get_ascii auto-scales to max 60×30 cells by default. You can set max_cols/max_rows.
-A large 200m space at 60 cols → each cell ≈ 3.3m. Zoom into a 10m room → each cell ≈ 0.17m.
-This keeps token usage low regardless of world size.
-
-## Tips
-- Place structural elements first (walls, stairs), then furniture
-- Use check_collision before placing to avoid overlaps
-- Object coordinates are RELATIVE to their parent
-- Tags help categorize: "building", "room", "furniture", "structural", "door", "outdoor"
+1. init_space — root space in meters
+2. place_object — buildings, floors, rooms, furniture (overlaps allowed)
+3. get_ascii — auto-scaled view (filter by tag if needed)
+4. check_collision — advisory overlap check when needed
+5. Use metadata to store 3D-relevant info (direction, style, material...)
 `)
 );
 
@@ -57,11 +56,11 @@ This keeps token usage low regardless of world size.
 
 server.tool(
   'init_space',
-  'Initialize root space. All dimensions in METERS. Clears existing data.',
+  'Initialize root space in METERS. Clears existing data.',
   {
-    name: z.string().describe('Name of the space'),
-    width: z.number().min(1).max(10000).describe('Width in meters'),
-    height: z.number().min(1).max(10000).describe('Height in meters'),
+    name: z.string(),
+    width: z.number().min(1).max(10000),
+    height: z.number().min(1).max(10000),
     description: z.string().optional(),
   },
   async ({ name, width, height, description }) => {
@@ -76,32 +75,24 @@ server.tool(
 
 server.tool(
   'place_object',
-  'Place an object into a space. ALL dimensions in METERS, relative to parent. Objects can be containers (have inner space for sub-objects) or leaves.',
+  'Place an object. All dimensions in METERS relative to parent. Overlaps are allowed — no collision enforcement. Use metadata for 3D-relevant properties (direction, style, material, etc).',
   {
-    path: z.string().optional().describe('Parent path (e.g. "building_a/floor_1"). "/" = root'),
+    path: z.string().optional().describe('Parent path. "/" = root'),
     id: z.string().describe('Unique ID within parent'),
-    name: z.string().describe('Display name'),
-    x: z.number().min(0).describe('X position in meters (relative to parent)'),
-    y: z.number().min(0).describe('Y position in meters (relative to parent)'),
-    width: z.number().min(0.01).describe('Width in meters'),
-    height: z.number().min(0.01).describe('Height in meters'),
-    char: z.string().max(1).describe('ASCII character for visualization'),
-    is_container: z.boolean().optional().describe('If true, this object can hold sub-objects (default: false)'),
+    name: z.string(),
+    x: z.number().min(0),
+    y: z.number().min(0),
+    width: z.number().min(0.01),
+    height: z.number().min(0.01),
+    char: z.string().max(1),
+    is_container: z.boolean().optional().describe('Can hold sub-objects (default: false)'),
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
+    metadata: z.record(z.any()).optional().describe('Arbitrary key-value data for 3D generation (e.g. direction, style, material, sill_height, connects...)'),
   },
-  async ({ path, id, name, x, y, width, height, char, is_container, description, tags }) => {
+  async ({ path, id, name, x, y, width, height, char, is_container, description, tags, metadata }) => {
     const parent = store.resolve(path || '/');
     if (!parent) return err(`Parent "${path}" not found`);
-
-    if (x + width > parent.width + 0.01 || y + height > parent.height + 0.01) {
-      return err(`Object (${x},${y}) ${width}×${height}m exceeds parent bounds ${parent.width}×${parent.height}m`);
-    }
-
-    const collisions = store.findCollisions(parent, x, y, width, height);
-    if (collisions.length > 0) {
-      return err(`Collision with: ${collisions.map(c => `"${c.name}" (${c.id})`).join(', ')}`);
-    }
 
     if (parent.children[id]) {
       return err(`"${id}" already exists. Remove first or pick different id.`);
@@ -113,12 +104,69 @@ server.tool(
       char: char || '#',
       description: description || '',
       tags: tags || [],
+      metadata: metadata || {},
       children: is_container ? {} : undefined,
     };
 
     store.save();
     const type = is_container ? 'container' : 'leaf';
-    return ok(`Placed "${name}" [${char}] at (${x}, ${y}) ${width}×${height}m (${type})`);
+    return ok(`Placed "${name}" [${char}] at (${x},${y}) ${width}×${height}m (${type})${metadata ? ' +metadata' : ''}`);
+  }
+);
+
+// ──────────────────────────────────────────────
+// TOOL: remove_object
+// ──────────────────────────────────────────────
+
+// ──────────────────────────────────────────────
+// TOOL: place_objects (batch)
+// ──────────────────────────────────────────────
+
+server.tool(
+  'place_objects',
+  'Place multiple objects at once (batch). Same params as place_object but as an array. Saves tokens by avoiding multiple round-trips.',
+  {
+    path: z.string().optional().describe('Parent path for ALL objects. "/" = root'),
+    objects: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      x: z.number().min(0),
+      y: z.number().min(0),
+      width: z.number().min(0.01),
+      height: z.number().min(0.01),
+      char: z.string().max(1),
+      is_container: z.boolean().optional(),
+      description: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+      metadata: z.record(z.any()).optional(),
+    })).describe('Array of objects to place'),
+  },
+  async ({ path, objects }) => {
+    const parent = store.resolve(path || '/');
+    if (!parent) return err(`Parent "${path}" not found`);
+
+    const results = [];
+    for (const o of objects) {
+      if (parent.children[o.id]) {
+        results.push(`SKIP "${o.id}" — already exists`);
+        continue;
+      }
+      parent.children[o.id] = {
+        id: o.id, name: o.name,
+        x: o.x, y: o.y, width: o.width, height: o.height,
+        char: o.char || '#',
+        description: o.description || '',
+        tags: o.tags || [],
+        metadata: o.metadata || {},
+        children: o.is_container ? {} : undefined,
+      };
+      const type = o.is_container ? '+' : '·';
+      const meta = o.metadata ? ' {…}' : '';
+      results.push(`${type} [${o.char}] ${o.id} at (${o.x},${o.y}) ${o.width}×${o.height}m${meta}`);
+    }
+
+    store.save();
+    return ok(`Placed ${results.length} objects:\n${results.join('\n')}`);
   }
 );
 
@@ -128,17 +176,15 @@ server.tool(
 
 server.tool(
   'remove_object',
-  'Remove an object and all its children by path',
-  {
-    path: z.string().describe('Full path (e.g. "building_a/floor_1/kitchen")'),
-  },
+  'Remove an object and all its children',
+  { path: z.string() },
   async ({ path }) => {
     const parts = path.split('/').filter(Boolean);
     if (parts.length === 0) return err('Cannot remove root. Use init_space.');
     const parentPath = parts.slice(0, -1).join('/') || '/';
     const childId = parts[parts.length - 1];
     const parent = store.resolve(parentPath);
-    if (!parent) return err(`Parent not found`);
+    if (!parent) return err('Parent not found');
     if (!parent.children[childId]) return err(`"${childId}" not found`);
     delete parent.children[childId];
     store.save();
@@ -166,14 +212,39 @@ server.tool(
     const parent = store.resolve(parentPath);
     if (!parent) return err('Parent not found');
     const obj = parent.children[childId];
-    if (!obj) return err('Object not found');
-    if (new_x + obj.width > parent.width || new_y + obj.height > parent.height) return err('Out of bounds');
-    const collisions = store.findCollisions(parent, new_x, new_y, obj.width, obj.height, childId);
-    if (collisions.length > 0) return err(`Collision: ${collisions.map(c => c.id).join(', ')}`);
+    if (!obj) return err('Not found');
     obj.x = new_x;
     obj.y = new_y;
     store.save();
-    return ok(`Moved to (${new_x}, ${new_y})`);
+    return ok(`Moved "${obj.name}" to (${new_x}, ${new_y})`);
+  }
+);
+
+// ──────────────────────────────────────────────
+// TOOL: update_object
+// ──────────────────────────────────────────────
+
+server.tool(
+  'update_object',
+  'Update properties of an existing object (name, description, char, tags, metadata). Metadata is merged, not replaced.',
+  {
+    path: z.string(),
+    name: z.string().optional(),
+    char: z.string().max(1).optional(),
+    description: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    metadata: z.record(z.any()).optional().describe('Merged with existing metadata'),
+  },
+  async ({ path, name, char, description, tags, metadata }) => {
+    const node = store.resolve(path);
+    if (!node || node === store.root) return err('Not found or root');
+    if (name !== undefined) node.name = name;
+    if (char !== undefined) node.char = char;
+    if (description !== undefined) node.description = description;
+    if (tags !== undefined) node.tags = tags;
+    if (metadata) node.metadata = { ...(node.metadata || {}), ...metadata };
+    store.save();
+    return ok(`Updated "${node.name}"`);
   }
 );
 
@@ -183,20 +254,23 @@ server.tool(
 
 server.tool(
   'get_objects',
-  'List objects in a space (one level)',
+  'List objects in a space. Optionally filter by tag.',
   {
     path: z.string().optional(),
+    tag: z.string().optional().describe('Filter: only show objects with this tag'),
   },
-  async ({ path }) => {
+  async ({ path, tag }) => {
     const node = store.resolve(path || '/');
     if (!node) return err('Not found');
-    const children = Object.values(node.children || {});
-    if (children.length === 0) return ok(`"${node.name}" (${node.width}m × ${node.height}m) — empty`);
+    let children = Object.values(node.children || {});
+    if (tag) children = children.filter(c => (c.tags || []).includes(tag));
+    if (children.length === 0) return ok(`"${node.name}" (${node.width}m × ${node.height}m) — ${tag ? 'no objects with tag "' + tag + '"' : 'empty'}`);
     const lines = [`"${node.name}" — ${node.width}m × ${node.height}m, ${children.length} objects:\n`];
     for (const c of children) {
-      const container = c.children ? `[container, ${Object.keys(c.children).length} children]` : '[leaf]';
-      const tags = c.tags?.length > 0 ? ` tags:[${c.tags.join(',')}]` : '';
-      lines.push(`  [${c.char}] ${c.id} "${c.name}" at (${c.x},${c.y}) ${c.width}×${c.height}m ${container}${tags}`);
+      const container = c.children ? `[+${Object.keys(c.children).length}]` : '';
+      const tags = c.tags?.length ? ` [${c.tags.join(',')}]` : '';
+      const meta = c.metadata && Object.keys(c.metadata).length ? ` {${Object.entries(c.metadata).map(([k,v]) => `${k}:${JSON.stringify(v)}`).join(', ')}}` : '';
+      lines.push(`  [${c.char}] ${c.id} "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m${container}${tags}${meta}`);
     }
     return ok(lines.join('\n'));
   }
@@ -208,21 +282,24 @@ server.tool(
 
 server.tool(
   'check_collision',
-  'Check if a rectangular area (in meters) collides with existing objects',
+  'Advisory check: does a rectangle overlap with existing objects? Does NOT block placement.',
   {
     path: z.string().optional(),
     x: z.number().min(0),
     y: z.number().min(0),
     width: z.number().min(0.01),
     height: z.number().min(0.01),
+    exclude_tags: z.array(z.string()).optional().describe('Ignore objects with these tags (e.g. ["door","window"])'),
   },
-  async ({ path, x, y, width, height }) => {
+  async ({ path, x, y, width, height, exclude_tags }) => {
     const parent = store.resolve(path || '/');
     if (!parent) return err('Not found');
-    if (x + width > parent.width || y + height > parent.height) return err('Exceeds bounds');
-    const collisions = store.findCollisions(parent, x, y, width, height);
+    let collisions = store.findCollisions(parent, x, y, width, height);
+    if (exclude_tags?.length) {
+      collisions = collisions.filter(c => !(c.tags || []).some(t => exclude_tags.includes(t)));
+    }
     if (collisions.length === 0) return ok(`Area (${x},${y}) ${width}×${height}m is FREE`);
-    return ok(`COLLISION with: ${collisions.map(c => `[${c.char}] "${c.name}" at (${c.x},${c.y}) ${c.width}×${c.height}m`).join(', ')}`);
+    return ok(`Overlaps with: ${collisions.map(c => `[${c.char}] "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m`).join(', ')}`);
   }
 );
 
@@ -232,31 +309,38 @@ server.tool(
 
 server.tool(
   'get_ascii',
-  'ASCII visualization of a space. Auto-scales to fit max_cols × max_rows. Each cell represents N meters depending on zoom level.',
+  'ASCII visualization. Auto-scales to fit. Optionally filter by tag.',
   {
-    path: z.string().optional().describe('Path to visualize. "/" = root'),
-    max_cols: z.number().int().min(10).max(120).optional().describe('Max columns (default: 60)'),
-    max_rows: z.number().int().min(5).max(60).optional().describe('Max rows (default: 30)'),
+    path: z.string().optional(),
+    max_cols: z.number().int().min(10).max(120).optional(),
+    max_rows: z.number().int().min(5).max(60).optional(),
+    tag: z.string().optional().describe('Only show objects with this tag'),
   },
-  async ({ path, max_cols, max_rows }) => {
+  async ({ path, max_cols, max_rows, tag }) => {
     const node = store.resolve(path || '/');
     if (!node) return err('Not found');
 
+    // If tag filter, temporarily filter children
+    let originalChildren;
+    if (tag && node.children) {
+      originalChildren = node.children;
+      const filtered = {};
+      for (const [k, v] of Object.entries(node.children)) {
+        if ((v.tags || []).includes(tag)) filtered[k] = v;
+      }
+      node.children = filtered;
+    }
+
     const { ascii, legend, scaleInfo } = store.renderAscii(node, max_cols || 60, max_rows || 30);
 
+    if (originalChildren) node.children = originalChildren;
+
     const lines = [`=== ${node.name} ===`, scaleInfo, ''];
-
-    for (let r = 0; r < ascii.length; r++) {
-      lines.push(ascii[r]);
-    }
-
+    for (const row of ascii) lines.push(row);
     if (legend.length > 0) {
       lines.push('');
-      for (const l of legend) {
-        lines.push(`[${l.char}] ${l.id} — "${l.name}"`);
-      }
+      for (const l of legend) lines.push(`[${l.char}] ${l.id} — "${l.name}"`);
     }
-
     return ok(lines.join('\n'));
   }
 );
@@ -267,15 +351,16 @@ server.tool(
 
 server.tool(
   'get_info',
-  'Detailed info about an object',
-  {
-    path: z.string(),
-  },
+  'Detailed info about an object including metadata',
+  { path: z.string() },
   async ({ path }) => {
     const node = store.resolve(path || '/');
     if (!node) return err('Not found');
     const children = Object.values(node.children || {});
-    const lines = [
+    const meta = node.metadata && Object.keys(node.metadata).length
+      ? Object.entries(node.metadata).map(([k, v]) => `  ${k}: ${JSON.stringify(v)}`).join('\n')
+      : '  (none)';
+    return ok([
       `Name: ${node.name}`,
       `Position: (${node.x}, ${node.y})`,
       `Size: ${node.width}m × ${node.height}m`,
@@ -283,35 +368,9 @@ server.tool(
       `Type: ${node.children ? 'container' : 'leaf'}`,
       `Description: ${node.description || '(none)'}`,
       `Tags: ${(node.tags || []).join(', ') || '(none)'}`,
+      `Metadata:\n${meta}`,
       `Children: ${children.length}`,
-    ];
-    return ok(lines.join('\n'));
-  }
-);
-
-// ──────────────────────────────────────────────
-// TOOL: update_object
-// ──────────────────────────────────────────────
-
-server.tool(
-  'update_object',
-  'Update properties of an existing object (name, description, char, tags)',
-  {
-    path: z.string(),
-    name: z.string().optional(),
-    char: z.string().max(1).optional(),
-    description: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-  },
-  async ({ path, name, char, description, tags }) => {
-    const node = store.resolve(path);
-    if (!node || node === store.root) return err('Not found or cannot update root');
-    if (name !== undefined) node.name = name;
-    if (char !== undefined) node.char = char;
-    if (description !== undefined) node.description = description;
-    if (tags !== undefined) node.tags = tags;
-    store.save();
-    return ok(`Updated "${node.name}"`);
+    ].join('\n'));
   }
 );
 
@@ -334,7 +393,7 @@ function err(text) { return { content: [{ type: 'text', text: `ERROR: ${text}` }
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('MapCraft MCP v0.3 running');
+  console.error('MapCraft MCP v0.4 running');
 }
 
 main().catch(console.error);

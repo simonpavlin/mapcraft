@@ -17,12 +17,11 @@ export class MapStore {
       id: '_root',
       name,
       description: description || '',
-      // Bounds in meters
       x: 0, y: 0,
-      width,  // meters
-      height, // meters
+      width, height,
       char: '.',
       tags: [],
+      metadata: {},
       children: {},
     };
     this.save();
@@ -40,6 +39,9 @@ export class MapStore {
     return node;
   }
 
+  /**
+   * Find overlapping objects. Advisory only — not enforced on placement.
+   */
   findCollisions(parent, x, y, w, h, excludeId) {
     const collisions = [];
     for (const child of Object.values(parent.children || {})) {
@@ -51,60 +53,45 @@ export class MapStore {
     return collisions;
   }
 
-  /**
-   * Render ASCII with automatic scaling.
-   * maxCols/maxRows define the max terminal size.
-   * The view auto-scales so everything fits.
-   */
   renderAscii(node, maxCols = 60, maxRows = 30) {
     const children = Object.values(node.children || {});
     if (children.length === 0) {
-      return { ascii: [`(empty space: ${node.width}m × ${node.height}m)`], legend: [], scaleInfo: '' };
+      return { ascii: [`(empty: ${node.width}m × ${node.height}m)`], legend: [], scaleInfo: '' };
     }
 
-    // Compute scale: how many meters per ASCII cell
     const scaleX = node.width / maxCols;
     const scaleY = node.height / maxRows;
-    const scale = Math.max(scaleX, scaleY, 0.1); // at least 0.1m per cell
+    const scale = Math.max(scaleX, scaleY, 0.1);
 
     const cols = Math.min(maxCols, Math.ceil(node.width / scale));
     const rows = Math.min(maxRows, Math.ceil(node.height / scale));
 
-    // Initialize grid
     const grid = [];
-    for (let r = 0; r < rows; r++) {
-      grid.push(new Array(cols).fill('.'));
-    }
+    for (let r = 0; r < rows; r++) grid.push(new Array(cols).fill('.'));
 
     const legend = [];
 
-    // Place children
     for (const child of children) {
       legend.push({ char: child.char, id: child.id, name: child.name });
-
       const startCol = Math.floor(child.x / scale);
       const startRow = Math.floor(child.y / scale);
       const endCol = Math.ceil((child.x + child.width) / scale);
       const endRow = Math.ceil((child.y + child.height) / scale);
-
       for (let r = startRow; r < endRow && r < rows; r++) {
         for (let c = startCol; c < endCol && c < cols; c++) {
-          if (r >= 0 && c >= 0) {
-            grid[r][c] = child.char;
-          }
+          if (r >= 0 && c >= 0) grid[r][c] = child.char;
         }
       }
     }
 
-    const ascii = grid.map(row => row.join(''));
-    const scaleInfo = `1 cell = ${scale.toFixed(2)}m | view: ${cols}×${rows} cells | real: ${node.width}m × ${node.height}m`;
-
-    return { ascii, legend, scaleInfo };
+    return {
+      ascii: grid.map(r => r.join('')),
+      legend,
+      scaleInfo: `1 cell = ${scale.toFixed(2)}m | ${cols}×${rows} cells | ${node.width}m × ${node.height}m`,
+    };
   }
 
-  exportJSON() {
-    return this.root;
-  }
+  exportJSON() { return this.root; }
 
   save() {
     writeFileSync(MAP_FILE, JSON.stringify(this.root, null, 2));
@@ -112,11 +99,8 @@ export class MapStore {
 
   _load() {
     if (!existsSync(MAP_FILE)) return null;
-    try {
-      return JSON.parse(readFileSync(MAP_FILE, 'utf-8'));
-    } catch {
-      return null;
-    }
+    try { return JSON.parse(readFileSync(MAP_FILE, 'utf-8')); }
+    catch { return null; }
   }
 }
 

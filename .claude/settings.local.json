@@ -8,7 +8,9 @@
       "WebSearch",
       "Bash(claude mcp:*)",
       "mcp__mapcraft__get_ascii",
-      "mcp__mapcraft__place_object"
+      "mcp__mapcraft__place_object",
+      "mcp__mapcraft__check_collision",
+      "mcp__mapcraft__remove_object"
     ]
   },
   "enableAllProjectMcpServers": true,
