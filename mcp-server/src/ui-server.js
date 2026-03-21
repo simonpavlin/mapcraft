@@ -144,7 +144,7 @@ const server = http.createServer((req, res) => {
 
     // Collect ALL descendants recursively with absolute coordinates
     const descendants = [];
-    function collectDescendants(obj, offsetX, offsetY, depth) {
+    function collectDescendants(obj, offsetX, offsetY, depth, rootParentId) {
       for (const child of Object.values(obj.children || {})) {
         const absX = offsetX + child.x;
         const absY = offsetY + child.y;
@@ -153,15 +153,16 @@ const server = http.createServer((req, res) => {
           x: absX,
           y: absY,
           _depth: depth,
+          _rootParentId: rootParentId,
         });
         if (child.children) {
-          collectDescendants(child, absX, absY, depth + 1);
+          collectDescendants(child, absX, absY, depth + 1, rootParentId);
         }
       }
     }
     for (const child of Object.values(node.children || {})) {
       if (child.children) {
-        collectDescendants(child, child.x, child.y, 1);
+        collectDescendants(child, child.x, child.y, 1, child.id);
       }
     }
 

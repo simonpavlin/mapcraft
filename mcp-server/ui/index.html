@@ -88,7 +88,12 @@ async function fetchTree() {
   try { treeData = await (await fetch('/api/tree')).json(); renderTree(); } catch {}
 }
 async function fetchNode(path) {
-  try { nodeData = await (await fetch(`/api/node?path=${encodeURIComponent(path)}`)).json(); renderContent(); } catch {}
+  try {
+    nodeData = await (await fetch(`/api/node?path=${encodeURIComponent(path)}`)).json();
+    // Auto-select first floor if floors detected and none selected
+    if (nodeData.floors?.length > 0 && !selectedFloor) selectedFloor = nodeData.floors[0].id;
+    renderContent();
+  } catch {}
 }
 let navHistory = ['/'];
 function navigateTo(path) {
@@ -129,7 +134,78 @@ function renderTreeNode(n) {
   return h + '</div>';
 }
 function switchTab(t) { currentTab = t; renderContent(); }
-function selectFloor(id) { selectedFloor = selectedFloor === id ? null : id; renderContent(); }
+function selectFloor(id) { selectedFloor = id; renderContent(); }
+// Helper: draw a single floor plan on a canvas context
+function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, PAD, shapePath) {
+  // Parent outline
+  ctx.strokeStyle = '#3a3a5a'; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
+  ctx.strokeRect(PAD, PAD, pw*scale, ph*scale); ctx.setLineDash([]);
+
+  const sorted = [...floorChildren].sort((a,b) => (b.width*b.height) - (a.width*a.height));
+  for (const c of sorted) {
+    const rx = PAD + c.x*scale, ry = PAD + c.y*scale, rw = c.width*scale, rh = c.height*scale;
+    const color = cc(c.char);
+    const isDoor = c.tags?.includes('door');
+    const isWindow = c.tags?.includes('window');
+    if (isDoor) { ctx.fillStyle = color + '80'; ctx.fillRect(rx, ry, rw, rh); continue; }
+    if (isWindow) { ctx.fillStyle = '#88ccee44'; ctx.fillRect(rx, ry, rw, rh); continue; }
+    ctx.fillStyle = color + '25';
+    shapePath(ctx, c, rx, ry, scale); ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    shapePath(ctx, c, rx, ry, scale); ctx.stroke();
+    const label = c.name;
+    const maxFont = Math.min(rw / (label.length * 0.55), rh / 3, 15);
+    const fs = Math.max(7, Math.floor(maxFont));
+    if (fs >= 7 && rw > 18 && rh > 14) {
+      ctx.fillStyle = color; ctx.font = `bold ${fs}px 'Segoe UI',sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, rx+rw/2, ry+rh/2 - (fs > 9 ? fs*.35 : 0), rw-4);
+      if (fs > 9 && rh > 25) {
+        ctx.font = `${Math.max(7,fs-3)}px 'Segoe UI',sans-serif`; ctx.fillStyle = color + 'aa';
+        ctx.fillText(`${c.width}×${c.height}m`, rx+rw/2, ry+rh/2+fs*.45, rw-4);
+      }
+    }
+    if (c.metadata && Object.keys(c.metadata).length > 0 && rw > 30 && rh > 35) {
+      ctx.font = '8px monospace'; ctx.fillStyle = '#ffffff55';
+      const metaStr = Object.entries(c.metadata).map(([k,v]) => `${k}:${v}`).join(' ');
+      ctx.fillText(metaStr.substring(0, Math.floor(rw/5)), rx+rw/2, ry+rh-6, rw-6);
+    }
+  }
+  // Descendants
+  if (floorDescendants.length > 0) {
+    const descSorted = [...floorDescendants].sort((a,b) => {
+      if (a._depth !== b._depth) return a._depth - b._depth;
+      return (b.width*b.height) - (a.width*a.height);
+    });
+    for (const dc of descSorted) {
+      const rx = PAD + dc.x*scale, ry = PAD + dc.y*scale, rw = dc.width*scale, rh = dc.height*scale;
+      const color = cc(dc.char);
+      const isDoor = dc.tags?.includes('door');
+      const isWindow = dc.tags?.includes('window');
+      const isFurniture = dc.tags?.includes('furniture');
+      const opacity = Math.max(15, 40 - dc._depth * 10);
+      if (isDoor) { ctx.fillStyle = color + Math.round(opacity * 1.5).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh); continue; }
+      if (isWindow) { ctx.fillStyle = '#88ccee' + Math.round(opacity).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh); continue; }
+      ctx.fillStyle = color + Math.round(opacity * 0.6).toString(16).padStart(2,'0');
+      shapePath(ctx, dc, rx, ry, scale); ctx.fill();
+      ctx.strokeStyle = color + Math.round(opacity * 2).toString(16).padStart(2,'0');
+      ctx.lineWidth = isFurniture ? 0.5 : 1;
+      ctx.setLineDash(isFurniture ? [2,2] : [4,3]);
+      shapePath(ctx, dc, rx, ry, scale); ctx.stroke();
+      ctx.setLineDash([]);
+      const maxFontSize = Math.max(6, 12 - dc._depth * 2);
+      const label = dc.name;
+      const maxFont2 = Math.min(rw / (label.length * 0.55), rh / 3, maxFontSize);
+      const fs2 = Math.max(5, Math.floor(maxFont2));
+      if (fs2 >= 5 && rw > 12 && rh > 8) {
+        ctx.fillStyle = color + Math.round(opacity * 3).toString(16).padStart(2,'0');
+        ctx.font = `${fs2}px 'Segoe UI',sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(label, rx+rw/2, ry+rh/2, rw-4);
+      }
+    }
+  }
+}
 
 function renderContent() {
   if (!nodeData || nodeData.error) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2></div>'; return; }
@@ -157,8 +233,7 @@ function renderToolbar() {
   }
   // Floor buttons
   if (d.floors && d.floors.length > 0) {
-    h += '<span class="floor-label">Patra:</span>';
-    h += `<div class="floor-btn ${selectedFloor===null?'active':''}" onclick="selectFloor(null)">Vše</div>`;
+    h += '<span class="floor-label">Patro:</span>';
     for (const f of d.floors) {
       h += `<div class="floor-btn ${selectedFloor===f.id?'active':''}" onclick="selectFloor('${f.id}')">[${esc(f.char)}] ${esc(f.name)}</div>`;
     }
@@ -168,21 +243,7 @@ function renderToolbar() {
 
 function getVisibleChildren() {
   if (!nodeData) return [];
-  let children = nodeData.children || [];
-  if (selectedFloor && nodeData.floors) {
-    // Show only children of the selected floor + non-floor siblings
-    const floorIds = new Set(nodeData.floors.map(f => f.id));
-    const floorChild = children.find(c => c.id === selectedFloor);
-    if (floorChild && floorChild.hasGrid) {
-      // Navigate into this floor
-      const floorPath = currentPath === '/' ? selectedFloor : `${currentPath}/${selectedFloor}`;
-      // We need sub-children — fetch and cache
-      // For now, filter: show floor's own data by navigating
-      navigateTo(floorPath);
-      return [];
-    }
-  }
-  return children;
+  return nodeData.children || [];
 }
 
 function renderOverview() {
@@ -235,30 +296,9 @@ function renderAscii() {
 
 function renderFloorplan() {
   const d = nodeData;
-  const children = d.children || [];
-  if (children.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Prázdný prostor</h2></div>'; return; }
-
-  const PAD = 40, maxW = 900, maxH = 600;
-  const pw = d.width || 1, ph = d.height || 1;
-  const scale = Math.min((maxW - PAD*2) / pw, (maxH - PAD*2) / ph);
-  const cw = Math.ceil(pw * scale + PAD*2), ch = Math.ceil(ph * scale + PAD*2);
-
-  let h = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow:auto">';
-  h += `<p style="margin-bottom:8px;font-size:12px;color:var(--tx2)">Půdorys — ${pw}m × ${ph}m</p>`;
-  h += `<canvas id="fp-canvas" width="${cw}" height="${ch}" style="border:1px solid var(--bd);border-radius:4px;cursor:pointer"></canvas>`;
-  if ((d.descendants || []).length > 0) {
-    h += `<p style="margin-top:8px;font-size:11px;color:var(--tx2)"><span style="display:inline-block;width:12px;height:12px;border:2px solid var(--ac);opacity:.6;vertical-align:middle;margin-right:4px"></span> přímé objekty &nbsp; <span style="display:inline-block;width:12px;height:12px;border:1px dashed var(--tx2);opacity:.6;vertical-align:middle;margin-right:4px"></span> vnořené objekty</p>`;
-  }
-  h += '</div>';
-  document.getElementById('content').innerHTML = h;
-
-  const canvas = document.getElementById('fp-canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#1a1a2e';
-  ctx.fillRect(0, 0, cw, ch);
-  // Parent outline
-  ctx.strokeStyle = '#3a3a5a'; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
-  ctx.strokeRect(PAD, PAD, pw*scale, ph*scale); ctx.setLineDash([]);
+  const allChildren = d.children || [];
+  const allDescendants = d.descendants || [];
+  if (allChildren.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Prázdný prostor</h2></div>'; return; }
 
   // Helper: draw shape path (polygon or rect)
   function shapePath(ctx, obj, ox, oy, s) {
@@ -273,82 +313,52 @@ function renderFloorplan() {
     }
   }
 
-  const sorted = [...children].sort((a,b) => (b.width*b.height) - (a.width*a.height));
-  for (const c of sorted) {
-    const rx = PAD + c.x*scale, ry = PAD + c.y*scale, rw = c.width*scale, rh = c.height*scale;
-    const color = cc(c.char);
-    const isDoor = c.tags?.includes('door');
-    const isWindow = c.tags?.includes('window');
+  const floors = d.floors;
+  const hasFloors = floors && floors.length > 0;
 
-    if (isDoor) { ctx.fillStyle = color + '80'; ctx.fillRect(rx, ry, rw, rh); continue; }
-    if (isWindow) { ctx.fillStyle = '#88ccee44'; ctx.fillRect(rx, ry, rw, rh); continue; }
-
-    ctx.fillStyle = color + '25';
-    shapePath(ctx, c, rx, ry, scale); ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 2;
-    shapePath(ctx, c, rx, ry, scale); ctx.stroke();
-
-    // Label
-    const label = c.name;
-    const maxFont = Math.min(rw / (label.length * 0.55), rh / 3, 15);
-    const fs = Math.max(7, Math.floor(maxFont));
-    if (fs >= 7 && rw > 18 && rh > 14) {
-      ctx.fillStyle = color; ctx.font = `bold ${fs}px 'Segoe UI',sans-serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(label, rx+rw/2, ry+rh/2 - (fs > 9 ? fs*.35 : 0), rw-4);
-      if (fs > 9 && rh > 25) {
-        ctx.font = `${Math.max(7,fs-3)}px 'Segoe UI',sans-serif`; ctx.fillStyle = color + 'aa';
-        ctx.fillText(`${c.width}×${c.height}m`, rx+rw/2, ry+rh/2+fs*.45, rw-4);
-      }
-    }
-    // Metadata indicator
-    if (c.metadata && Object.keys(c.metadata).length > 0 && rw > 30 && rh > 35) {
-      ctx.font = '8px monospace'; ctx.fillStyle = '#ffffff55';
-      const metaStr = Object.entries(c.metadata).map(([k,v]) => `${k}:${v}`).join(' ');
-      ctx.fillText(metaStr.substring(0, Math.floor(rw/5)), rx+rw/2, ry+rh-6, rw-6);
-    }
+  // Determine what to show
+  let children, descendants;
+  if (hasFloors && selectedFloor) {
+    const floorObj = allChildren.find(c => c.id === selectedFloor);
+    children = allDescendants.filter(dc => dc._rootParentId === selectedFloor && dc._depth === 1).map(dc => ({
+      ...dc,
+      x: dc.x - (floorObj ? floorObj.x : 0),
+      y: dc.y - (floorObj ? floorObj.y : 0),
+    }));
+    descendants = allDescendants.filter(dc => dc._rootParentId === selectedFloor && dc._depth > 1).map(dc => ({
+      ...dc,
+      x: dc.x - (floorObj ? floorObj.x : 0),
+      y: dc.y - (floorObj ? floorObj.y : 0),
+      _depth: dc._depth - 1,
+    }));
+  } else {
+    children = allChildren;
+    descendants = allDescendants;
   }
-  // Descendants (all nested objects, any depth) — drawn with dashed borders, opacity decreasing with depth
-  const descendants = d.descendants || [];
+
+  if (children.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Prázdný prostor</h2></div>'; return; }
+
+  const PAD = 40, maxW = 900, maxH = 600;
+  const pw = d.width || 1, ph = d.height || 1;
+  const scale = Math.min((maxW - PAD*2) / pw, (maxH - PAD*2) / ph);
+  const cw = Math.ceil(pw * scale + PAD*2), ch = Math.ceil(ph * scale + PAD*2);
+
+  const floorLabel = hasFloors && selectedFloor ? ` — ${floors.find(f=>f.id===selectedFloor)?.name || selectedFloor}` : '';
+  let h = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow:auto">';
+  h += `<p style="margin-bottom:8px;font-size:12px;color:var(--tx2)">Půdorys — ${pw}m × ${ph}m${floorLabel}</p>`;
+  h += `<canvas id="fp-canvas" width="${cw}" height="${ch}" style="border:1px solid var(--bd);border-radius:4px;cursor:pointer"></canvas>`;
   if (descendants.length > 0) {
-    const descSorted = [...descendants].sort((a,b) => {
-      // Sort by depth first (shallow first), then by area (large first)
-      if (a._depth !== b._depth) return a._depth - b._depth;
-      return (b.width*b.height) - (a.width*a.height);
-    });
-    for (const dc of descSorted) {
-      const rx = PAD + dc.x*scale, ry = PAD + dc.y*scale, rw = dc.width*scale, rh = dc.height*scale;
-      const color = cc(dc.char);
-      const isDoor = dc.tags?.includes('door');
-      const isWindow = dc.tags?.includes('window');
-      const isFurniture = dc.tags?.includes('furniture');
-      const opacity = Math.max(15, 40 - dc._depth * 10);
-
-      if (isDoor) { ctx.fillStyle = color + Math.round(opacity * 1.5).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh); continue; }
-      if (isWindow) { ctx.fillStyle = '#88ccee' + Math.round(opacity).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh); continue; }
-
-      ctx.fillStyle = color + Math.round(opacity * 0.6).toString(16).padStart(2,'0');
-      shapePath(ctx, dc, rx, ry, scale); ctx.fill();
-      const dashSize = isFurniture ? [2,2] : [4,3];
-      ctx.strokeStyle = color + Math.round(opacity * 2).toString(16).padStart(2,'0');
-      ctx.lineWidth = isFurniture ? 0.5 : 1;
-      ctx.setLineDash(dashSize);
-      shapePath(ctx, dc, rx, ry, scale); ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Label — smaller for deeper objects
-      const maxFontSize = Math.max(6, 12 - dc._depth * 2);
-      const label = dc.name;
-      const maxFont = Math.min(rw / (label.length * 0.55), rh / 3, maxFontSize);
-      const fs = Math.max(5, Math.floor(maxFont));
-      if (fs >= 5 && rw > 12 && rh > 8) {
-        ctx.fillStyle = color + Math.round(opacity * 3).toString(16).padStart(2,'0');
-        ctx.font = `${fs}px 'Segoe UI',sans-serif`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(label, rx+rw/2, ry+rh/2, rw-4);
-      }
-    }
+    h += `<p style="margin-top:8px;font-size:11px;color:var(--tx2)"><span style="display:inline-block;width:12px;height:12px;border:2px solid var(--ac);opacity:.6;vertical-align:middle;margin-right:4px"></span> přímé objekty &nbsp; <span style="display:inline-block;width:12px;height:12px;border:1px dashed var(--tx2);opacity:.6;vertical-align:middle;margin-right:4px"></span> vnořené objekty</p>`;
   }
+  h += '</div>';
+  document.getElementById('content').innerHTML = h;
+
+  const canvas = document.getElementById('fp-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, cw, ch);
+
+  drawFloorContent(ctx, children, descendants, pw, ph, scale, PAD, shapePath);
 
   // Dimension labels
   ctx.fillStyle = '#606080'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';

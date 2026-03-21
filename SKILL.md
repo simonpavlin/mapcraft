@@ -173,9 +173,38 @@ addCeiling(group, 0, 0, 12, 12, 3, 3);         // 2nd floor ceiling
 addFlatRoof(group, 0, 0, 12, 12, 6);           // roof at top
 ```
 
+## Use export_json for data-driven 3D code
+
+Instead of manually reading ASCII and typing positions by hand, use `export_json` to get the
+full data tree and reference it when writing 3D code.
+
+### Pattern: extract doors/windows for wallWithOpenings
+Call `export_json`, then for each wall find all doors and windows that sit on it.
+Convert their positions to `openings` array automatically instead of hand-coding each one.
+
+Example workflow:
+1. Call `export_json` → get full JSON tree
+2. For the north wall of "lod" (z=2, length=15):
+   - Find all doors/windows in lod where y=0 (on north boundary)
+   - w_north1 at x=3, width=1.5, metadata sill=2, win_height=4 → opening {start:3, end:4.5, bottom:2, top:6}
+   - w_north2 at x=7, width=1.5 → opening {start:7, end:8.5, bottom:2, top:6}
+   - Write wallWithOpenings with these openings — no manual guessing
+
+### Pattern: extract furniture positions
+Instead of `// mcp:loznice/postel (1, 0.3) 1.8×2.2` copied by hand:
+- Read postel from export JSON: x=1, y=0.3, width=1.8, height=2.2
+- Use directly: `g.add(p(box(1.8, 0.35, 2.2, bed), rx + 1 + 0.9, 0.275, rz + 0.3 + 1.1))`
+
+### When to use export_json
+- Before writing walls → extract all doors/windows per wall
+- Before writing furniture → extract positions from MCP instead of guessing
+- After moving rooms with update_object → re-export to get updated positions
+- NOT needed for simple layouts where you remember the positions
+
 ## Common mistakes to avoid
 1. **Furniture blocking doors** — always plan furniture in MCP first, verify with get_ascii
 2. **Forgetting wall openings** — every door/window needs a matching opening in wallWithOpenings
 3. **Stairs not connecting floors** — plan entry/exit in MCP with exact positions, use addUTurnStairs or manual addStairFlight with explicit startY/endY matching floor heights
 4. **Window not visible from outside** — use wallWithOpenings to create the hole, then addWindow for glass
 5. **Overlapping rooms on same floor** — verify with check_collision after placing rooms
+6. **Skipping verification** — after each batch of rooms, call check_collision. After furniture, call get_ascii(recursive=true). Skipping these leads to overlaps and blocked doors found only in 3D.

@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import { createLoft } from './loft.js';
+import { createKostel } from './kostel.js';
 
 export function createWorld(scene) {
   createGround(scene);
   createLoft(scene, -20, -15);
+  createKostel(scene, -40, -40);
 }
 
 function createGround(scene) {

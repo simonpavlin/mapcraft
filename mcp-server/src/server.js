@@ -63,14 +63,25 @@ Every object can carry arbitrary key-value metadata for 3D generation:
 - Furniture: { material: "wood", color: "#8a7050" }
 - Stairs: see Stairs section below
 
-## Workflow — plan EVERYTHING before generating 3D
-1. init_space — root space in meters
-2. place_object / place_objects — buildings, floors, rooms (overlaps allowed)
-3. **VERIFY rooms**: check_collision(exclude_tags=["door","window","furniture"]) to catch room overlaps
-4. Place doors and windows ON wall lines (as markers with metadata)
-5. **Place furniture** in MCP too — at least major pieces (counters, tables, beds, sofas, appliances). This is your spatial memory — if you skip this and place furniture only in 3D code, you WILL put a fridge in front of a door or a bed blocking a window.
-6. **VERIFY furniture vs doors/windows**: visually check get_ascii or floorplan to ensure no furniture blocks doorways or covers windows
-7. Only THEN generate 3D code, using MCP positions directly
+## Workflow — think like an architect
+1. **PROGRAM first** — before placing anything, list required rooms with target m2:
+   - Master bedroom: 15m2 (3.6x4.2m), Secondary bedroom: 11m2 (3x3.6m)
+   - Living room: 27m2 (4.5x6m), Kitchen: 17m2 (3.5x5m)
+   - Bathroom: 5.5m2 (2x2.75m), WC: 1.8m2 (1.2x1.5m)
+   - Hallway width: min 1m, ideally 1.2m
+   - Entry/foyer: min 2x2m
+2. **ADJACENCY** — decide what connects to what: entry→hallway→all rooms. Kitchen near dining. Bathroom near bedrooms. WC accessible from living zone.
+3. **init_space + place rooms** — use standard sizes from step 1. Rooms touch edge-to-edge (walls implicit).
+4. **VERIFY rooms**: check_collision, get_ascii
+5. **Doors + windows** — doors: interior 80-90cm, bathroom 70-80cm, entrance 90-100cm. Windows: sill 90cm standard, 40cm for living room panorama, 140cm for bathroom.
+6. **Furniture** with clearance rules:
+   - Traffic paths between rooms: min 90cm
+   - Around furniture: min 60cm
+   - Behind dining chairs: 75cm
+   - Bed sides: min 60cm
+   - Kitchen work triangle (sink-stove-fridge): 3.6-7.9m total
+7. **VERIFY**: get_ascii(recursive=true) — check no furniture blocks doors/windows, clearances OK
+8. Generate 3D code with MCP references
 
 ## Collision verification rules
 - Rooms ("room" tag) must NOT overlap with other rooms on the same floor
@@ -106,6 +117,21 @@ Example:
 - Place at least: kitchen counter+appliances, tables, beds, sofas, desks, wardrobes
 - Small items (chairs, lamps, decorations) can be added directly in 3D code
 - ALWAYS run get_ascii on each room to verify layout — you should see doors, windows AND furniture together
+
+## Clearance zones (tag: "clearance")
+Place invisible rectangles to mark space that must stay free. These are planning aids — ignored in 3D.
+Use char "_" so they're subtle in ASCII. Standard clearances:
+- Door swing: 90×90cm in front of door (hinged), or 60cm (sliding)
+- Toilet/sink: 60cm in front
+- Bed sides: 60cm for access
+- Dining chair: 75cm behind for push-back
+- Kitchen counter: 90cm working space in front
+- Hallway: check clearance width min 90cm
+
+After placing furniture, verify:
+  check_collision(path="room", exclude_tags=["window","clearance"])  → rooms vs rooms
+  Then separately check: does any furniture overlap a clearance zone?
+  get_ascii on the room → visually confirm "_" zones are not covered by furniture
 
 ## Stairs — plan entry and exit points explicitly
 Stairs are the hardest element to get right. DO NOT just place a box with "direction: south".

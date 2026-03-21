@@ -16,7 +16,9 @@
       "mcp__mapcraft__place_objects",
       "mcp__mapcraft__init_space",
       "mcp__mapcraft__get_objects",
-      "mcp__mapcraft__update_object"
+      "mcp__mapcraft__update_object",
+      "WebFetch(domain:www.archtoolbox.com)",
+      "WebFetch(domain:www.livehome3d.com)"
     ]
   },
   "enableAllProjectMcpServers": true,
