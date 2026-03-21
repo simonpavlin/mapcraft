@@ -18,7 +18,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 // Lighting
-const ambientLight = new THREE.AmbientLight(0x404050, 1.5);
+const ambientLight = new THREE.AmbientLight(0x606070, 4);
 scene.add(ambientLight);
 
 const sunLight = new THREE.DirectionalLight(0xffffff, 2);

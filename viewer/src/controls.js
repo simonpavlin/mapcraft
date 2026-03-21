@@ -5,7 +5,8 @@ export function createControls(camera, domElement) {
   const velocity = new THREE.Vector3();
   const direction = new THREE.Vector3();
 
-  const SPEED = 15;
+  const SPEED = 60;
+  const SPRINT_MULTIPLIER = 2.5;
   const MOUSE_SENSITIVITY = 0.002;
 
   const keys = {
@@ -13,6 +14,9 @@ export function createControls(camera, domElement) {
     backward: false,
     left: false,
     right: false,
+    sprint: false,
+    up: false,
+    down: false,
   };
 
   let isLocked = false;
@@ -60,6 +64,16 @@ export function createControls(camera, domElement) {
       case 'KeyD':
         keys.right = true;
         break;
+      case 'ShiftLeft':
+      case 'ShiftRight':
+        keys.sprint = true;
+        break;
+      case 'Space':
+        keys.up = true;
+        break;
+      case 'KeyQ':
+        keys.down = true;
+        break;
     }
   };
 
@@ -81,6 +95,16 @@ export function createControls(camera, domElement) {
       case 'KeyD':
         keys.right = false;
         break;
+      case 'ShiftLeft':
+      case 'ShiftRight':
+        keys.sprint = false;
+        break;
+      case 'Space':
+        keys.up = false;
+        break;
+      case 'KeyQ':
+        keys.down = false;
+        break;
     }
   };
 
@@ -93,6 +117,7 @@ export function createControls(camera, domElement) {
 
       // Deceleration
       velocity.x -= velocity.x * 10.0 * delta;
+      velocity.y -= velocity.y * 10.0 * delta;
       velocity.z -= velocity.z * 10.0 * delta;
 
       // Direction
@@ -100,8 +125,11 @@ export function createControls(camera, domElement) {
       direction.x = Number(keys.right) - Number(keys.left);
       direction.normalize();
 
-      if (keys.forward || keys.backward) velocity.z -= direction.z * SPEED * delta;
-      if (keys.left || keys.right) velocity.x -= direction.x * SPEED * delta;
+      const currentSpeed = keys.sprint ? SPEED * SPRINT_MULTIPLIER : SPEED;
+      if (keys.forward || keys.backward) velocity.z -= direction.z * currentSpeed * delta;
+      if (keys.left || keys.right) velocity.x -= direction.x * currentSpeed * delta;
+      if (keys.up) velocity.y += currentSpeed * delta;
+      if (keys.down) velocity.y -= currentSpeed * delta;
 
       // Move camera
       const forward = new THREE.Vector3();
@@ -114,9 +142,7 @@ export function createControls(camera, domElement) {
 
       camera.position.addScaledVector(forward, -velocity.z * delta);
       camera.position.addScaledVector(right, velocity.x * delta);
-
-      // Keep at eye height
-      camera.position.y = 1.7;
+      camera.position.y += velocity.y * delta;
     },
   };
 }

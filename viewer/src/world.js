@@ -2,7 +2,6 @@ import * as THREE from 'three';
 
 export function createWorld(scene) {
   createGround(scene);
-  createBuildings(scene);
   createTrees(scene);
   createPaths(scene);
 }
@@ -31,7 +30,7 @@ function createBuildings(scene) {
   for (const b of buildings) {
     // Main body
     const geometry = new THREE.BoxGeometry(b.w, b.h, b.d);
-    const material = new THREE.MeshLambertMaterial({ color: b.color });
+    const material = new THREE.MeshLambertMaterial({ color: b.color, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(b.x, b.h / 2, b.z);
     mesh.castShadow = true;
@@ -53,7 +52,7 @@ function createBuildings(scene) {
 }
 
 function addWindows(scene, b) {
-  const windowMaterial = new THREE.MeshLambertMaterial({ color: 0xadd8e6, emissive: 0x112233 });
+  const windowMaterial = new THREE.MeshLambertMaterial({ color: 0xadd8e6, emissive: 0x112233, side: THREE.DoubleSide });
   const windowSize = 0.8;
   const windowGeometry = new THREE.PlaneGeometry(windowSize, windowSize);
 
