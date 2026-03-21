@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MapCraft Viewer</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { overflow: hidden; }
+    canvas { display: block; }
+    #crosshair {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #crosshair::before, #crosshair::after {
+      content: '';
+      position: absolute;
+      background: rgba(255, 255, 255, 0.7);
+    }
+    #crosshair::before {
+      width: 2px;
+      height: 20px;
+      left: 9px;
+      top: 0;
+    }
+    #crosshair::after {
+      width: 20px;
+      height: 2px;
+      top: 9px;
+      left: 0;
+    }
+    #instructions {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 40px;
+      border-radius: 8px;
+      text-align: center;
+      font-family: sans-serif;
+      cursor: pointer;
+      z-index: 20;
+    }
+    #instructions h1 { margin-bottom: 16px; font-size: 24px; }
+    #instructions p { font-size: 14px; color: #aaa; }
+  </style>
+</head>
+<body>
+  <div id="crosshair"></div>
+  <div id="instructions">
+    <h1>MapCraft Viewer</h1>
+    <p>Click to start</p>
+    <p>WASD / Arrow keys - move</p>
+    <p>Mouse - look around</p>
+    <p>ESC - release cursor</p>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
