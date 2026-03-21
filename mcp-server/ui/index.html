@@ -245,7 +245,11 @@ function renderFloorplan() {
 
   let h = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow:auto">';
   h += `<p style="margin-bottom:8px;font-size:12px;color:var(--tx2)">Půdorys — ${pw}m × ${ph}m</p>`;
-  h += `<canvas id="fp-canvas" width="${cw}" height="${ch}" style="border:1px solid var(--bd);border-radius:4px;cursor:pointer"></canvas></div>`;
+  h += `<canvas id="fp-canvas" width="${cw}" height="${ch}" style="border:1px solid var(--bd);border-radius:4px;cursor:pointer"></canvas>`;
+  if ((d.descendants || []).length > 0) {
+    h += `<p style="margin-top:8px;font-size:11px;color:var(--tx2)"><span style="display:inline-block;width:12px;height:12px;border:2px solid var(--ac);opacity:.6;vertical-align:middle;margin-right:4px"></span> přímé objekty &nbsp; <span style="display:inline-block;width:12px;height:12px;border:1px dashed var(--tx2);opacity:.6;vertical-align:middle;margin-right:4px"></span> vnořené objekty</p>`;
+  }
+  h += '</div>';
   document.getElementById('content').innerHTML = h;
 
   const canvas = document.getElementById('fp-canvas');
@@ -289,6 +293,48 @@ function renderFloorplan() {
       ctx.fillText(metaStr.substring(0, Math.floor(rw/5)), rx+rw/2, ry+rh-6, rw-6);
     }
   }
+  // Descendants (all nested objects, any depth) — drawn with dashed borders, opacity decreasing with depth
+  const descendants = d.descendants || [];
+  if (descendants.length > 0) {
+    const descSorted = [...descendants].sort((a,b) => {
+      // Sort by depth first (shallow first), then by area (large first)
+      if (a._depth !== b._depth) return a._depth - b._depth;
+      return (b.width*b.height) - (a.width*a.height);
+    });
+    for (const dc of descSorted) {
+      const rx = PAD + dc.x*scale, ry = PAD + dc.y*scale, rw = dc.width*scale, rh = dc.height*scale;
+      const color = cc(dc.char);
+      const isDoor = dc.tags?.includes('door');
+      const isWindow = dc.tags?.includes('window');
+      const isFurniture = dc.tags?.includes('furniture');
+      const opacity = Math.max(15, 40 - dc._depth * 10);
+
+      if (isDoor) { ctx.fillStyle = color + Math.round(opacity * 1.5).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh); continue; }
+      if (isWindow) { ctx.fillStyle = '#88ccee' + Math.round(opacity).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh); continue; }
+
+      ctx.fillStyle = color + Math.round(opacity * 0.6).toString(16).padStart(2,'0');
+      ctx.fillRect(rx, ry, rw, rh);
+      const dashSize = isFurniture ? [2,2] : [4,3];
+      ctx.strokeStyle = color + Math.round(opacity * 2).toString(16).padStart(2,'0');
+      ctx.lineWidth = isFurniture ? 0.5 : 1;
+      ctx.setLineDash(dashSize);
+      ctx.strokeRect(rx, ry, rw, rh);
+      ctx.setLineDash([]);
+
+      // Label — smaller for deeper objects
+      const maxFontSize = Math.max(6, 12 - dc._depth * 2);
+      const label = dc.name;
+      const maxFont = Math.min(rw / (label.length * 0.55), rh / 3, maxFontSize);
+      const fs = Math.max(5, Math.floor(maxFont));
+      if (fs >= 5 && rw > 12 && rh > 8) {
+        ctx.fillStyle = color + Math.round(opacity * 3).toString(16).padStart(2,'0');
+        ctx.font = `${fs}px 'Segoe UI',sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(label, rx+rw/2, ry+rh/2, rw-4);
+      }
+    }
+  }
+
   // Dimension labels
   ctx.fillStyle = '#606080'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
   ctx.fillText(`${pw}m`, PAD+pw*scale/2, PAD+ph*scale+6);

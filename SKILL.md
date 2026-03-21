@@ -105,6 +105,30 @@ addDoor(group, {
 - Door/window at MCP `x=0` → on wall at `x=0` (west wall), axis='z'
 - Door/window at MCP `x=maxX` → on wall at `x=maxX` (east wall), axis='z'
 
+### MCP references in code — ALWAYS use this pattern
+Every room and furniture block MUST reference its MCP path and use relative coordinates.
+This makes it trivial to move rooms later — just change the origin constants.
+
+```js
+function furnishLoznice(g) {
+  // mcp:loznice (0, 4.5) 3.5×5
+  const lx = 0, lz = 4.5;                          // ← room origin from MCP
+  // mcp:loznice/postel (0.8, 0.5) 2×2.2
+  g.add(p(box(2, 0.35, 2.2, bed), lx + 0.8 + 1, 0.275, lz + 0.5 + 1.1));
+  // mcp:loznice/stolek_l (0.2, 0.8) 0.45×0.4
+  g.add(p(box(0.45, 0.4, 0.4, wood), lx + 0.2 + 0.225, 0.2, lz + 0.8 + 0.2));
+  // mcp:loznice/komoda (0.3, 3.5) 1.2×0.5
+  g.add(p(box(1.2, 0.7, 0.5, wood), lx + 0.3 + 0.6, 0.35, lz + 3.5 + 0.25));
+}
+```
+
+Rules:
+- Each room function starts with `const rx = ..., rz = ...;` from MCP room position
+- Each furniture line has `// mcp:path (x, y) WxH` comment
+- Furniture positions are `rx + mcpLocalX`, `rz + mcpLocalY`
+- To move a room: update MCP, then change ONLY `rx, rz` in code — furniture follows
+- Walls reference MCP door/window objects: `// mcp:d_loz (3.5, 6)` in wall opening comments
+
 ### Stairs — use entry/exit based API
 
 Three functions available:

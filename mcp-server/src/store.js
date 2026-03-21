@@ -53,9 +53,29 @@ export class MapStore {
     return collisions;
   }
 
-  renderAscii(node, maxCols = 60, maxRows = 30) {
-    const children = Object.values(node.children || {});
-    if (children.length === 0) {
+  /**
+   * Collect all objects to render — optionally recursive.
+   * Returns flat array of { char, id, name, x, y, width, height } with absolute coords.
+   */
+  collectRenderObjects(node, recursive = false) {
+    const objects = [];
+    function collect(parent, offsetX, offsetY) {
+      for (const child of Object.values(parent.children || {})) {
+        const absX = offsetX + child.x;
+        const absY = offsetY + child.y;
+        objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: absY, width: child.width, height: child.height });
+        if (recursive && child.children) {
+          collect(child, absX, absY);
+        }
+      }
+    }
+    collect(node, 0, 0);
+    return objects;
+  }
+
+  renderAscii(node, maxCols = 60, maxRows = 30, recursive = false) {
+    const objects = this.collectRenderObjects(node, recursive);
+    if (objects.length === 0) {
       return { ascii: [`(empty: ${node.width}m × ${node.height}m)`], legend: [], scaleInfo: '' };
     }
 
@@ -70,9 +90,13 @@ export class MapStore {
     for (let r = 0; r < rows; r++) grid.push(new Array(cols).fill('.'));
 
     const legend = [];
+    const seenChars = new Set();
 
-    for (const child of children) {
-      legend.push({ char: child.char, id: child.id, name: child.name });
+    for (const child of objects) {
+      if (!seenChars.has(child.char + child.id)) {
+        legend.push({ char: child.char, id: child.id, name: child.name });
+        seenChars.add(child.char + child.id);
+      }
       const startCol = Math.floor(child.x / scale);
       const startRow = Math.floor(child.y / scale);
       const endCol = Math.ceil((child.x + child.width) / scale);

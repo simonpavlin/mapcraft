@@ -56,13 +56,34 @@ Every object can carry arbitrary key-value metadata for 3D generation:
 - Doors, windows, furniture CAN overlap with anything — they are markers/contents
 - After each batch of room placements, verify with: check_collision(exclude_tags=["door","window","furniture"])
 
+## Where to place doors vs windows
+- **Windows** → INSIDE the room container they belong to. You need to see them when planning furniture.
+- **Doors** → at the FLOOR/APARTMENT level (parent of rooms). Doors sit between two rooms, they don't belong to either one.
+
+This way:
+- get_ascii on a room shows windows + furniture → you can verify TV is not in front of a window
+- get_ascii on the floor/apartment shows rooms + doors → you can verify all rooms are accessible
+- No duplication needed
+
+Example:
+  byt/
+    d_chodba_obyvak  (door between chodba and obyvak — at apartment level)
+    d_chodba_loznice (door — at apartment level)
+    obyvak/          (container)
+      w_south        (window — inside room, relative coords)
+      w_west         (window — inside room)
+      pohovka        (furniture — you SEE it's not blocking the window!)
+      tv             (furniture)
+    loznice/         (container)
+      w_north        (window — inside room)
+      postel         (furniture)
+
 ## Furniture placement rules
-- Place furniture as sub-objects inside rooms (tag: "furniture")
 - Furniture must NOT block doors — check that no furniture rectangle overlaps a door rectangle
-- Furniture should NOT cover windows — leave wall-adjacent space clear where windows are
+- Furniture must NOT cover windows — leave wall-adjacent space clear where windows are
 - Place at least: kitchen counter+appliances, tables, beds, sofas, desks, wardrobes
 - Small items (chairs, lamps, decorations) can be added directly in 3D code
-- Use get_ascii on the room to visually verify layout before 3D generation
+- ALWAYS run get_ascii on each room to verify layout — you should see doors, windows AND furniture together
 
 ## Stairs — plan entry and exit points explicitly
 Stairs are the hardest element to get right. DO NOT just place a box with "direction: south".
@@ -75,7 +96,7 @@ Place a container for the stairwell, then inside it place:
 3. Optionally: **landing** — the mid-point turn platform
 
 Example for a U-turn stairwell (3×5m, going up from north to south and back):
-```
+\`\`\`
 place_objects(path="building/prizemi/schody", objects=[
   { id: "entry", x: 0.5, y: 0, width: 2, height: 0.3, char: "E",
     tags: ["stair_entry"], metadata: {"side": "north", "floor_y": 0} },
@@ -88,7 +109,7 @@ place_objects(path="building/prizemi/schody", objects=[
   { id: "exit", x: 0.5, y: 0, width: 2, height: 0.3, char: "X",
     tags: ["stair_exit"], metadata: {"side": "north", "floor_y": 3.0} }
 ])
-```
+\`\`\`
 
 ### Key rules:
 - Entry and exit positions must match door positions on the stairwell walls
@@ -104,6 +125,11 @@ place_objects(path="building/prizemi/schody", objects=[
 - Build flight 2 from landing toward exit
 - Place railings along flights
 - Ensure the stair geometry actually connects the two floor levels
+
+## 3D code conventions
+- In 3D code, ALWAYS reference MCP objects with comments: // mcp:path (x, y) WxH
+- Use relative coordinates per room: const rx = mcpRoomX, rz = mcpRoomY; then rx + localX
+- This makes rooms movable — change MCP + update rx,rz → furniture follows automatically
 
 ## 3D generation notes for doors and windows
 - Doors and windows require REAL OPENINGS in walls (for player walkthrough / visibility)
@@ -292,25 +318,34 @@ server.tool(
 
 server.tool(
   'update_object',
-  'Update properties of an existing object (name, description, char, tags, metadata). Metadata is merged, not replaced.',
+  'Update ANY properties of an existing object — position, size, name, char, tags, metadata. Only provided fields are changed. Children are preserved.',
   {
     path: z.string(),
+    x: z.number().min(0).optional(),
+    y: z.number().min(0).optional(),
+    width: z.number().min(0.01).optional(),
+    height: z.number().min(0.01).optional(),
     name: z.string().optional(),
     char: z.string().max(1).optional(),
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
     metadata: z.string().optional().describe('Merged with existing metadata'),
   },
-  async ({ path, name, char, description, tags, metadata }) => {
+  async ({ path, x, y, width, height, name, char, description, tags, metadata }) => {
     const node = store.resolve(path);
     if (!node || node === store.root) return err('Not found or root');
+    if (x !== undefined) node.x = x;
+    if (y !== undefined) node.y = y;
+    if (width !== undefined) node.width = width;
+    if (height !== undefined) node.height = height;
     if (name !== undefined) node.name = name;
     if (char !== undefined) node.char = char;
     if (description !== undefined) node.description = description;
     if (tags !== undefined) node.tags = tags;
     if (metadata) node.metadata = { ...(node.metadata || {}), ...parseMeta(metadata) };
     store.save();
-    return ok(`Updated "${node.name}"`);
+    const pos = `(${node.x},${node.y}) ${node.width}×${node.height}m`;
+    return ok(`Updated "${node.name}" → ${pos}`);
   }
 );
 
@@ -375,14 +410,15 @@ server.tool(
 
 server.tool(
   'get_ascii',
-  'ASCII visualization. Auto-scales to fit. Optionally filter by tag.',
+  'ASCII visualization. Auto-scales to fit. Use recursive=true to show all nested objects (windows, furniture inside rooms).',
   {
     path: z.string().optional(),
     max_cols: z.number().int().min(10).max(120).optional(),
     max_rows: z.number().int().min(5).max(60).optional(),
+    recursive: z.boolean().optional().describe('Show all nested objects (children of children, etc). Default: false — only direct children.'),
     tag: z.string().optional().describe('Only show objects with this tag'),
   },
-  async ({ path, max_cols, max_rows, tag }) => {
+  async ({ path, max_cols, max_rows, recursive, tag }) => {
     const node = store.resolve(path || '/');
     if (!node) return err('Not found');
 
@@ -397,7 +433,7 @@ server.tool(
       node.children = filtered;
     }
 
-    const { ascii, legend, scaleInfo } = store.renderAscii(node, max_cols || 60, max_rows || 30);
+    const { ascii, legend, scaleInfo } = store.renderAscii(node, max_cols || 60, max_rows || 30, recursive || false);
 
     if (originalChildren) node.children = originalChildren;
 

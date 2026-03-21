@@ -141,12 +141,35 @@ const server = http.createServer((req, res) => {
     const floors = detectFloors(node);
     const children = Object.values(node.children || {}).map(serializeChild);
 
+    // Collect ALL descendants recursively with absolute coordinates
+    const descendants = [];
+    function collectDescendants(obj, offsetX, offsetY, depth) {
+      for (const child of Object.values(obj.children || {})) {
+        const absX = offsetX + child.x;
+        const absY = offsetY + child.y;
+        descendants.push({
+          ...serializeChild(child),
+          x: absX,
+          y: absY,
+          _depth: depth,
+        });
+        if (child.children) {
+          collectDescendants(child, absX, absY, depth + 1);
+        }
+      }
+    }
+    for (const child of Object.values(node.children || {})) {
+      if (child.children) {
+        collectDescendants(child, child.x, child.y, 1);
+      }
+    }
+
     return json(res, {
       id: node.id, name: node.name, description: node.description || '',
       width: node.width, height: node.height,
       char: node.char, tags: node.tags || [], metadata: node.metadata || {},
       isContainer: !!node.children,
-      scaleInfo, ascii, legend, children, floors, path,
+      scaleInfo, ascii, legend, children, descendants, floors, path,
     });
   }
 

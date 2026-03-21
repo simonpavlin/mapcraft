@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import { createByt4kk } from './byt4kk.js';
 
 export function createWorld(scene) {
   createGround(scene);
+  createByt4kk(scene, 0, 0);
 }
 
 function createGround(scene) {

@@ -13,7 +13,10 @@
       "mcp__mapcraft__remove_object",
       "Bash(timeout 3 node mcp-server/src/server.js)",
       "Bash(node:*)",
-      "mcp__mapcraft__place_objects"
+      "mcp__mapcraft__place_objects",
+      "mcp__mapcraft__init_space",
+      "mcp__mapcraft__get_objects",
+      "mcp__mapcraft__update_object"
     ]
   },
   "enableAllProjectMcpServers": true,
