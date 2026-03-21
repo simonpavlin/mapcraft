@@ -122,7 +122,7 @@ export function createControls(camera, domElement) {
 
       // Direction
       direction.z = Number(keys.forward) - Number(keys.backward);
-      direction.x = Number(keys.right) - Number(keys.left);
+      direction.x = Number(keys.left) - Number(keys.right);
       direction.normalize();
 
       const currentSpeed = keys.sprint ? SPEED * SPRINT_MULTIPLIER : SPEED;

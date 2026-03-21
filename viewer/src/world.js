@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import { createPanelak } from './panelak.js';
 
 export function createWorld(scene) {
   createGround(scene);
+  createPanelak(scene, 0, 0);
   createTrees(scene);
   createPaths(scene);
 }
