@@ -41,12 +41,35 @@ Every object can carry arbitrary key-value metadata for 3D generation:
 - Windows: { sill_height: 0.8, type: "panorama" }
 - Furniture: { material: "wood", color: "#8a7050" }
 
-## Workflow
+## Workflow — plan EVERYTHING before generating 3D
 1. init_space — root space in meters
-2. place_object — buildings, floors, rooms, furniture (overlaps allowed)
-3. get_ascii — auto-scaled view (filter by tag if needed)
-4. check_collision — advisory overlap check when needed
-5. Use metadata to store 3D-relevant info (direction, style, material...)
+2. place_object / place_objects — buildings, floors, rooms (overlaps allowed)
+3. **VERIFY rooms**: check_collision(exclude_tags=["door","window","furniture"]) to catch room overlaps
+4. Place doors and windows ON wall lines (as markers with metadata)
+5. **Place furniture** in MCP too — at least major pieces (counters, tables, beds, sofas, appliances). This is your spatial memory — if you skip this and place furniture only in 3D code, you WILL put a fridge in front of a door or a bed blocking a window.
+6. **VERIFY furniture vs doors/windows**: visually check get_ascii or floorplan to ensure no furniture blocks doorways or covers windows
+7. Only THEN generate 3D code, using MCP positions directly
+
+## Collision verification rules
+- Rooms ("room" tag) must NOT overlap with other rooms on the same floor
+- Structural elements ("structural" — stairs, hallways) must NOT overlap with rooms
+- Doors, windows, furniture CAN overlap with anything — they are markers/contents
+- After each batch of room placements, verify with: check_collision(exclude_tags=["door","window","furniture"])
+
+## Furniture placement rules
+- Place furniture as sub-objects inside rooms (tag: "furniture")
+- Furniture must NOT block doors — check that no furniture rectangle overlaps a door rectangle
+- Furniture should NOT cover windows — leave wall-adjacent space clear where windows are
+- Place at least: kitchen counter+appliances, tables, beds, sofas, desks, wardrobes
+- Small items (chairs, lamps, decorations) can be added directly in 3D code
+- Use get_ascii on the room to visually verify layout before 3D generation
+
+## 3D generation notes for doors and windows
+- Doors and windows require REAL OPENINGS in walls (for player walkthrough / visibility)
+- In 3D: build wall segments AROUND each door/window gap, not solid walls
+- Door metadata should include: style (hinged/sliding/open), direction, connects
+- Window metadata should include: sill_height, win_height, type (fixed/panorama)
+- Always place doors/windows ON the wall line (x or y matching the wall position)
 `)
 );
 
@@ -88,7 +111,7 @@ server.tool(
     is_container: z.boolean().optional().describe('Can hold sub-objects (default: false)'),
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
-    metadata: z.record(z.any()).optional().describe('Arbitrary key-value data for 3D generation (e.g. direction, style, material, sill_height, connects...)'),
+    metadata: z.string().optional().describe('JSON string of key-value data for 3D generation, e.g. {"direction":"south","style":"sliding"}'),
   },
   async ({ path, id, name, x, y, width, height, char, is_container, description, tags, metadata }) => {
     const parent = store.resolve(path || '/');
@@ -98,13 +121,15 @@ server.tool(
       return err(`"${id}" already exists. Remove first or pick different id.`);
     }
 
+    const meta = parseMeta(metadata);
+
     parent.children[id] = {
       id, name,
       x, y, width, height,
       char: char || '#',
       description: description || '',
       tags: tags || [],
-      metadata: metadata || {},
+      metadata: meta,
       children: is_container ? {} : undefined,
     };
 
@@ -138,7 +163,7 @@ server.tool(
       is_container: z.boolean().optional(),
       description: z.string().optional(),
       tags: z.array(z.string()).optional(),
-      metadata: z.record(z.any()).optional(),
+      metadata: z.string().optional(),
     })).describe('Array of objects to place'),
   },
   async ({ path, objects }) => {
@@ -157,7 +182,7 @@ server.tool(
         char: o.char || '#',
         description: o.description || '',
         tags: o.tags || [],
-        metadata: o.metadata || {},
+        metadata: parseMeta(o.metadata),
         children: o.is_container ? {} : undefined,
       };
       const type = o.is_container ? '+' : '·';
@@ -233,7 +258,7 @@ server.tool(
     char: z.string().max(1).optional(),
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
-    metadata: z.record(z.any()).optional().describe('Merged with existing metadata'),
+    metadata: z.string().optional().describe('Merged with existing metadata'),
   },
   async ({ path, name, char, description, tags, metadata }) => {
     const node = store.resolve(path);
@@ -242,7 +267,7 @@ server.tool(
     if (char !== undefined) node.char = char;
     if (description !== undefined) node.description = description;
     if (tags !== undefined) node.tags = tags;
-    if (metadata) node.metadata = { ...(node.metadata || {}), ...metadata };
+    if (metadata) node.metadata = { ...(node.metadata || {}), ...parseMeta(metadata) };
     store.save();
     return ok(`Updated "${node.name}"`);
   }
@@ -389,6 +414,11 @@ server.tool(
 
 function ok(text) { return { content: [{ type: 'text', text }] }; }
 function err(text) { return { content: [{ type: 'text', text: `ERROR: ${text}` }], isError: true }; }
+function parseMeta(s) {
+  if (!s) return {};
+  if (typeof s === 'object') return s;
+  try { return JSON.parse(s); } catch { return {}; }
+}
 
 async function main() {
   const transport = new StdioServerTransport();

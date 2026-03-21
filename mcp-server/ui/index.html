@@ -5,936 +5,341 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MapCraft — Prohlížeč map</title>
 <style>
-  :root {
-    --bg: #1a1a2e;
-    --surface: #16213e;
-    --surface2: #0f3460;
-    --accent: #e94560;
-    --accent2: #533483;
-    --text: #e0e0e0;
-    --text2: #a0a0b0;
-    --border: #2a2a4a;
-    --green: #4ade80;
-    --yellow: #facc15;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  /* Sidebar */
-  #sidebar {
-    width: 300px;
-    min-width: 300px;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  #sidebar-header {
-    padding: 16px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface2);
-  }
-  #sidebar-header h1 {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--accent);
-  }
-  #sidebar-header p {
-    font-size: 12px;
-    color: var(--text2);
-    margin-top: 4px;
-  }
-  #tree-container {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-  }
-
-  /* Tree */
-  .tree-node {
-    user-select: none;
-  }
-  .tree-row {
-    display: flex;
-    align-items: center;
-    padding: 5px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    gap: 6px;
-    font-size: 13px;
-    transition: background 0.1s;
-  }
-  .tree-row:hover {
-    background: rgba(233, 69, 96, 0.1);
-  }
-  .tree-row.active {
-    background: rgba(233, 69, 96, 0.2);
-    color: var(--accent);
-  }
-  .tree-toggle {
-    width: 16px;
-    text-align: center;
-    font-size: 10px;
-    color: var(--text2);
-    flex-shrink: 0;
-  }
-  .tree-icon {
-    font-size: 14px;
-    flex-shrink: 0;
-  }
-  .tree-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .tree-badge {
-    font-size: 10px;
-    background: var(--surface2);
-    padding: 1px 5px;
-    border-radius: 8px;
-    color: var(--text2);
-  }
-  .tree-children {
-    margin-left: 16px;
-  }
-  .tree-children.collapsed {
-    display: none;
-  }
-
-  /* Main area */
-  #main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  /* Breadcrumb */
-  #breadcrumb {
-    padding: 10px 20px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    flex-wrap: wrap;
-  }
-  .crumb {
-    color: var(--text2);
-    cursor: pointer;
-    transition: color 0.1s;
-  }
-  .crumb:hover { color: var(--accent); }
-  .crumb.current { color: var(--text); font-weight: 600; }
-  .crumb-sep { color: var(--text2); opacity: 0.5; }
-
-  /* Tabs */
-  #tabs {
-    display: flex;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 16px;
-  }
-  .tab {
-    padding: 10px 20px;
-    font-size: 13px;
-    cursor: pointer;
-    color: var(--text2);
-    border-bottom: 2px solid transparent;
-    transition: all 0.15s;
-  }
-  .tab:hover { color: var(--text); }
-  .tab.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
-
-  /* Content */
-  #content {
-    flex: 1;
-    overflow: auto;
-    padding: 20px;
-  }
-
-  /* Info panel */
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .info-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px;
-  }
-  .info-card h3 {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text2);
-    margin-bottom: 6px;
-  }
-  .info-card .value {
-    font-size: 20px;
-    font-weight: 600;
-  }
-  .info-card .sub {
-    font-size: 12px;
-    color: var(--text2);
-    margin-top: 4px;
-  }
-
-  /* ASCII view */
-  #ascii-view {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    overflow: auto;
-  }
-  #ascii-grid {
-    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-    font-size: 13px;
-    line-height: 1.35;
-    white-space: pre;
-    letter-spacing: 1px;
-  }
-  #ascii-legend {
-    margin-top: 16px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    background: var(--bg);
-    padding: 4px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.1s;
-  }
-  .legend-item:hover {
-    background: var(--surface2);
-  }
-  .legend-char {
-    font-family: 'Cascadia Code', 'Fira Code', monospace;
-    font-weight: bold;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 3px;
-    font-size: 14px;
-  }
-
-  /* Children table */
-  .children-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-  .children-table th {
-    text-align: left;
-    padding: 8px 12px;
-    border-bottom: 2px solid var(--border);
-    color: var(--text2);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .children-table td {
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .children-table tr {
-    cursor: pointer;
-    transition: background 0.1s;
-  }
-  .children-table tr:hover {
-    background: rgba(233, 69, 96, 0.08);
-  }
-  .obj-char {
-    font-family: monospace;
-    font-weight: bold;
-    font-size: 16px;
-    width: 28px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-  }
-  .tag {
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: var(--accent2);
-    color: var(--text);
-    margin-right: 4px;
-  }
-  .zoomable-badge {
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: rgba(74, 222, 128, 0.2);
-    color: var(--green);
-  }
-
-  /* Grid canvas view */
-  #grid-canvas-container {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    overflow: auto;
-  }
-  #grid-canvas {
-    image-rendering: pixelated;
-    border: 1px solid var(--border);
-  }
-
-  /* Empty state */
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text2);
-  }
-  .empty-state h2 {
-    font-size: 18px;
-    margin-bottom: 8px;
-    color: var(--text);
-  }
-
-  /* Refresh button */
-  #refresh-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
-    transition: transform 0.1s;
-    z-index: 100;
-  }
-  #refresh-btn:hover { transform: scale(1.05); }
-  #refresh-btn:active { transform: scale(0.95); }
-
-  /* Auto-refresh indicator */
-  #auto-refresh {
-    position: fixed;
-    bottom: 20px;
-    right: 140px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--text2);
-    z-index: 100;
-  }
-  #auto-refresh label { cursor: pointer; }
-
-  /* Color palette for ASCII chars */
-  .c-hash { color: #8b8b8b; }
-  .c-dot { color: #3a3a4a; }
-  .c-A { color: #e94560; }
-  .c-B { color: #4ade80; }
-  .c-C { color: #60a5fa; }
-  .c-D { color: #facc15; }
-  .c-E { color: #c084fc; }
-  .c-F { color: #fb923c; }
-  .c-G { color: #2dd4bf; }
-  .c-H { color: #a78bfa; }
-  .c-S { color: #f472b6; }
-  .c-W { color: #38bdf8; }
-  .c-T { color: #4ade80; }
-  .c-K { color: #fbbf24; }
-  .c-default { color: #e0e0e0; }
-
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+  :root { --bg:#1a1a2e; --sf:#16213e; --sf2:#0f3460; --ac:#e94560; --ac2:#533483; --tx:#e0e0e0; --tx2:#a0a0b0; --bd:#2a2a4a; --gn:#4ade80; --yl:#facc15; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--tx); display:flex; height:100vh; overflow:hidden; }
+  #sidebar { width:300px; min-width:300px; background:var(--sf); border-right:1px solid var(--bd); display:flex; flex-direction:column; overflow:hidden; }
+  #sidebar-header { padding:16px; border-bottom:1px solid var(--bd); background:var(--sf2); }
+  #sidebar-header h1 { font-size:18px; color:var(--ac); }
+  #sidebar-header p { font-size:12px; color:var(--tx2); margin-top:4px; }
+  #tree-container { flex:1; overflow-y:auto; padding:8px; }
+  .tree-node { user-select:none; }
+  .tree-row { display:flex; align-items:center; padding:5px 8px; border-radius:4px; cursor:pointer; gap:6px; font-size:13px; transition:background .1s; }
+  .tree-row:hover { background:rgba(233,69,96,.1); }
+  .tree-row.active { background:rgba(233,69,96,.2); color:var(--ac); }
+  .tree-toggle { width:16px; text-align:center; font-size:10px; color:var(--tx2); flex-shrink:0; }
+  .tree-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tree-badge { font-size:10px; background:var(--sf2); padding:1px 5px; border-radius:8px; color:var(--tx2); }
+  .tree-tag { font-size:9px; padding:1px 4px; border-radius:3px; background:var(--ac2); color:var(--tx); margin-left:2px; }
+  .tree-children { margin-left:16px; }
+  .tree-children.collapsed { display:none; }
+  #main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  #breadcrumb { padding:10px 20px; background:var(--sf); border-bottom:1px solid var(--bd); display:flex; align-items:center; gap:6px; font-size:13px; flex-wrap:wrap; }
+  .crumb { color:var(--tx2); cursor:pointer; } .crumb:hover { color:var(--ac); } .crumb.current { color:var(--tx); font-weight:600; }
+  .crumb-sep { color:var(--tx2); opacity:.5; }
+  #toolbar { display:flex; background:var(--sf); border-bottom:1px solid var(--bd); padding:6px 16px; gap:8px; align-items:center; flex-wrap:wrap; }
+  .tab { padding:8px 16px; font-size:13px; cursor:pointer; color:var(--tx2); border-bottom:2px solid transparent; transition:all .15s; }
+  .tab:hover { color:var(--tx); } .tab.active { color:var(--ac); border-bottom-color:var(--ac); }
+  .floor-btn { padding:4px 12px; font-size:12px; cursor:pointer; border:1px solid var(--bd); border-radius:4px; background:var(--sf2); color:var(--tx2); transition:all .1s; }
+  .floor-btn:hover { border-color:var(--ac); color:var(--tx); }
+  .floor-btn.active { background:var(--ac); color:#fff; border-color:var(--ac); }
+  .floor-label { font-size:11px; color:var(--tx2); margin-left:8px; }
+  #content { flex:1; overflow:auto; padding:20px; }
+  .info-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-bottom:20px; }
+  .info-card { background:var(--sf); border:1px solid var(--bd); border-radius:8px; padding:14px; }
+  .info-card h3 { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--tx2); margin-bottom:6px; }
+  .info-card .value { font-size:18px; font-weight:600; }
+  .info-card .sub { font-size:12px; color:var(--tx2); margin-top:4px; }
+  .meta-table { width:100%; font-size:12px; border-collapse:collapse; margin-top:8px; }
+  .meta-table td { padding:4px 8px; border-bottom:1px solid var(--bd); }
+  .meta-table td:first-child { color:var(--ac); font-weight:600; width:120px; }
+  #ascii-view { background:var(--sf); border:1px solid var(--bd); border-radius:8px; padding:16px; overflow:auto; }
+  #ascii-grid { font-family:'Cascadia Code','Fira Code','Consolas',monospace; font-size:13px; line-height:1.35; white-space:pre; letter-spacing:1px; }
+  #ascii-legend,.legend-wrap { margin-top:12px; display:flex; flex-wrap:wrap; gap:8px; }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:12px; background:var(--bg); padding:4px 10px; border-radius:4px; cursor:pointer; }
+  .legend-item:hover { background:var(--sf2); }
+  .legend-char { font-family:monospace; font-weight:bold; width:20px; height:20px; display:flex; align-items:center; justify-content:center; border-radius:3px; }
+  .children-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .children-table th { text-align:left; padding:8px 12px; border-bottom:2px solid var(--bd); color:var(--tx2); font-size:11px; text-transform:uppercase; }
+  .children-table td { padding:8px 12px; border-bottom:1px solid var(--bd); vertical-align:top; }
+  .children-table tr { cursor:pointer; transition:background .1s; } .children-table tr:hover { background:rgba(233,69,96,.08); }
+  .obj-char { font-family:monospace; font-weight:bold; font-size:16px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; }
+  .tag { font-size:10px; padding:2px 6px; border-radius:4px; background:var(--ac2); color:var(--tx); margin-right:4px; }
+  .meta-pill { font-size:10px; padding:2px 6px; border-radius:4px; background:var(--sf2); color:var(--tx2); margin-right:3px; }
+  .empty-state { text-align:center; padding:60px 20px; color:var(--tx2); }
+  .empty-state h2 { font-size:18px; margin-bottom:8px; color:var(--tx); }
+  #refresh-btn { position:fixed; bottom:20px; right:20px; background:var(--ac); color:#fff; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; box-shadow:0 4px 12px rgba(233,69,96,.3); z-index:100; }
+  #auto-refresh { position:fixed; bottom:20px; right:140px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--tx2); z-index:100; }
+  ::-webkit-scrollbar { width:8px; height:8px; } ::-webkit-scrollbar-track { background:var(--bg); } ::-webkit-scrollbar-thumb { background:var(--bd); border-radius:4px; }
 </style>
 </head>
 <body>
-
 <div id="sidebar">
-  <div id="sidebar-header">
-    <h1>MapCraft</h1>
-    <p>Map Explorer</p>
-  </div>
-  <div id="tree-container">
-    <div id="tree"></div>
-  </div>
+  <div id="sidebar-header"><h1>MapCraft</h1><p>Map Explorer v0.4</p></div>
+  <div id="tree-container"><div id="tree"></div></div>
 </div>
-
 <div id="main">
   <div id="breadcrumb"></div>
-  <div id="tabs">
-    <div class="tab active" data-tab="overview" onclick="switchTab('overview')">Přehled</div>
-    <div class="tab" data-tab="ascii" onclick="switchTab('ascii')">ASCII Plánek</div>
-    <div class="tab" data-tab="grid" onclick="switchTab('grid')">Grafický plánek</div>
-    <div class="tab" data-tab="floorplan" onclick="switchTab('floorplan')">Půdorys</div>
-    <div class="tab" data-tab="objects" onclick="switchTab('objects')">Objekty</div>
-  </div>
-  <div id="content">
-    <div class="empty-state">
-      <h2>Žádná mapa</h2>
-      <p>Použij MCP server k vytvoření mapy (init_space)</p>
-    </div>
-  </div>
+  <div id="toolbar"></div>
+  <div id="content"><div class="empty-state"><h2>Žádná mapa</h2><p>Použij MCP server k vytvoření mapy</p></div></div>
 </div>
-
 <button id="refresh-btn" onclick="refresh()">Obnovit</button>
-<div id="auto-refresh">
-  <input type="checkbox" id="auto-refresh-check" checked>
-  <label for="auto-refresh-check">Auto (2s)</label>
-</div>
+<div id="auto-refresh"><input type="checkbox" id="auto-refresh-check" checked><label for="auto-refresh-check">Auto (2s)</label></div>
 
 <script>
-const API = '';
-let currentPath = '/';
-let currentTab = 'overview';
-let treeData = null;
-let nodeData = null;
-let expandedPaths = new Set(['/']);
+const COLORS = {'#':'#8b8b8b','.':'#3a3a4a','A':'#e94560','B':'#4ade80','C':'#60a5fa','D':'#facc15','E':'#c084fc','F':'#fb923c','G':'#2dd4bf','H':'#a78bfa','I':'#f87171','K':'#fbbf24','L':'#34d399','M':'#a3e635','O':'#fb923c','P':'#c4b5fd','R':'#fb7185','S':'#f472b6','T':'#4ade80','V':'#38bdf8','W':'#94a3b8','o':'#60a5fa','~':'#38bdf8','=':'#9ca3af','1':'#f59e0b','2':'#8b5cf6'};
+function cc(ch) { return COLORS[ch] || '#e0e0e0'; }
+function esc(s) { return s ? s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 
-// Color map for chars
-const CHAR_COLORS = {
-  '#': '#8b8b8b', '.': '#3a3a4a',
-  'A': '#e94560', 'B': '#4ade80', 'C': '#60a5fa',
-  'D': '#facc15', 'E': '#c084fc', 'F': '#fb923c',
-  'G': '#2dd4bf', 'H': '#a78bfa', 'I': '#f87171',
-  'S': '#f472b6', 'W': '#38bdf8', 'T': '#4ade80',
-  'K': '#fbbf24', 'L': '#34d399', 'M': '#a3e635',
-  'R': '#fb7185', 'P': '#c4b5fd',
-  '0': '#94a3b8', '1': '#64748b', '2': '#78716c',
-  '3': '#a1a1aa', '4': '#9ca3af', '5': '#a8a29e',
-  '6': '#d6d3d1', '7': '#e7e5e4', '8': '#d4d4d8', '9': '#e5e7eb',
-};
-
-function getCharColor(ch) {
-  return CHAR_COLORS[ch] || '#e0e0e0';
-}
+let currentPath = '/', currentTab = 'overview', treeData = null, nodeData = null;
+let expandedPaths = new Set(['/']), selectedFloor = null;
 
 async function fetchTree() {
-  try {
-    const res = await fetch(`${API}/api/tree`);
-    treeData = await res.json();
-    renderTree();
-  } catch (e) {
-    document.getElementById('tree').innerHTML = '<p style="padding:16px;color:#a0a0b0">Nelze se připojit k serveru</p>';
-  }
+  try { treeData = await (await fetch('/api/tree')).json(); renderTree(); } catch {}
 }
-
 async function fetchNode(path) {
-  try {
-    const res = await fetch(`${API}/api/node?path=${encodeURIComponent(path)}`);
-    nodeData = await res.json();
-    renderContent();
-  } catch (e) {
-    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Chyba</h2><p>Nelze načíst data</p></div>';
-  }
+  try { nodeData = await (await fetch(`/api/node?path=${encodeURIComponent(path)}`)).json(); renderContent(); } catch {}
 }
-
 function navigateTo(path) {
-  currentPath = path;
-  // Expand all parents
+  currentPath = path; selectedFloor = null;
   const parts = path.split('/').filter(Boolean);
-  let p = '';
-  expandedPaths.add('/');
-  for (const part of parts) {
-    p = p ? `${p}/${part}` : part;
-    expandedPaths.add(p);
-  }
-  fetchNode(path);
-  renderTree();
+  let p = ''; expandedPaths.add('/');
+  for (const part of parts) { p = p ? `${p}/${part}` : part; expandedPaths.add(p); }
+  fetchNode(path); renderTree();
 }
-
-function renderTree() {
-  if (!treeData || treeData.error) {
-    document.getElementById('tree').innerHTML = `<p style="padding:16px;color:var(--text2)">${treeData?.error || 'Žádná data'}</p>`;
-    return;
-  }
-  document.getElementById('tree').innerHTML = renderTreeNode(treeData);
-}
-
-function renderTreeNode(node) {
-  const hasChildren = node.children && node.children.length > 0;
-  const isExpanded = expandedPaths.has(node.path);
-  const isActive = currentPath === node.path;
-  const icon = node.hasGrid ? (hasChildren ? '📦' : '📋') : '🔹';
-
-  let html = '<div class="tree-node">';
-  html += `<div class="tree-row ${isActive ? 'active' : ''}" onclick="treeClick(event, '${node.path}', ${hasChildren})">`;
-  html += `<span class="tree-toggle">${hasChildren ? (isExpanded ? '▼' : '▶') : '·'}</span>`;
-  html += `<span class="tree-icon">${icon}</span>`;
-  html += `<span class="tree-name">${escHtml(node.name)}</span>`;
-  if (node.childCount > 0) {
-    html += `<span class="tree-badge">${node.childCount}</span>`;
-  }
-  html += '</div>';
-
-  if (hasChildren) {
-    html += `<div class="tree-children ${isExpanded ? '' : 'collapsed'}">`;
-    for (const child of node.children) {
-      html += renderTreeNode(child);
-    }
-    html += '</div>';
-  }
-  html += '</div>';
-  return html;
-}
-
 function treeClick(e, path, hasChildren) {
   e.stopPropagation();
-  if (hasChildren) {
-    if (expandedPaths.has(path)) expandedPaths.delete(path);
-    else expandedPaths.add(path);
-  }
-  currentPath = path;
-  fetchNode(path);
-  renderTree();
+  if (hasChildren) { expandedPaths.has(path) ? expandedPaths.delete(path) : expandedPaths.add(path); }
+  currentPath = path; fetchNode(path); renderTree();
 }
-
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  renderContent();
+function renderTree() {
+  if (!treeData || treeData.error) { document.getElementById('tree').innerHTML = `<p style="padding:16px;color:var(--tx2)">${treeData?.error||'Žádná data'}</p>`; return; }
+  document.getElementById('tree').innerHTML = renderTreeNode(treeData);
 }
+function renderTreeNode(n) {
+  const has = n.children?.length > 0, exp = expandedPaths.has(n.path), act = currentPath === n.path;
+  let h = `<div class="tree-node"><div class="tree-row ${act?'active':''}" onclick="treeClick(event,'${n.path}',${has})">`;
+  h += `<span class="tree-toggle">${has?(exp?'▼':'▶'):'·'}</span>`;
+  h += `<span class="tree-name">${esc(n.name)}</span>`;
+  if (n.childCount > 0) h += `<span class="tree-badge">${n.childCount}</span>`;
+  if (n.tags?.includes('floor')) h += `<span class="tree-tag">floor</span>`;
+  h += '</div>';
+  if (has) { h += `<div class="tree-children ${exp?'':'collapsed'}">`; for (const c of n.children) h += renderTreeNode(c); h += '</div>'; }
+  return h + '</div>';
+}
+function switchTab(t) { currentTab = t; renderContent(); }
+function selectFloor(id) { selectedFloor = selectedFloor === id ? null : id; renderContent(); }
 
 function renderContent() {
-  if (!nodeData || nodeData.error) {
-    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2></div>';
-    return;
-  }
-
-  renderBreadcrumb();
-
-  switch (currentTab) {
+  if (!nodeData || nodeData.error) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2></div>'; return; }
+  renderBreadcrumb(); renderToolbar();
+  switch(currentTab) {
     case 'overview': renderOverview(); break;
     case 'ascii': renderAscii(); break;
-    case 'grid': renderGrid(); break;
     case 'floorplan': renderFloorplan(); break;
     case 'objects': renderObjects(); break;
   }
 }
-
 function renderBreadcrumb() {
-  const bc = document.getElementById('breadcrumb');
   const parts = currentPath === '/' ? [] : currentPath.split('/').filter(Boolean);
-
-  let html = `<span class="crumb ${parts.length === 0 ? 'current' : ''}" onclick="navigateTo('/')">🏠 Root</span>`;
-
-  let path = '';
-  for (let i = 0; i < parts.length; i++) {
-    path = path ? `${path}/${parts[i]}` : parts[i];
-    html += '<span class="crumb-sep">/</span>';
-    html += `<span class="crumb ${i === parts.length - 1 ? 'current' : ''}" onclick="navigateTo('${path}')">${escHtml(parts[i])}</span>`;
+  let h = `<span class="crumb ${parts.length===0?'current':''}" onclick="navigateTo('/')">Root</span>`;
+  let p = '';
+  for (let i = 0; i < parts.length; i++) { p = p ? `${p}/${parts[i]}` : parts[i]; h += `<span class="crumb-sep">/</span><span class="crumb ${i===parts.length-1?'current':''}" onclick="navigateTo('${p}')">${esc(parts[i])}</span>`; }
+  document.getElementById('breadcrumb').innerHTML = h;
+}
+function renderToolbar() {
+  const d = nodeData;
+  let h = '';
+  // Tabs
+  for (const [id, label] of [['overview','Přehled'],['ascii','ASCII'],['floorplan','Půdorys'],['objects','Objekty']]) {
+    h += `<div class="tab ${currentTab===id?'active':''}" onclick="switchTab('${id}')">${label}</div>`;
   }
+  // Floor buttons
+  if (d.floors && d.floors.length > 0) {
+    h += '<span class="floor-label">Patra:</span>';
+    h += `<div class="floor-btn ${selectedFloor===null?'active':''}" onclick="selectFloor(null)">Vše</div>`;
+    for (const f of d.floors) {
+      h += `<div class="floor-btn ${selectedFloor===f.id?'active':''}" onclick="selectFloor('${f.id}')">[${esc(f.char)}] ${esc(f.name)}</div>`;
+    }
+  }
+  document.getElementById('toolbar').innerHTML = h;
+}
 
-  bc.innerHTML = html;
+function getVisibleChildren() {
+  if (!nodeData) return [];
+  let children = nodeData.children || [];
+  if (selectedFloor && nodeData.floors) {
+    // Show only children of the selected floor + non-floor siblings
+    const floorIds = new Set(nodeData.floors.map(f => f.id));
+    const floorChild = children.find(c => c.id === selectedFloor);
+    if (floorChild && floorChild.hasGrid) {
+      // Navigate into this floor
+      const floorPath = currentPath === '/' ? selectedFloor : `${currentPath}/${selectedFloor}`;
+      // We need sub-children — fetch and cache
+      // For now, filter: show floor's own data by navigating
+      navigateTo(floorPath);
+      return [];
+    }
+  }
+  return children;
 }
 
 function renderOverview() {
   const d = nodeData;
-  let html = '<div class="info-grid">';
-
-  html += infoCard('Název', d.name, d.description || '');
-  html += infoCard('Znak', `<span style="font-family:monospace;font-size:28px;color:${getCharColor(d.char)}">${escHtml(d.char || '-')}</span>`, '');
-
+  let h = '<div class="info-grid">';
+  h += infoCard('Název', d.name, d.description || '');
+  h += infoCard('Znak', `<span style="font-family:monospace;font-size:28px;color:${cc(d.char)}">${esc(d.char||'-')}</span>`, '');
   if (d.width && d.height) {
-    html += infoCard('Rozměry', `${d.width}m × ${d.height}m`, d.scaleInfo || '');
-    html += infoCard('Plocha', `${(d.width * d.height).toFixed(0)} m²`, '');
+    h += infoCard('Rozměry', `${d.width}m × ${d.height}m`, d.scaleInfo || '');
+    h += infoCard('Plocha', `${(d.width * d.height).toFixed(0)} m²`, '');
   }
+  h += infoCard('Objekty', (d.children||[]).length.toString(), '');
+  if (d.tags?.length > 0) h += infoCard('Tagy', d.tags.map(t => `<span class="tag">${esc(t)}</span>`).join(' '), '');
+  if (d.floors) h += infoCard('Patra', d.floors.map(f => `[${esc(f.char)}] ${esc(f.name)}`).join(', '), 'Přepínač v toolbaru');
+  h += '</div>';
 
-  html += infoCard('Objekty', d.children.length.toString(), d.children.length > 0 ? 'Klikni na "Objekty" pro detail' : 'Prázdný prostor');
-
-  if (d.tags && d.tags.length > 0) {
-    html += infoCard('Tagy', d.tags.map(t => `<span class="tag">${escHtml(t)}</span>`).join(' '), '');
-  }
-
-  html += '</div>';
-
-  // Quick ASCII preview
-  if (d.ascii && d.ascii.length > 0) {
-    html += '<h3 style="margin-bottom:12px;font-size:14px;color:var(--text2)">Náhled</h3>';
-    html += '<div id="ascii-view" style="max-height:400px;overflow:auto">';
-    html += `<div id="ascii-grid">${colorizeAscii(d.ascii)}</div>`;
-    if (d.legend.length > 0) {
-      html += '<div id="ascii-legend">';
-      for (const l of d.legend) {
-        const color = getCharColor(l.char);
-        const childPath = currentPath === '/' ? l.id : `${currentPath}/${l.id}`;
-        html += `<div class="legend-item" onclick="navigateTo('${childPath}')">`;
-        html += `<span class="legend-char" style="background:${color}22;color:${color}">${escHtml(l.char)}</span>`;
-        html += `<span>${escHtml(l.id)} — ${escHtml(l.name)}</span>`;
-        html += '</div>';
-      }
-      html += '</div>';
+  // Metadata
+  const meta = d.metadata || {};
+  if (Object.keys(meta).length > 0) {
+    h += '<div class="info-card" style="margin-bottom:20px"><h3>Metadata</h3><table class="meta-table">';
+    for (const [k, v] of Object.entries(meta)) {
+      h += `<tr><td>${esc(k)}</td><td>${esc(typeof v === 'object' ? JSON.stringify(v) : v)}</td></tr>`;
     }
-    html += '</div>';
+    h += '</table></div>';
   }
 
-  document.getElementById('content').innerHTML = html;
+  // ASCII preview
+  if (d.ascii?.length > 0) {
+    h += '<h3 style="margin-bottom:8px;font-size:14px;color:var(--tx2)">Náhled</h3>';
+    h += '<div id="ascii-view" style="max-height:400px;overflow:auto">';
+    h += `<div id="ascii-grid">${colorizeAscii(d.ascii)}</div>`;
+    h += renderLegend(d.legend);
+    h += '</div>';
+  }
+  document.getElementById('content').innerHTML = h;
 }
 
 function renderAscii() {
   const d = nodeData;
-  if (!d.ascii || d.ascii.length === 0) {
-    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2><p>Tento objekt nemá podřízené objekty k zobrazení</p></div>';
-    return;
-  }
-
-  let html = '<div id="ascii-view">';
-  if (d.scaleInfo) {
-    html += `<p style="margin-bottom:8px;font-size:11px;color:var(--text2)">${escHtml(d.scaleInfo)}</p>`;
-  }
-  html += '<div id="ascii-grid">';
-
+  if (!d.ascii?.length) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2></div>'; return; }
+  let h = '<div id="ascii-view">';
+  if (d.scaleInfo) h += `<p style="margin-bottom:8px;font-size:11px;color:var(--tx2)">${esc(d.scaleInfo)}</p>`;
+  h += '<div id="ascii-grid">';
   for (let r = 0; r < d.ascii.length; r++) {
-    const label = `<span style="color:var(--text2)">${r.toString().padStart(3)} </span>`;
-    html += label + colorizeAsciiLine(d.ascii[r]) + '\n';
+    h += `<span style="color:var(--tx2)">${r.toString().padStart(3)} </span>${colorizeAsciiLine(d.ascii[r])}\n`;
   }
-
-  html += '</div>';
-
-  if (d.legend.length > 0) {
-    html += '<div id="ascii-legend">';
-    for (const l of d.legend) {
-      const color = getCharColor(l.char);
-      const childPath = currentPath === '/' ? l.id : `${currentPath}/${l.id}`;
-      html += `<div class="legend-item" onclick="navigateTo('${childPath}')">`;
-      html += `<span class="legend-char" style="background:${color}22;color:${color}">${escHtml(l.char)}</span>`;
-      html += `<span>${escHtml(l.id)} — ${escHtml(l.name)}</span>`;
-      html += '</div>';
-    }
-    html += '</div>';
-  }
-
-  html += '</div>';
-  document.getElementById('content').innerHTML = html;
-}
-
-function renderGrid() {
-  const d = nodeData;
-  if (!d.ascii || d.ascii.length === 0) {
-    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2></div>';
-    return;
-  }
-
-  const gridW = d.ascii[0].length;
-  const gridH = d.ascii.length;
-  const cellSize = Math.max(4, Math.min(24, Math.floor(800 / Math.max(gridW, gridH))));
-  const canvasW = gridW * cellSize;
-  const canvasH = gridH * cellSize;
-
-  let html = '<div id="grid-canvas-container">';
-  html += `<p style="margin-bottom:12px;font-size:12px;color:var(--text2)">${escHtml(d.scaleInfo || `${gridW}×${gridH} cells`)}</p>`;
-  html += `<canvas id="grid-canvas" width="${canvasW}" height="${canvasH}"></canvas>`;
-
-  if (d.legend.length > 0) {
-    html += '<div id="ascii-legend" style="margin-top:12px">';
-    for (const l of d.legend) {
-      const color = getCharColor(l.char);
-      const childPath = currentPath === '/' ? l.id : `${currentPath}/${l.id}`;
-      html += `<div class="legend-item" onclick="navigateTo('${childPath}')">`;
-      html += `<span class="legend-char" style="background:${color};color:#000">${escHtml(l.char)}</span>`;
-      html += `<span>${escHtml(l.id)} — ${escHtml(l.name)}</span>`;
-      html += '</div>';
-    }
-    html += '</div>';
-  }
-
-  html += '</div>';
-  document.getElementById('content').innerHTML = html;
-
-  // Draw on canvas
-  const canvas = document.getElementById('grid-canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#1a1a2e';
-  ctx.fillRect(0, 0, canvasW, canvasH);
-
-  for (let r = 0; r < d.ascii.length; r++) {
-    for (let c = 0; c < d.ascii[r].length; c++) {
-      const ch = d.ascii[r][c];
-      if (ch !== '.') {
-        ctx.fillStyle = getCharColor(ch) || '#e0e0e0';
-        ctx.fillRect(c * cellSize, r * cellSize, cellSize - 1, cellSize - 1);
-      } else {
-        ctx.fillStyle = '#222235';
-        ctx.fillRect(c * cellSize, r * cellSize, cellSize - 1, cellSize - 1);
-      }
-    }
-  }
-
-  // Grid lines if cells are large enough
-  if (cellSize >= 8) {
-    ctx.strokeStyle = '#2a2a3a';
-    ctx.lineWidth = 0.5;
-    for (let x = 0; x <= canvasW; x += cellSize) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvasH); ctx.stroke();
-    }
-    for (let y = 0; y <= canvasH; y += cellSize) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvasW, y); ctx.stroke();
-    }
-  }
-
-  // Labels if cells large enough
-  if (cellSize >= 14) {
-    ctx.font = `${Math.min(cellSize - 2, 12)}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    for (let r = 0; r < d.ascii.length; r++) {
-      for (let c = 0; c < d.ascii[r].length; c++) {
-        const ch = d.ascii[r][c];
-        if (ch !== '.') {
-          ctx.fillStyle = '#000';
-          ctx.fillText(ch, c * cellSize + cellSize / 2, r * cellSize + cellSize / 2);
-        }
-      }
-    }
-  }
-
-  // Click to navigate
-  canvas.onclick = (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const cx = Math.floor((e.clientX - rect.left) / cellSize);
-    const cy = Math.floor((e.clientY - rect.top) / cellSize);
-    if (cy >= 0 && cy < d.ascii.length && cx >= 0 && cx < d.ascii[cy].length) {
-      const ch = d.ascii[cy][cx];
-      if (ch !== '.') {
-        const obj = d.children.find(c => c.char === ch);
-        if (obj && obj.hasGrid) {
-          const childPath = currentPath === '/' ? obj.id : `${currentPath}/${obj.id}`;
-          navigateTo(childPath);
-        }
-      }
-    }
-  };
-  canvas.style.cursor = 'pointer';
+  h += '</div>' + renderLegend(d.legend) + '</div>';
+  document.getElementById('content').innerHTML = h;
 }
 
 function renderFloorplan() {
   const d = nodeData;
-  if (!d.children || d.children.length === 0) {
-    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádné objekty</h2><p>Tento prostor je prázdný</p></div>';
-    return;
-  }
+  const children = d.children || [];
+  if (children.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Prázdný prostor</h2></div>'; return; }
 
-  const PAD = 40;
-  const maxCanvasW = 900;
-  const maxCanvasH = 600;
+  const PAD = 40, maxW = 900, maxH = 600;
+  const pw = d.width || 1, ph = d.height || 1;
+  const scale = Math.min((maxW - PAD*2) / pw, (maxH - PAD*2) / ph);
+  const cw = Math.ceil(pw * scale + PAD*2), ch = Math.ceil(ph * scale + PAD*2);
 
-  // Compute scale to fit all children
-  const parentW = d.width || 1;
-  const parentH = d.height || 1;
-  const scaleX = (maxCanvasW - PAD * 2) / parentW;
-  const scaleY = (maxCanvasH - PAD * 2) / parentH;
-  const scale = Math.min(scaleX, scaleY);
+  let h = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow:auto">';
+  h += `<p style="margin-bottom:8px;font-size:12px;color:var(--tx2)">Půdorys — ${pw}m × ${ph}m</p>`;
+  h += `<canvas id="fp-canvas" width="${cw}" height="${ch}" style="border:1px solid var(--bd);border-radius:4px;cursor:pointer"></canvas></div>`;
+  document.getElementById('content').innerHTML = h;
 
-  const canvasW = Math.ceil(parentW * scale + PAD * 2);
-  const canvasH = Math.ceil(parentH * scale + PAD * 2);
-
-  let html = '<div id="grid-canvas-container">';
-  html += `<p style="margin-bottom:8px;font-size:12px;color:var(--text2)">Půdorys — ${parentW}m × ${parentH}m | 1px = ${(1/scale).toFixed(3)}m</p>`;
-  html += `<canvas id="floorplan-canvas" width="${canvasW}" height="${canvasH}" style="border:1px solid var(--border);border-radius:4px;cursor:pointer"></canvas>`;
-  html += '</div>';
-
-  document.getElementById('content').innerHTML = html;
-
-  const canvas = document.getElementById('floorplan-canvas');
+  const canvas = document.getElementById('fp-canvas');
   const ctx = canvas.getContext('2d');
-
-  // Background
   ctx.fillStyle = '#1a1a2e';
-  ctx.fillRect(0, 0, canvasW, canvasH);
+  ctx.fillRect(0, 0, cw, ch);
+  // Parent outline
+  ctx.strokeStyle = '#3a3a5a'; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
+  ctx.strokeRect(PAD, PAD, pw*scale, ph*scale); ctx.setLineDash([]);
 
-  // Draw parent outline
-  ctx.strokeStyle = '#3a3a5a';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([6, 4]);
-  ctx.strokeRect(PAD, PAD, parentW * scale, parentH * scale);
-  ctx.setLineDash([]);
-
-  // Sort: larger objects first (background), smaller on top
-  const sorted = [...d.children].sort((a, b) => (b.width * b.height) - (a.width * a.height));
-
+  const sorted = [...children].sort((a,b) => (b.width*b.height) - (a.width*a.height));
   for (const c of sorted) {
-    const rx = PAD + c.x * scale;
-    const ry = PAD + c.y * scale;
-    const rw = c.width * scale;
-    const rh = c.height * scale;
-    const color = getCharColor(c.char);
+    const rx = PAD + c.x*scale, ry = PAD + c.y*scale, rw = c.width*scale, rh = c.height*scale;
+    const color = cc(c.char);
+    const isDoor = c.tags?.includes('door');
+    const isWindow = c.tags?.includes('window');
 
-    // Fill
-    ctx.fillStyle = color + '30';
-    ctx.fillRect(rx, ry, rw, rh);
+    if (isDoor) { ctx.fillStyle = color + '80'; ctx.fillRect(rx, ry, rw, rh); continue; }
+    if (isWindow) { ctx.fillStyle = '#88ccee44'; ctx.fillRect(rx, ry, rw, rh); continue; }
 
-    // Border
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(rx, ry, rw, rh);
-
-    // Door-tagged objects get different style
-    if (c.tags && c.tags.includes('door')) {
-      ctx.fillStyle = color + '60';
-      ctx.fillRect(rx, ry, rw, rh);
-      continue; // no label for doors
-    }
+    ctx.fillStyle = color + '25'; ctx.fillRect(rx, ry, rw, rh);
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.strokeRect(rx, ry, rw, rh);
 
     // Label
     const label = c.name;
-    const dimLabel = `${c.width}×${c.height}m`;
-
-    // Determine font size based on rect size
-    const maxFontSize = Math.min(rw / (label.length * 0.55), rh / 3, 16);
-    const fontSize = Math.max(8, Math.floor(maxFontSize));
-
-    if (fontSize >= 8 && rw > 20 && rh > 15) {
-      ctx.fillStyle = color;
-      ctx.font = `bold ${fontSize}px 'Segoe UI', system-ui, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(label, rx + rw / 2, ry + rh / 2 - (fontSize > 10 ? fontSize * 0.4 : 0), rw - 4);
-
-      // Dimensions below name
-      if (fontSize > 10 && rh > 30) {
-        const dimSize = Math.max(7, fontSize - 3);
-        ctx.font = `${dimSize}px 'Segoe UI', system-ui, sans-serif`;
-        ctx.fillStyle = color + 'aa';
-        ctx.fillText(dimLabel, rx + rw / 2, ry + rh / 2 + fontSize * 0.5, rw - 4);
+    const maxFont = Math.min(rw / (label.length * 0.55), rh / 3, 15);
+    const fs = Math.max(7, Math.floor(maxFont));
+    if (fs >= 7 && rw > 18 && rh > 14) {
+      ctx.fillStyle = color; ctx.font = `bold ${fs}px 'Segoe UI',sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, rx+rw/2, ry+rh/2 - (fs > 9 ? fs*.35 : 0), rw-4);
+      if (fs > 9 && rh > 25) {
+        ctx.font = `${Math.max(7,fs-3)}px 'Segoe UI',sans-serif`; ctx.fillStyle = color + 'aa';
+        ctx.fillText(`${c.width}×${c.height}m`, rx+rw/2, ry+rh/2+fs*.45, rw-4);
       }
+    }
+    // Metadata indicator
+    if (c.metadata && Object.keys(c.metadata).length > 0 && rw > 30 && rh > 35) {
+      ctx.font = '8px monospace'; ctx.fillStyle = '#ffffff55';
+      const metaStr = Object.entries(c.metadata).map(([k,v]) => `${k}:${v}`).join(' ');
+      ctx.fillText(metaStr.substring(0, Math.floor(rw/5)), rx+rw/2, ry+rh-6, rw-6);
     }
   }
+  // Dimension labels
+  ctx.fillStyle = '#606080'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText(`${pw}m`, PAD+pw*scale/2, PAD+ph*scale+6);
+  ctx.save(); ctx.translate(PAD-8, PAD+ph*scale/2); ctx.rotate(-Math.PI/2); ctx.textBaseline = 'bottom'; ctx.fillText(`${ph}m`, 0, 0); ctx.restore();
 
-  // Dimension labels on edges
-  ctx.fillStyle = '#606080';
-  ctx.font = '11px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(`${parentW}m`, PAD + parentW * scale / 2, PAD + parentH * scale + 6);
-  ctx.save();
-  ctx.translate(PAD - 8, PAD + parentH * scale / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.textBaseline = 'bottom';
-  ctx.fillText(`${parentH}m`, 0, 0);
-  ctx.restore();
-
-  // Click to navigate into container children
   canvas.onclick = (e) => {
     const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left - PAD;
-    const my = e.clientY - rect.top - PAD;
-    const wx = mx / scale;
-    const wy = my / scale;
-
-    // Find smallest container child at click position
-    let best = null;
-    let bestArea = Infinity;
-    for (const c of d.children) {
-      if (wx >= c.x && wx <= c.x + c.width && wy >= c.y && wy <= c.y + c.height) {
-        const area = c.width * c.height;
-        if (c.hasGrid && area < bestArea) {
-          best = c;
-          bestArea = area;
-        }
+    const wx = (e.clientX-rect.left-PAD)/scale, wy = (e.clientY-rect.top-PAD)/scale;
+    let best = null, bestArea = Infinity;
+    for (const c of children) {
+      if (wx >= c.x && wx <= c.x+c.width && wy >= c.y && wy <= c.y+c.height) {
+        const area = c.width*c.height;
+        if (c.hasGrid && area < bestArea) { best = c; bestArea = area; }
       }
     }
-    if (best) {
-      const childPath = currentPath === '/' ? best.id : `${currentPath}/${best.id}`;
-      navigateTo(childPath);
-    }
+    if (best) navigateTo(currentPath === '/' ? best.id : `${currentPath}/${best.id}`);
   };
 }
 
 function renderObjects() {
   const d = nodeData;
-  if (d.children.length === 0) {
-    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádné objekty</h2><p>Tento prostor je prázdný</p></div>';
-    return;
-  }
+  const children = d.children || [];
+  if (children.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádné objekty</h2></div>'; return; }
 
-  let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">';
-  html += '<table class="children-table">';
-  html += '<thead><tr><th>Znak</th><th>ID</th><th>Název</th><th>Pozice</th><th>Rozměry</th><th>Typ</th><th>Tagy</th></tr></thead>';
-  html += '<tbody>';
-
-  for (const c of d.children) {
+  let h = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;overflow:auto">';
+  h += '<table class="children-table"><thead><tr><th>Znak</th><th>ID</th><th>Název</th><th>Pozice</th><th>Rozměry</th><th>Tagy</th><th>Metadata</th></tr></thead><tbody>';
+  for (const c of children) {
     const childPath = currentPath === '/' ? c.id : `${currentPath}/${c.id}`;
-    const color = getCharColor(c.char);
-    html += `<tr onclick="navigateTo('${childPath}')">`;
-    html += `<td><span class="obj-char" style="background:${color}22;color:${color}">${escHtml(c.char)}</span></td>`;
-    html += `<td><code>${escHtml(c.id)}</code></td>`;
-    html += `<td>${escHtml(c.name)}</td>`;
-    html += `<td>(${c.x}, ${c.y})</td>`;
-    html += `<td>${c.width}×${c.height}</td>`;
-    html += `<td>${c.hasGrid ? `<span class="zoomable-badge">zoomable ${c.gridSize}</span>` : 'leaf'}</td>`;
-    html += `<td>${(c.tags || []).map(t => `<span class="tag">${escHtml(t)}</span>`).join('')}</td>`;
-    html += '</tr>';
+    const color = cc(c.char);
+    const metaKeys = Object.keys(c.metadata || {});
+    h += `<tr onclick="navigateTo('${childPath}')">`;
+    h += `<td><span class="obj-char" style="background:${color}22;color:${color}">${esc(c.char)}</span></td>`;
+    h += `<td><code>${esc(c.id)}</code></td>`;
+    h += `<td>${esc(c.name)}${c.description ? `<br><span style="font-size:11px;color:var(--tx2)">${esc(c.description)}</span>` : ''}</td>`;
+    h += `<td>(${c.x}, ${c.y})</td>`;
+    h += `<td>${c.width}×${c.height}m</td>`;
+    h += `<td>${(c.tags||[]).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</td>`;
+    h += `<td>${metaKeys.map(k => `<span class="meta-pill">${esc(k)}:${esc(c.metadata[k])}</span>`).join('')}</td>`;
+    h += '</tr>';
   }
-
-  html += '</tbody></table></div>';
-  document.getElementById('content').innerHTML = html;
+  h += '</tbody></table></div>';
+  document.getElementById('content').innerHTML = h;
 }
 
-function colorizeAscii(lines) {
-  return lines.map(l => colorizeAsciiLine(l)).join('\n');
-}
-
-function colorizeAsciiLine(line) {
-  let html = '';
-  for (const ch of line) {
-    const color = getCharColor(ch);
-    html += `<span style="color:${color}">${escHtml(ch)}</span>`;
+function colorizeAscii(lines) { return lines.map(l => colorizeAsciiLine(l)).join('\n'); }
+function colorizeAsciiLine(line) { let h = ''; for (const ch of line) h += `<span style="color:${cc(ch)}">${esc(ch)}</span>`; return h; }
+function renderLegend(legend) {
+  if (!legend?.length) return '';
+  let h = '<div class="legend-wrap">';
+  for (const l of legend) {
+    const color = cc(l.char);
+    const childPath = currentPath === '/' ? l.id : `${currentPath}/${l.id}`;
+    h += `<div class="legend-item" onclick="navigateTo('${childPath}')"><span class="legend-char" style="background:${color}22;color:${color}">${esc(l.char)}</span><span>${esc(l.id)} — ${esc(l.name)}</span></div>`;
   }
-  return html;
+  return h + '</div>';
 }
-
 function infoCard(title, value, sub) {
   return `<div class="info-card"><h3>${title}</h3><div class="value">${value}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
 }
 
-function escHtml(s) {
-  if (!s) return '';
-  return s.toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-async function refresh() {
-  await fetchTree();
-  await fetchNode(currentPath);
-}
-
-// Auto-refresh
-setInterval(() => {
-  if (document.getElementById('auto-refresh-check').checked) {
-    refresh();
-  }
-}, 2000);
-
-// Initial load
+async function refresh() { await fetchTree(); await fetchNode(currentPath); }
+setInterval(() => { if (document.getElementById('auto-refresh-check').checked) refresh(); }, 2000);
 refresh();
 </script>
 </body>

@@ -10,7 +10,10 @@
       "mcp__mapcraft__get_ascii",
       "mcp__mapcraft__place_object",
       "mcp__mapcraft__check_collision",
-      "mcp__mapcraft__remove_object"
+      "mcp__mapcraft__remove_object",
+      "Bash(timeout 3 node mcp-server/src/server.js)",
+      "Bash(node:*)",
+      "mcp__mapcraft__place_objects"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -4,6 +4,7 @@ import { createPanelak2 } from './panelak2.js';
 import { createDomek } from './domek.js';
 import { createVila } from './vila.js';
 import { createRezidence } from './rezidence.js';
+import { createDumGaraz } from './dum-garaz.js';
 
 export function createWorld(scene) {
   createGround(scene);
@@ -12,6 +13,7 @@ export function createWorld(scene) {
   createDomek(scene, -40, 20);
   createVila(scene, -25, 20);
   createRezidence(scene, -70, 40);
+  createDumGaraz(scene, 10, -25);
   createTrees(scene);
   createPaths(scene);
 }
