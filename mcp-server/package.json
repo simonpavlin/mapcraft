@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "ui": "node src/ui-server.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"

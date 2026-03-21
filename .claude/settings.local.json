@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(timeout 3 node src/server.js)"
+      "Bash(timeout 3 node src/server.js)",
+      "Bash(timeout 2 node src/ui-server.js)"
     ]
   }
 }

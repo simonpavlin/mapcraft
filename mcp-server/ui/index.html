@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MapCraft — Prohlížeč map</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface2: #0f3460;
+    --accent: #e94560;
+    --accent2: #533483;
+    --text: #e0e0e0;
+    --text2: #a0a0b0;
+    --border: #2a2a4a;
+    --green: #4ade80;
+    --yellow: #facc15;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  #sidebar {
+    width: 300px;
+    min-width: 300px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  #sidebar-header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  #sidebar-header p {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+  #tree-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  /* Tree */
+  .tree-node {
+    user-select: none;
+  }
+  .tree-row {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    gap: 6px;
+    font-size: 13px;
+    transition: background 0.1s;
+  }
+  .tree-row:hover {
+    background: rgba(233, 69, 96, 0.1);
+  }
+  .tree-row.active {
+    background: rgba(233, 69, 96, 0.2);
+    color: var(--accent);
+  }
+  .tree-toggle {
+    width: 16px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text2);
+    flex-shrink: 0;
+  }
+  .tree-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .tree-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tree-badge {
+    font-size: 10px;
+    background: var(--surface2);
+    padding: 1px 5px;
+    border-radius: 8px;
+    color: var(--text2);
+  }
+  .tree-children {
+    margin-left: 16px;
+  }
+  .tree-children.collapsed {
+    display: none;
+  }
+
+  /* Main area */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Breadcrumb */
+  #breadcrumb {
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  .crumb {
+    color: var(--text2);
+    cursor: pointer;
+    transition: color 0.1s;
+  }
+  .crumb:hover { color: var(--accent); }
+  .crumb.current { color: var(--text); font-weight: 600; }
+  .crumb-sep { color: var(--text2); opacity: 0.5; }
+
+  /* Tabs */
+  #tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+  }
+  .tab {
+    padding: 10px 20px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text2);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* Content */
+  #content {
+    flex: 1;
+    overflow: auto;
+    padding: 20px;
+  }
+
+  /* Info panel */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .info-card h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+  .info-card .value {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .info-card .sub {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  /* ASCII view */
+  #ascii-view {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow: auto;
+  }
+  #ascii-grid {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.35;
+    white-space: pre;
+    letter-spacing: 1px;
+  }
+  #ascii-legend {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    background: var(--bg);
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .legend-item:hover {
+    background: var(--surface2);
+  }
+  .legend-char {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-weight: bold;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    font-size: 14px;
+  }
+
+  /* Children table */
+  .children-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .children-table th {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--border);
+    color: var(--text2);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .children-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .children-table tr {
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .children-table tr:hover {
+    background: rgba(233, 69, 96, 0.08);
+  }
+  .obj-char {
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+  }
+  .tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--accent2);
+    color: var(--text);
+    margin-right: 4px;
+  }
+  .zoomable-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(74, 222, 128, 0.2);
+    color: var(--green);
+  }
+
+  /* Grid canvas view */
+  #grid-canvas-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow: auto;
+  }
+  #grid-canvas {
+    image-rendering: pixelated;
+    border: 1px solid var(--border);
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text2);
+  }
+  .empty-state h2 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  /* Refresh button */
+  #refresh-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+    transition: transform 0.1s;
+    z-index: 100;
+  }
+  #refresh-btn:hover { transform: scale(1.05); }
+  #refresh-btn:active { transform: scale(0.95); }
+
+  /* Auto-refresh indicator */
+  #auto-refresh {
+    position: fixed;
+    bottom: 20px;
+    right: 140px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+    z-index: 100;
+  }
+  #auto-refresh label { cursor: pointer; }
+
+  /* Color palette for ASCII chars */
+  .c-hash { color: #8b8b8b; }
+  .c-dot { color: #3a3a4a; }
+  .c-A { color: #e94560; }
+  .c-B { color: #4ade80; }
+  .c-C { color: #60a5fa; }
+  .c-D { color: #facc15; }
+  .c-E { color: #c084fc; }
+  .c-F { color: #fb923c; }
+  .c-G { color: #2dd4bf; }
+  .c-H { color: #a78bfa; }
+  .c-S { color: #f472b6; }
+  .c-W { color: #38bdf8; }
+  .c-T { color: #4ade80; }
+  .c-K { color: #fbbf24; }
+  .c-default { color: #e0e0e0; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div id="sidebar-header">
+    <h1>MapCraft</h1>
+    <p>Map Explorer</p>
+  </div>
+  <div id="tree-container">
+    <div id="tree"></div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="breadcrumb"></div>
+  <div id="tabs">
+    <div class="tab active" data-tab="overview" onclick="switchTab('overview')">Přehled</div>
+    <div class="tab" data-tab="ascii" onclick="switchTab('ascii')">ASCII Plánek</div>
+    <div class="tab" data-tab="grid" onclick="switchTab('grid')">Grafický plánek</div>
+    <div class="tab" data-tab="objects" onclick="switchTab('objects')">Objekty</div>
+  </div>
+  <div id="content">
+    <div class="empty-state">
+      <h2>Žádná mapa</h2>
+      <p>Použij MCP server k vytvoření mapy (init_space)</p>
+    </div>
+  </div>
+</div>
+
+<button id="refresh-btn" onclick="refresh()">Obnovit</button>
+<div id="auto-refresh">
+  <input type="checkbox" id="auto-refresh-check" checked>
+  <label for="auto-refresh-check">Auto (2s)</label>
+</div>
+
+<script>
+const API = '';
+let currentPath = '/';
+let currentTab = 'overview';
+let treeData = null;
+let nodeData = null;
+let expandedPaths = new Set(['/']);
+
+// Color map for chars
+const CHAR_COLORS = {
+  '#': '#8b8b8b', '.': '#3a3a4a',
+  'A': '#e94560', 'B': '#4ade80', 'C': '#60a5fa',
+  'D': '#facc15', 'E': '#c084fc', 'F': '#fb923c',
+  'G': '#2dd4bf', 'H': '#a78bfa', 'I': '#f87171',
+  'S': '#f472b6', 'W': '#38bdf8', 'T': '#4ade80',
+  'K': '#fbbf24', 'L': '#34d399', 'M': '#a3e635',
+  'R': '#fb7185', 'P': '#c4b5fd',
+  '0': '#94a3b8', '1': '#64748b', '2': '#78716c',
+  '3': '#a1a1aa', '4': '#9ca3af', '5': '#a8a29e',
+  '6': '#d6d3d1', '7': '#e7e5e4', '8': '#d4d4d8', '9': '#e5e7eb',
+};
+
+function getCharColor(ch) {
+  return CHAR_COLORS[ch] || '#e0e0e0';
+}
+
+async function fetchTree() {
+  try {
+    const res = await fetch(`${API}/api/tree`);
+    treeData = await res.json();
+    renderTree();
+  } catch (e) {
+    document.getElementById('tree').innerHTML = '<p style="padding:16px;color:#a0a0b0">Nelze se připojit k serveru</p>';
+  }
+}
+
+async function fetchNode(path) {
+  try {
+    const res = await fetch(`${API}/api/node?path=${encodeURIComponent(path)}`);
+    nodeData = await res.json();
+    renderContent();
+  } catch (e) {
+    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Chyba</h2><p>Nelze načíst data</p></div>';
+  }
+}
+
+function navigateTo(path) {
+  currentPath = path;
+  // Expand all parents
+  const parts = path.split('/').filter(Boolean);
+  let p = '';
+  expandedPaths.add('/');
+  for (const part of parts) {
+    p = p ? `${p}/${part}` : part;
+    expandedPaths.add(p);
+  }
+  fetchNode(path);
+  renderTree();
+}
+
+function renderTree() {
+  if (!treeData || treeData.error) {
+    document.getElementById('tree').innerHTML = `<p style="padding:16px;color:var(--text2)">${treeData?.error || 'Žádná data'}</p>`;
+    return;
+  }
+  document.getElementById('tree').innerHTML = renderTreeNode(treeData);
+}
+
+function renderTreeNode(node) {
+  const hasChildren = node.children && node.children.length > 0;
+  const isExpanded = expandedPaths.has(node.path);
+  const isActive = currentPath === node.path;
+  const icon = node.hasGrid ? (hasChildren ? '📦' : '📋') : '🔹';
+
+  let html = '<div class="tree-node">';
+  html += `<div class="tree-row ${isActive ? 'active' : ''}" onclick="treeClick(event, '${node.path}', ${hasChildren})">`;
+  html += `<span class="tree-toggle">${hasChildren ? (isExpanded ? '▼' : '▶') : '·'}</span>`;
+  html += `<span class="tree-icon">${icon}</span>`;
+  html += `<span class="tree-name">${escHtml(node.name)}</span>`;
+  if (node.childCount > 0) {
+    html += `<span class="tree-badge">${node.childCount}</span>`;
+  }
+  html += '</div>';
+
+  if (hasChildren) {
+    html += `<div class="tree-children ${isExpanded ? '' : 'collapsed'}">`;
+    for (const child of node.children) {
+      html += renderTreeNode(child);
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function treeClick(e, path, hasChildren) {
+  e.stopPropagation();
+  if (hasChildren) {
+    if (expandedPaths.has(path)) expandedPaths.delete(path);
+    else expandedPaths.add(path);
+  }
+  navigateTo(path);
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  renderContent();
+}
+
+function renderContent() {
+  if (!nodeData || nodeData.error) {
+    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2></div>';
+    return;
+  }
+
+  renderBreadcrumb();
+
+  switch (currentTab) {
+    case 'overview': renderOverview(); break;
+    case 'ascii': renderAscii(); break;
+    case 'grid': renderGrid(); break;
+    case 'objects': renderObjects(); break;
+  }
+}
+
+function renderBreadcrumb() {
+  const bc = document.getElementById('breadcrumb');
+  const parts = currentPath === '/' ? [] : currentPath.split('/').filter(Boolean);
+
+  let html = `<span class="crumb ${parts.length === 0 ? 'current' : ''}" onclick="navigateTo('/')">🏠 Root</span>`;
+
+  let path = '';
+  for (let i = 0; i < parts.length; i++) {
+    path = path ? `${path}/${parts[i]}` : parts[i];
+    html += '<span class="crumb-sep">/</span>';
+    html += `<span class="crumb ${i === parts.length - 1 ? 'current' : ''}" onclick="navigateTo('${path}')">${escHtml(parts[i])}</span>`;
+  }
+
+  bc.innerHTML = html;
+}
+
+function renderOverview() {
+  const d = nodeData;
+  let html = '<div class="info-grid">';
+
+  html += infoCard('Název', d.name, d.description || '');
+  html += infoCard('Znak', `<span style="font-family:monospace;font-size:28px;color:${getCharColor(d.char)}">${escHtml(d.char || '-')}</span>`, '');
+
+  if (d.grid) {
+    html += infoCard('Mřížka', `${d.grid.width} × ${d.grid.height}`, `${d.grid.cell_size}m na buňku`);
+    const totalArea = d.grid.width * d.grid.height * d.grid.cell_size * d.grid.cell_size;
+    html += infoCard('Plocha', `${totalArea.toFixed(0)} m²`, `${d.grid.width * d.grid.cell_size}m × ${d.grid.height * d.grid.cell_size}m`);
+  }
+
+  html += infoCard('Objekty', d.children.length.toString(), d.children.length > 0 ? 'Klikni na "Objekty" pro detail' : 'Prázdný prostor');
+
+  if (d.tags && d.tags.length > 0) {
+    html += infoCard('Tagy', d.tags.map(t => `<span class="tag">${escHtml(t)}</span>`).join(' '), '');
+  }
+
+  html += '</div>';
+
+  // Quick ASCII preview
+  if (d.grid && d.ascii && d.ascii.length > 0) {
+    html += '<h3 style="margin-bottom:12px;font-size:14px;color:var(--text2)">Náhled</h3>';
+    html += '<div id="ascii-view" style="max-height:400px;overflow:auto">';
+    html += `<div id="ascii-grid">${colorizeAscii(d.ascii)}</div>`;
+    if (d.legend.length > 0) {
+      html += '<div id="ascii-legend">';
+      for (const l of d.legend) {
+        const color = getCharColor(l.char);
+        const childPath = currentPath === '/' ? l.id : `${currentPath}/${l.id}`;
+        html += `<div class="legend-item" onclick="navigateTo('${childPath}')">`;
+        html += `<span class="legend-char" style="background:${color}22;color:${color}">${escHtml(l.char)}</span>`;
+        html += `<span>${escHtml(l.id)} — ${escHtml(l.name)}</span>`;
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function renderAscii() {
+  const d = nodeData;
+  if (!d.grid || !d.ascii) {
+    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná mřížka</h2><p>Tento objekt nemá vnitřní prostor</p></div>';
+    return;
+  }
+
+  let html = '<div id="ascii-view">';
+
+  // Header with numbers
+  const w = d.grid.width;
+  if (w <= 120) {
+    let tens = '    ';
+    let ones = '    ';
+    for (let i = 0; i < w; i++) {
+      tens += i >= 10 ? Math.floor(i / 10).toString() : ' ';
+      ones += (i % 10).toString();
+    }
+    html += `<div id="ascii-grid"><span style="color:var(--text2)">${tens}\n${ones}</span>\n`;
+  } else {
+    html += '<div id="ascii-grid">';
+  }
+
+  for (let r = 0; r < d.ascii.length; r++) {
+    const label = `<span style="color:var(--text2)">${r.toString().padStart(3)} </span>`;
+    html += label + colorizeAsciiLine(d.ascii[r]) + '\n';
+  }
+
+  html += '</div>';
+
+  if (d.legend.length > 0) {
+    html += '<div id="ascii-legend">';
+    for (const l of d.legend) {
+      const color = getCharColor(l.char);
+      const childPath = currentPath === '/' ? l.id : `${currentPath}/${l.id}`;
+      html += `<div class="legend-item" onclick="navigateTo('${childPath}')">`;
+      html += `<span class="legend-char" style="background:${color}22;color:${color}">${escHtml(l.char)}</span>`;
+      html += `<span>${escHtml(l.id)} — ${escHtml(l.name)}</span>`;
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function renderGrid() {
+  const d = nodeData;
+  if (!d.grid || !d.ascii) {
+    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná mřížka</h2></div>';
+    return;
+  }
+
+  const cellSize = Math.max(4, Math.min(24, Math.floor(800 / Math.max(d.grid.width, d.grid.height))));
+  const canvasW = d.grid.width * cellSize;
+  const canvasH = d.grid.height * cellSize;
+
+  let html = '<div id="grid-canvas-container">';
+  html += `<p style="margin-bottom:12px;font-size:12px;color:var(--text2)">Grafický pohled — ${d.grid.width}×${d.grid.height} buněk, ${cellSize}px/buňka</p>`;
+  html += `<canvas id="grid-canvas" width="${canvasW}" height="${canvasH}"></canvas>`;
+
+  if (d.legend.length > 0) {
+    html += '<div id="ascii-legend" style="margin-top:12px">';
+    for (const l of d.legend) {
+      const color = getCharColor(l.char);
+      const childPath = currentPath === '/' ? l.id : `${currentPath}/${l.id}`;
+      html += `<div class="legend-item" onclick="navigateTo('${childPath}')">`;
+      html += `<span class="legend-char" style="background:${color};color:#000">${escHtml(l.char)}</span>`;
+      html += `<span>${escHtml(l.id)} — ${escHtml(l.name)}</span>`;
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  // Draw on canvas
+  const canvas = document.getElementById('grid-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, canvasW, canvasH);
+
+  for (let r = 0; r < d.ascii.length; r++) {
+    for (let c = 0; c < d.ascii[r].length; c++) {
+      const ch = d.ascii[r][c];
+      if (ch !== '.') {
+        ctx.fillStyle = getCharColor(ch) || '#e0e0e0';
+        ctx.fillRect(c * cellSize, r * cellSize, cellSize - 1, cellSize - 1);
+      } else {
+        ctx.fillStyle = '#222235';
+        ctx.fillRect(c * cellSize, r * cellSize, cellSize - 1, cellSize - 1);
+      }
+    }
+  }
+
+  // Grid lines if cells are large enough
+  if (cellSize >= 8) {
+    ctx.strokeStyle = '#2a2a3a';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= canvasW; x += cellSize) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvasH); ctx.stroke();
+    }
+    for (let y = 0; y <= canvasH; y += cellSize) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvasW, y); ctx.stroke();
+    }
+  }
+
+  // Labels if cells large enough
+  if (cellSize >= 14) {
+    ctx.font = `${Math.min(cellSize - 2, 12)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let r = 0; r < d.ascii.length; r++) {
+      for (let c = 0; c < d.ascii[r].length; c++) {
+        const ch = d.ascii[r][c];
+        if (ch !== '.') {
+          ctx.fillStyle = '#000';
+          ctx.fillText(ch, c * cellSize + cellSize / 2, r * cellSize + cellSize / 2);
+        }
+      }
+    }
+  }
+
+  // Click to navigate
+  canvas.onclick = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = Math.floor((e.clientX - rect.left) / cellSize);
+    const cy = Math.floor((e.clientY - rect.top) / cellSize);
+    if (cy >= 0 && cy < d.ascii.length && cx >= 0 && cx < d.ascii[cy].length) {
+      const ch = d.ascii[cy][cx];
+      if (ch !== '.') {
+        const obj = d.children.find(c => c.char === ch);
+        if (obj && obj.hasGrid) {
+          const childPath = currentPath === '/' ? obj.id : `${currentPath}/${obj.id}`;
+          navigateTo(childPath);
+        }
+      }
+    }
+  };
+  canvas.style.cursor = 'pointer';
+}
+
+function renderObjects() {
+  const d = nodeData;
+  if (d.children.length === 0) {
+    document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádné objekty</h2><p>Tento prostor je prázdný</p></div>';
+    return;
+  }
+
+  let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">';
+  html += '<table class="children-table">';
+  html += '<thead><tr><th>Znak</th><th>ID</th><th>Název</th><th>Pozice</th><th>Rozměry</th><th>Typ</th><th>Tagy</th></tr></thead>';
+  html += '<tbody>';
+
+  for (const c of d.children) {
+    const childPath = currentPath === '/' ? c.id : `${currentPath}/${c.id}`;
+    const color = getCharColor(c.char);
+    html += `<tr onclick="navigateTo('${childPath}')">`;
+    html += `<td><span class="obj-char" style="background:${color}22;color:${color}">${escHtml(c.char)}</span></td>`;
+    html += `<td><code>${escHtml(c.id)}</code></td>`;
+    html += `<td>${escHtml(c.name)}</td>`;
+    html += `<td>(${c.x}, ${c.y})</td>`;
+    html += `<td>${c.width}×${c.height}</td>`;
+    html += `<td>${c.hasGrid ? `<span class="zoomable-badge">zoomable ${c.gridSize}</span>` : 'leaf'}</td>`;
+    html += `<td>${(c.tags || []).map(t => `<span class="tag">${escHtml(t)}</span>`).join('')}</td>`;
+    html += '</tr>';
+  }
+
+  html += '</tbody></table></div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function colorizeAscii(lines) {
+  return lines.map(l => colorizeAsciiLine(l)).join('\n');
+}
+
+function colorizeAsciiLine(line) {
+  let html = '';
+  for (const ch of line) {
+    const color = getCharColor(ch);
+    html += `<span style="color:${color}">${escHtml(ch)}</span>`;
+  }
+  return html;
+}
+
+function infoCard(title, value, sub) {
+  return `<div class="info-card"><h3>${title}</h3><div class="value">${value}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function refresh() {
+  await fetchTree();
+  await fetchNode(currentPath);
+}
+
+// Auto-refresh
+setInterval(() => {
+  if (document.getElementById('auto-refresh-check').checked) {
+    refresh();
+  }
+}, 2000);
+
+// Initial load
+refresh();
+</script>
+</body>
+</html>
