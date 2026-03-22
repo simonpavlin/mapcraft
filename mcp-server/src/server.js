@@ -550,9 +550,16 @@ server.tool(
 
 server.tool(
   'export_json',
-  'Export entire map as JSON',
-  {},
-  async () => ok(JSON.stringify(store.exportJSON(), null, 2))
+  'Export map as JSON. Optionally filter by path and/or tag (recursive — keeps parent containers that have matching descendants).',
+  {
+    path: z.string().optional().describe('Path to export from (default: root)'),
+    tag: z.string().optional().describe('Only include objects with this tag (recursive filter)'),
+  },
+  async ({ path, tag }) => {
+    const result = store.exportJSON(path, tag);
+    if (!result) return err('Path not found');
+    return ok(JSON.stringify(result, null, 2));
+  }
 );
 
 // ──────────────────────────────────────────────

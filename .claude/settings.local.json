@@ -18,7 +18,9 @@
       "mcp__mapcraft__get_objects",
       "mcp__mapcraft__update_object",
       "WebFetch(domain:www.archtoolbox.com)",
-      "WebFetch(domain:www.livehome3d.com)"
+      "WebFetch(domain:www.livehome3d.com)",
+      "mcp__mapcraft__export_json",
+      "Bash(npx vite:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

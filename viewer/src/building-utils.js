@@ -412,6 +412,144 @@ export function addUTurnStairs(group, opts) {
 }
 
 // ════════════════════════════════════════════════
+// BOX WITH OPENINGS — 3D generalization of wallWithOpenings
+// ════════════════════════════════════════════════
+
+/**
+ * Build a 3D box with rectangular openings cut out of any face.
+ * Each face is treated as a 2D grid (like wallWithOpenings) and
+ * only solid segments are generated. This replaces the broken
+ * pattern of placing a smaller box inside a larger one (which
+ * is invisible in Three.js because the outer box occludes it).
+ *
+ * Use cases: fireplace with open front, floor with stairwell hole,
+ * cabinet with door opening, any solid with cutouts.
+ *
+ * @param {THREE.Group} group
+ * @param {object} opts
+ * @param {number} opts.x - box origin X (left)
+ * @param {number} opts.y - box origin Y (bottom)
+ * @param {number} opts.z - box origin Z (front)
+ * @param {number} opts.width - size along X
+ * @param {number} opts.height - size along Y
+ * @param {number} opts.depth - size along Z
+ * @param {THREE.Material} opts.material
+ * @param {Array} opts.openings - array of opening specs:
+ *   {
+ *     face: 'front'|'back'|'left'|'right'|'top'|'bottom',
+ *     start: number,   // position along face width (0 = left/front edge)
+ *     end: number,     // end position along face width
+ *     bottom: number,  // position along face height from bottom (default 0)
+ *     top: number,     // end position along face height (default = face height)
+ *   }
+ *
+ * Face coordinate systems:
+ *   front  (z=min): width=X(0..w),  height=Y(0..h)
+ *   back   (z=max): width=X(0..w),  height=Y(0..h)
+ *   left   (x=min): width=Z(0..d),  height=Y(0..h)
+ *   right  (x=max): width=Z(0..d),  height=Y(0..h)
+ *   top    (y=max): width=X(0..w),  height=Z(0..d)
+ *   bottom (y=min): width=X(0..w),  height=Z(0..d)
+ */
+export function boxWithOpenings(group, opts) {
+  const {
+    x, y, z,
+    width: W, height: H, depth: D,
+    material = MAT.wallOuter,
+    openings = []
+  } = opts;
+
+  // Group openings by face
+  const faceOpenings = { front: [], back: [], left: [], right: [], top: [], bottom: [] };
+  for (const op of openings) {
+    if (faceOpenings[op.face]) faceOpenings[op.face].push(op);
+  }
+
+  // Face definitions: [faceWidth, faceHeight, buildSegment function]
+  const faces = {
+    front:  { fw: W, fh: H, build: (s, e, b, t) => _seg(group, x+s+(e-s)/2, y+b+(t-b)/2, z,           e-s, t-b, 0.001, material) },
+    back:   { fw: W, fh: H, build: (s, e, b, t) => _seg(group, x+s+(e-s)/2, y+b+(t-b)/2, z+D,         e-s, t-b, 0.001, material) },
+    left:   { fw: D, fh: H, build: (s, e, b, t) => _seg(group, x,           y+b+(t-b)/2, z+s+(e-s)/2, 0.001, t-b, e-s, material) },
+    right:  { fw: D, fh: H, build: (s, e, b, t) => _seg(group, x+W,         y+b+(t-b)/2, z+s+(e-s)/2, 0.001, t-b, e-s, material) },
+    top:    { fw: W, fh: D, build: (s, e, b, t) => _seg(group, x+s+(e-s)/2, y+H,         z+b+(t-b)/2, e-s, 0.001, t-b, material) },
+    bottom: { fw: W, fh: D, build: (s, e, b, t) => _seg(group, x+s+(e-s)/2, y,           z+b+(t-b)/2, e-s, 0.001, t-b, material) },
+  };
+
+  for (const [faceName, { fw, fh, build }] of Object.entries(faces)) {
+    const ops = faceOpenings[faceName];
+    _buildFaceWithOpenings(fw, fh, ops, build);
+  }
+}
+
+function _buildFaceWithOpenings(faceW, faceH, openings, buildSeg) {
+  if (openings.length === 0) {
+    buildSeg(0, faceW, 0, faceH);
+    return;
+  }
+
+  const hSplits = new Set([0, faceW]);
+  const vSplits = new Set([0, faceH]);
+
+  for (const op of openings) {
+    const s = Math.max(0, op.start);
+    const e = Math.min(faceW, op.end);
+    const b = Math.max(0, op.bottom ?? 0);
+    const t = Math.min(faceH, op.top ?? faceH);
+    hSplits.add(s); hSplits.add(e);
+    vSplits.add(b); vSplits.add(t);
+  }
+
+  const hs = [...hSplits].sort((a, b) => a - b);
+  const vs = [...vSplits].sort((a, b) => a - b);
+
+  for (let hi = 0; hi < hs.length - 1; hi++) {
+    for (let vi = 0; vi < vs.length - 1; vi++) {
+      const cL = hs[hi], cR = hs[hi + 1];
+      const cB = vs[vi], cT = vs[vi + 1];
+      if (cR - cL <= 0.001 || cT - cB <= 0.001) continue;
+
+      let isOpen = false;
+      for (const op of openings) {
+        const os = Math.max(0, op.start);
+        const oe = Math.min(faceW, op.end);
+        const ob = Math.max(0, op.bottom ?? 0);
+        const ot = Math.min(faceH, op.top ?? faceH);
+        if (cL >= os && cR <= oe && cB >= ob && cT <= ot) {
+          isOpen = true;
+          break;
+        }
+      }
+
+      if (!isOpen) buildSeg(cL, cR, cB, cT);
+    }
+  }
+}
+
+function _seg(group, cx, cy, cz, w, h, d, material) {
+  if (w <= 0.001 && d <= 0.001) return;
+  // For face segments, one dimension is ~0 — use plane instead of box for efficiency
+  if (w <= 0.001) {
+    const p = plane(d, h, material);
+    p.rotation.y = Math.PI / 2;
+    p.position.set(cx, cy, cz);
+    group.add(p);
+  } else if (d <= 0.001) {
+    const p = plane(w, h, material);
+    p.position.set(cx, cy, cz);
+    group.add(p);
+  } else if (h <= 0.001) {
+    const p = plane(w, d, material);
+    p.rotation.x = Math.PI / 2;
+    p.position.set(cx, cy, cz);
+    group.add(p);
+  } else {
+    const b = box(w, h, d, material);
+    b.position.set(cx, cy, cz);
+    group.add(b);
+  }
+}
+
+// ════════════════════════════════════════════════
 // FLAT ROOF
 // ════════════════════════════════════════════════
 

@@ -201,6 +201,54 @@ Instead of `// mcp:loznice/postel (1, 0.3) 1.8×2.2` copied by hand:
 - After moving rooms with update_object → re-export to get updated positions
 - NOT needed for simple layouts where you remember the positions
 
+## 3D boxes with openings — `boxWithOpenings`
+
+**NEVER place a box inside another box to create a hole/recess.** The inner box is invisible
+because the outer geometry occludes it. Always use `boxWithOpenings` to cut openings into solid objects.
+
+```js
+import { boxWithOpenings } from './building-utils.js';
+
+// Fireplace — stone block with open front
+boxWithOpenings(group, {
+  x: 0, y: 0.15, z: 2,
+  width: 0.8, height: 1.2, depth: 2,
+  material: stoneMat,
+  openings: [
+    { face: 'front', start: 0.55, end: 1.45, bottom: 0, top: 0.9 }  // firebox opening
+  ]
+});
+
+// Floor with stairwell hole
+boxWithOpenings(group, {
+  x: 0, y: 3, z: 0,
+  width: 12, height: 0.15, depth: 12,
+  material: floorMat,
+  openings: [
+    { face: 'top', start: 8.5, end: 11.5, bottom: 0.5, top: 5.5 }  // stairwell hole
+  ]
+});
+
+// Cabinet with door opening
+boxWithOpenings(group, {
+  x: 2, y: 0, z: 0,
+  width: 1.2, height: 1.8, depth: 0.5,
+  material: woodMat,
+  openings: [
+    { face: 'front', start: 0.1, end: 1.1, bottom: 0.5, top: 1.7 }  // glass door area
+  ]
+});
+```
+
+Face coordinate systems:
+- **front** (z=min) / **back** (z=max): start/end along X, bottom/top along Y
+- **left** (x=min) / **right** (x=max): start/end along Z, bottom/top along Y
+- **top** (y=max) / **bottom** (y=min): start/end along X, bottom/top along Z
+
+### When to use boxWithOpenings vs wallWithOpenings
+- **wallWithOpenings** — thin walls (doors, windows). Already handles 2D grid subtraction.
+- **boxWithOpenings** — thick/solid objects with cutouts (fireplaces, floors with holes, cabinets, arches).
+
 ## Common mistakes to avoid
 1. **Furniture blocking doors** — always plan furniture in MCP first, verify with get_ascii
 2. **Forgetting wall openings** — every door/window needs a matching opening in wallWithOpenings
@@ -208,3 +256,4 @@ Instead of `// mcp:loznice/postel (1, 0.3) 1.8×2.2` copied by hand:
 4. **Window not visible from outside** — use wallWithOpenings to create the hole, then addWindow for glass
 5. **Overlapping rooms on same floor** — verify with check_collision after placing rooms
 6. **Skipping verification** — after each batch of rooms, call check_collision. After furniture, call get_ascii(recursive=true). Skipping these leads to overlaps and blocked doors found only in 3D.
+7. **Box inside box for holes** — NEVER place a smaller box inside a larger box to create a recess (fireplace opening, cabinet door, etc). The inner box is invisible. Use `boxWithOpenings` instead.

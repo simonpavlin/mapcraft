@@ -44,7 +44,7 @@
   .meta-table td { padding:4px 8px; border-bottom:1px solid var(--bd); }
   .meta-table td:first-child { color:var(--ac); font-weight:600; width:120px; }
   #ascii-view { background:var(--sf); border:1px solid var(--bd); border-radius:8px; padding:16px; overflow:auto; }
-  #ascii-grid { font-family:'Cascadia Code','Fira Code','Consolas',monospace; font-size:13px; line-height:1.35; white-space:pre; letter-spacing:1px; }
+  #ascii-grid { font-family:'Cascadia Code','Fira Code','Consolas',monospace; font-size:13px; line-height:1.35; white-space:pre; letter-spacing:0.6em; }
   #ascii-legend,.legend-wrap { margin-top:12px; display:flex; flex-wrap:wrap; gap:8px; }
   .legend-item { display:flex; align-items:center; gap:6px; font-size:12px; background:var(--bg); padding:4px 10px; border-radius:4px; cursor:pointer; }
   .legend-item:hover { background:var(--sf2); }
@@ -61,6 +61,21 @@
   #refresh-btn { position:fixed; bottom:20px; right:20px; background:var(--ac); color:#fff; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; box-shadow:0 4px 12px rgba(233,69,96,.3); z-index:100; }
   #auto-refresh { position:fixed; bottom:20px; right:140px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--tx2); z-index:100; }
   ::-webkit-scrollbar { width:8px; height:8px; } ::-webkit-scrollbar-track { background:var(--bg); } ::-webkit-scrollbar-thumb { background:var(--bd); border-radius:4px; }
+  .view-with-panel { display:flex; gap:16px; align-items:flex-start; }
+  .view-main { flex:1; min-width:0; }
+  #hover-info { width:240px; min-width:240px; background:var(--sf); border:1px solid var(--bd); border-radius:8px; padding:14px; position:sticky; top:0; align-self:flex-start; }
+  #hover-info .hi-empty { color:var(--tx2); font-size:12px; font-style:italic; }
+  #hover-info .hi-char { font-family:monospace; font-weight:bold; font-size:24px; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; margin-bottom:8px; }
+  #hover-info .hi-name { font-weight:600; font-size:14px; color:var(--ac); margin-bottom:4px; }
+  #hover-info .hi-desc { font-size:11px; color:var(--tx2); margin-bottom:8px; }
+  #hover-info .hi-row { font-size:11px; color:var(--tx2); line-height:1.8; }
+  #hover-info .hi-row b { color:var(--tx); font-weight:600; }
+  #hover-info .hi-tags { margin-top:6px; display:flex; flex-wrap:wrap; gap:4px; }
+  #hover-info .hi-meta { margin-top:8px; border-top:1px solid var(--bd); padding-top:8px; }
+  #hover-info .hi-meta-row { font-size:10px; color:var(--tx2); line-height:1.6; }
+  #hover-info .hi-meta-row b { color:var(--tx); }
+  #ascii-grid span.achar { cursor:crosshair; }
+  #ascii-grid span.achar:hover { outline:1px solid var(--ac); outline-offset:-1px; border-radius:1px; }
 </style>
 </head>
 <body>
@@ -81,8 +96,40 @@ const COLORS = {'#':'#8b8b8b','.':'#3a3a4a','A':'#e94560','B':'#4ade80','C':'#60
 function cc(ch) { return COLORS[ch] || '#e0e0e0'; }
 function esc(s) { return s ? s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 
+// Info panel helpers
+function updateInfoPanel(obj) {
+  const el = document.getElementById('hover-info');
+  if (!el) return;
+  if (!obj) { el.innerHTML = '<div class="hi-empty">Najeď na objekt</div>'; return; }
+  const color = cc(obj.char);
+  let h = `<div class="hi-char" style="background:${color}22;color:${color}">${esc(obj.char)}</div>`;
+  h += `<div class="hi-name">${esc(obj.name)}</div>`;
+  if (obj.description) h += `<div class="hi-desc">${esc(obj.description)}</div>`;
+  h += `<div class="hi-row"><b>ID:</b> ${esc(obj.id)}</div>`;
+  h += `<div class="hi-row"><b>Pozice:</b> (${obj.x}, ${obj.y})</div>`;
+  h += `<div class="hi-row"><b>Rozměry:</b> ${obj.width} × ${obj.height}m</div>`;
+  h += `<div class="hi-row"><b>Plocha:</b> ${(obj.width * obj.height).toFixed(0)} m²</div>`;
+  if (obj.tags?.length) {
+    h += '<div class="hi-tags">';
+    for (const t of obj.tags) h += `<span class="tag">${esc(t)}</span>`;
+    h += '</div>';
+  }
+  const meta = obj.metadata || {};
+  if (Object.keys(meta).length > 0) {
+    h += '<div class="hi-meta">';
+    for (const [k,v] of Object.entries(meta)) h += `<div class="hi-meta-row"><b>${esc(k)}:</b> ${esc(typeof v === 'object' ? JSON.stringify(v) : v)}</div>`;
+    h += '</div>';
+  }
+  el.innerHTML = h;
+}
+function buildCharLookup() {
+  const map = {};
+  for (const c of (nodeData?.children || [])) { map[c.char] = c; }
+  return map;
+}
+
 let currentPath = '/', currentTab = 'overview', treeData = null, nodeData = null;
-let expandedPaths = new Set(['/']), selectedFloor = null;
+let expandedPaths = new Set(['/']), selectedFloor = null, selectedFloorData = null;
 
 async function fetchTree() {
   try { treeData = await (await fetch('/api/tree')).json(); renderTree(); } catch {}
@@ -91,14 +138,17 @@ async function fetchNode(path) {
   try {
     nodeData = await (await fetch(`/api/node?path=${encodeURIComponent(path)}`)).json();
     // Auto-select first floor if floors detected and none selected
-    if (nodeData.floors?.length > 0 && !selectedFloor) selectedFloor = nodeData.floors[0].id;
+    if (nodeData.floors?.length > 0 && !selectedFloor) {
+      await selectFloor(nodeData.floors[0].id);
+      return; // selectFloor calls renderContent
+    }
     renderContent();
   } catch {}
 }
 let navHistory = ['/'];
 function navigateTo(path) {
   if (currentPath !== path) navHistory.push(currentPath);
-  currentPath = path; selectedFloor = null;
+  currentPath = path; selectedFloor = null; selectedFloorData = null;
   const parts = path.split('/').filter(Boolean);
   let p = ''; expandedPaths.add('/');
   for (const part of parts) { p = p ? `${p}/${part}` : part; expandedPaths.add(p); }
@@ -134,7 +184,19 @@ function renderTreeNode(n) {
   return h + '</div>';
 }
 function switchTab(t) { currentTab = t; renderContent(); }
-function selectFloor(id) { selectedFloor = id; renderContent(); }
+async function selectFloor(id) {
+  selectedFloor = id;
+  if (id) {
+    const floorPath = currentPath === '/' ? id : `${currentPath}/${id}`;
+    try {
+      const res = await fetch(`/api/node?path=${encodeURIComponent(floorPath)}`);
+      selectedFloorData = await res.json();
+    } catch { selectedFloorData = null; }
+  } else {
+    selectedFloorData = null;
+  }
+  renderContent();
+}
 // Helper: draw a single floor plan on a canvas context
 function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, PAD, shapePath) {
   // Parent outline
@@ -284,14 +346,24 @@ function renderOverview() {
 function renderAscii() {
   const d = nodeData;
   if (!d.ascii?.length) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2></div>'; return; }
-  let h = '<div id="ascii-view">';
+  let h = '<div class="view-with-panel"><div class="view-main"><div id="ascii-view">';
   if (d.scaleInfo) h += `<p style="margin-bottom:8px;font-size:11px;color:var(--tx2)">${esc(d.scaleInfo)}</p>`;
   h += '<div id="ascii-grid">';
   for (let r = 0; r < d.ascii.length; r++) {
     h += `<span style="color:var(--tx2)">${r.toString().padStart(3)} </span>${colorizeAsciiLine(d.ascii[r])}\n`;
   }
-  h += '</div>' + renderLegend(d.legend) + '</div>';
+  h += '</div>' + renderLegend(d.legend) + '</div></div>';
+  h += '<div id="hover-info"><div class="hi-empty">Najeď na objekt</div></div></div>';
   document.getElementById('content').innerHTML = h;
+  const charLookup = buildCharLookup();
+  const grid = document.getElementById('ascii-grid');
+  if (grid) {
+    grid.addEventListener('mousemove', (e) => {
+      const span = e.target.closest('.achar');
+      updateInfoPanel(span ? charLookup[span.dataset.char] : null);
+    });
+    grid.addEventListener('mouseleave', () => updateInfoPanel(null));
+  }
 }
 
 function renderFloorplan() {
@@ -317,20 +389,13 @@ function renderFloorplan() {
   const hasFloors = floors && floors.length > 0;
 
   // Determine what to show
-  let children, descendants;
-  if (hasFloors && selectedFloor) {
-    const floorObj = allChildren.find(c => c.id === selectedFloor);
-    children = allDescendants.filter(dc => dc._rootParentId === selectedFloor && dc._depth === 1).map(dc => ({
-      ...dc,
-      x: dc.x - (floorObj ? floorObj.x : 0),
-      y: dc.y - (floorObj ? floorObj.y : 0),
-    }));
-    descendants = allDescendants.filter(dc => dc._rootParentId === selectedFloor && dc._depth > 1).map(dc => ({
-      ...dc,
-      x: dc.x - (floorObj ? floorObj.x : 0),
-      y: dc.y - (floorObj ? floorObj.y : 0),
-      _depth: dc._depth - 1,
-    }));
+  let children, descendants, viewWidth = d.width, viewHeight = d.height;
+  if (hasFloors && selectedFloor && selectedFloorData) {
+    // Use directly fetched floor data
+    children = selectedFloorData.children || [];
+    descendants = selectedFloorData.descendants || [];
+    viewWidth = selectedFloorData.width || d.width;
+    viewHeight = selectedFloorData.height || d.height;
   } else {
     children = allChildren;
     descendants = allDescendants;
@@ -339,18 +404,19 @@ function renderFloorplan() {
   if (children.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Prázdný prostor</h2></div>'; return; }
 
   const PAD = 40, maxW = 900, maxH = 600;
-  const pw = d.width || 1, ph = d.height || 1;
-  const scale = Math.min((maxW - PAD*2) / pw, (maxH - PAD*2) / ph);
-  const cw = Math.ceil(pw * scale + PAD*2), ch = Math.ceil(ph * scale + PAD*2);
+  const vpw = viewWidth, vph = viewHeight;
+  const scale = Math.min((maxW - PAD*2) / vpw, (maxH - PAD*2) / vph);
+  const cw = Math.ceil(vpw * scale + PAD*2), ch = Math.ceil(vph * scale + PAD*2);
 
   const floorLabel = hasFloors && selectedFloor ? ` — ${floors.find(f=>f.id===selectedFloor)?.name || selectedFloor}` : '';
-  let h = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow:auto">';
-  h += `<p style="margin-bottom:8px;font-size:12px;color:var(--tx2)">Půdorys — ${pw}m × ${ph}m${floorLabel}</p>`;
-  h += `<canvas id="fp-canvas" width="${cw}" height="${ch}" style="border:1px solid var(--bd);border-radius:4px;cursor:pointer"></canvas>`;
+  let h = '<div class="view-with-panel"><div class="view-main"><div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow:auto">';
+  h += `<p style="margin-bottom:8px;font-size:12px;color:var(--tx2)">Půdorys — ${vpw}m × ${vph}m${floorLabel}</p>`;
+  h += `<canvas id="fp-canvas" width="${cw}" height="${ch}" style="border:1px solid var(--bd);border-radius:4px;cursor:crosshair"></canvas>`;
   if (descendants.length > 0) {
     h += `<p style="margin-top:8px;font-size:11px;color:var(--tx2)"><span style="display:inline-block;width:12px;height:12px;border:2px solid var(--ac);opacity:.6;vertical-align:middle;margin-right:4px"></span> přímé objekty &nbsp; <span style="display:inline-block;width:12px;height:12px;border:1px dashed var(--tx2);opacity:.6;vertical-align:middle;margin-right:4px"></span> vnořené objekty</p>`;
   }
-  h += '</div>';
+  h += '</div></div>';
+  h += '<div id="hover-info"><div class="hi-empty">Najeď na objekt</div></div></div>';
   document.getElementById('content').innerHTML = h;
 
   const canvas = document.getElementById('fp-canvas');
@@ -358,12 +424,12 @@ function renderFloorplan() {
   ctx.fillStyle = '#1a1a2e';
   ctx.fillRect(0, 0, cw, ch);
 
-  drawFloorContent(ctx, children, descendants, pw, ph, scale, PAD, shapePath);
+  drawFloorContent(ctx, children, descendants, vpw, vph, scale, PAD, shapePath);
 
   // Dimension labels
   ctx.fillStyle = '#606080'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  ctx.fillText(`${pw}m`, PAD+pw*scale/2, PAD+ph*scale+6);
-  ctx.save(); ctx.translate(PAD-8, PAD+ph*scale/2); ctx.rotate(-Math.PI/2); ctx.textBaseline = 'bottom'; ctx.fillText(`${ph}m`, 0, 0); ctx.restore();
+  ctx.fillText(`${vpw}m`, PAD+vpw*scale/2, PAD+vph*scale+6);
+  ctx.save(); ctx.translate(PAD-8, PAD+vph*scale/2); ctx.rotate(-Math.PI/2); ctx.textBaseline = 'bottom'; ctx.fillText(`${vph}m`, 0, 0); ctx.restore();
 
   canvas.onclick = (e) => {
     const rect = canvas.getBoundingClientRect();
@@ -377,6 +443,23 @@ function renderFloorplan() {
     }
     if (best) navigateTo(currentPath === '/' ? best.id : `${currentPath}/${best.id}`);
   };
+
+  // Info panel on hover
+  const allObjects = [...children, ...descendants];
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const wx = (e.clientX - rect.left - PAD) / scale, wy = (e.clientY - rect.top - PAD) / scale;
+    let best = null, bestArea = Infinity;
+    for (const c of allObjects) {
+      if (wx >= c.x && wx <= c.x + c.width && wy >= c.y && wy <= c.y + c.height) {
+        const area = c.width * c.height;
+        if (area < bestArea) { best = c; bestArea = area; }
+      }
+    }
+    updateInfoPanel(best);
+    canvas.style.cursor = best ? 'pointer' : 'crosshair';
+  });
+  canvas.addEventListener('mouseleave', () => { updateInfoPanel(null); canvas.style.cursor = 'crosshair'; });
 }
 
 function renderObjects() {
@@ -405,7 +488,17 @@ function renderObjects() {
 }
 
 function colorizeAscii(lines) { return lines.map(l => colorizeAsciiLine(l)).join('\n'); }
-function colorizeAsciiLine(line) { let h = ''; for (const ch of line) h += `<span style="color:${cc(ch)}">${esc(ch)}</span>`; return h; }
+function colorizeAsciiLine(line) {
+  let h = '';
+  for (const ch of line) {
+    if (ch !== '.' && ch !== '#' && ch !== ' ') {
+      h += `<span class="achar" data-char="${esc(ch)}" style="color:${cc(ch)}">${esc(ch)}</span>`;
+    } else {
+      h += `<span style="color:${cc(ch)}">${esc(ch)}</span>`;
+    }
+  }
+  return h;
+}
 function renderLegend(legend) {
   if (!legend?.length) return '';
   let h = '<div class="legend-wrap">';

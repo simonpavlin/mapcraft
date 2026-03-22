@@ -133,7 +133,7 @@ const server = http.createServer((req, res) => {
     const root = loadMap();
     const path = url.searchParams.get('path') || '/';
     const node = resolveNode(root, path);
-    if (!node) { res.writeHead(404); return json(res, { error: `Not found: ${path}` }); }
+    if (!node) { return json(res, { error: `Not found: ${path}` }, 404); }
 
     const maxCols = parseInt(url.searchParams.get('cols')) || 60;
     const maxRows = parseInt(url.searchParams.get('rows')) || 30;
@@ -190,8 +190,8 @@ const server = http.createServer((req, res) => {
   res.end('Not found');
 });
 
-function json(res, data) {
-  res.writeHead(200, { 'Content-Type': 'application/json' });
+function json(res, data, status = 200) {
+  res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(data, null, 2));
 }
 

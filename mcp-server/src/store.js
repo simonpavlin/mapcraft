@@ -131,7 +131,31 @@ export class MapStore {
     };
   }
 
-  exportJSON() { return this.root; }
+  exportJSON(path, tag) {
+    const node = this.resolve(path || '/');
+    if (!node) return null;
+    if (!tag) return node;
+    return this._filterByTag(node, tag);
+  }
+
+  _filterByTag(node, tag) {
+    const filtered = { ...node };
+    if (node.children) {
+      const newChildren = {};
+      for (const [id, child] of Object.entries(node.children)) {
+        if ((child.tags || []).includes(tag)) {
+          newChildren[id] = child;
+        } else if (child.children) {
+          const sub = this._filterByTag(child, tag);
+          if (sub.children && Object.keys(sub.children).length > 0) {
+            newChildren[id] = sub;
+          }
+        }
+      }
+      filtered.children = newChildren;
+    }
+    return filtered;
+  }
 
   save() {
     writeFileSync(MAP_FILE, JSON.stringify(this.root, null, 2));
