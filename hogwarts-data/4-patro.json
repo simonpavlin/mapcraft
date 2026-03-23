@@ -1,0 +1,349 @@
+{
+  "id": "bradavice_4_patro",
+  "name": "Bradavice - 4. patro",
+  "x": 0,
+  "y": 0,
+  "width": 100,
+  "height": 80,
+  "char": ".",
+  "description": "4th floor: Library with Restricted Section",
+  "tags": [],
+  "metadata": {},
+  "children": {
+    "velke_schodiste": {
+      "id": "velke_schodiste",
+      "name": "Velké schodiště",
+      "x": 38,
+      "y": 20,
+      "width": 10,
+      "height": 25,
+      "char": "T",
+      "description": "",
+      "tags": [
+        "stairs",
+        "structural"
+      ],
+      "metadata": {}
+    },
+    "chodba_hlavni": {
+      "id": "chodba_hlavni",
+      "name": "Hlavní chodba",
+      "x": 10,
+      "y": 16,
+      "width": 55,
+      "height": 4,
+      "char": "-",
+      "description": "",
+      "tags": [
+        "corridor"
+      ],
+      "metadata": {}
+    },
+    "chodba_ke_knihovne": {
+      "id": "chodba_ke_knihovne",
+      "name": "Chodba ke knihovně",
+      "x": 55,
+      "y": 4,
+      "width": 4,
+      "height": 12,
+      "char": "|",
+      "description": "",
+      "tags": [
+        "corridor"
+      ],
+      "metadata": {}
+    },
+    "knihovna": {
+      "id": "knihovna",
+      "name": "Knihovna",
+      "x": 59,
+      "y": 2,
+      "width": 25,
+      "height": 15,
+      "char": "L",
+      "description": "",
+      "tags": [
+        "room"
+      ],
+      "metadata": {
+        "staff": "Madam Pince",
+        "description": "Library - thousands of books, Restricted Section behind rope at back"
+      },
+      "children": {
+        "regal_a": {
+          "id": "regal_a",
+          "name": "Regály A",
+          "x": 2,
+          "y": 2,
+          "width": 8,
+          "height": 1,
+          "char": "#",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "regal_b": {
+          "id": "regal_b",
+          "name": "Regály B",
+          "x": 2,
+          "y": 4,
+          "width": 8,
+          "height": 1,
+          "char": "#",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "regal_c": {
+          "id": "regal_c",
+          "name": "Regály C",
+          "x": 2,
+          "y": 6,
+          "width": 8,
+          "height": 1,
+          "char": "#",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "regal_d": {
+          "id": "regal_d",
+          "name": "Regály D",
+          "x": 2,
+          "y": 8,
+          "width": 8,
+          "height": 1,
+          "char": "#",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "regal_e": {
+          "id": "regal_e",
+          "name": "Regály E",
+          "x": 2,
+          "y": 10,
+          "width": 8,
+          "height": 1,
+          "char": "#",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "regal_f": {
+          "id": "regal_f",
+          "name": "Regály F",
+          "x": 2,
+          "y": 12,
+          "width": 8,
+          "height": 1,
+          "char": "#",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "studovni_stoly": {
+          "id": "studovni_stoly",
+          "name": "Studovní stoly",
+          "x": 12,
+          "y": 2,
+          "width": 6,
+          "height": 10,
+          "char": "s",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "Reading tables with chairs"
+          }
+        },
+        "pince_stul": {
+          "id": "pince_stul",
+          "name": "Stůl Madam Pinceové",
+          "x": 12,
+          "y": 0.5,
+          "width": 3,
+          "height": 1.5,
+          "char": "P",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "zakazana_sekce": {
+          "id": "zakazana_sekce",
+          "name": "Zakázaná sekce",
+          "x": 19,
+          "y": 0,
+          "width": 6,
+          "height": 15,
+          "char": "X",
+          "description": "",
+          "tags": [
+            "room"
+          ],
+          "metadata": {
+            "description": "Restricted Section - rope barrier, books that scream when opened"
+          },
+          "children": {}
+        },
+        "clr_hlavni_ulicka": {
+          "id": "clr_hlavni_ulicka",
+          "name": "Hlavní ulička",
+          "x": 10,
+          "y": 0,
+          "width": 2,
+          "height": 15,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        },
+        "clr_mezi_regaly1": {
+          "id": "clr_mezi_regaly1",
+          "name": "Ulička 1",
+          "x": 2,
+          "y": 3,
+          "width": 8,
+          "height": 1,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        },
+        "clr_mezi_regaly2": {
+          "id": "clr_mezi_regaly2",
+          "name": "Ulička 2",
+          "x": 2,
+          "y": 5,
+          "width": 8,
+          "height": 1,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        },
+        "clr_mezi_regaly3": {
+          "id": "clr_mezi_regaly3",
+          "name": "Ulička 3",
+          "x": 2,
+          "y": 7,
+          "width": 8,
+          "height": 1,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        },
+        "clr_mezi_regaly4": {
+          "id": "clr_mezi_regaly4",
+          "name": "Ulička 4",
+          "x": 2,
+          "y": 9,
+          "width": 8,
+          "height": 1,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        },
+        "clr_mezi_regaly5": {
+          "id": "clr_mezi_regaly5",
+          "name": "Ulička 5",
+          "x": 2,
+          "y": 11,
+          "width": 8,
+          "height": 1,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        }
+      }
+    },
+    "neviditelna_ucebna": {
+      "id": "neviditelna_ucebna",
+      "name": "Nepožívaná učebna",
+      "x": 10,
+      "y": 6,
+      "width": 10,
+      "height": 8,
+      "char": "X",
+      "description": "",
+      "tags": [
+        "room"
+      ],
+      "metadata": {
+        "description": "Disused classroom - Mirror of Erised stored here in 1991-92"
+      }
+    },
+    "chodba_zapad": {
+      "id": "chodba_zapad",
+      "name": "Západní chodba",
+      "x": 10,
+      "y": 14,
+      "width": 4,
+      "height": 6,
+      "char": "|",
+      "description": "",
+      "tags": [
+        "corridor"
+      ],
+      "metadata": {}
+    },
+    "clr_hlavni": {
+      "id": "clr_hlavni",
+      "name": "Průchod hlavní chodbou",
+      "x": 10,
+      "y": 17,
+      "width": 55,
+      "height": 2,
+      "char": " ",
+      "description": "",
+      "tags": [
+        "clearance"
+      ],
+      "metadata": {}
+    },
+    "clr_ke_knihovne": {
+      "id": "clr_ke_knihovne",
+      "name": "Průchod ke knihovně",
+      "x": 56,
+      "y": 5,
+      "width": 2,
+      "height": 11,
+      "char": " ",
+      "description": "",
+      "tags": [
+        "clearance"
+      ],
+      "metadata": {}
+    }
+  }
+}

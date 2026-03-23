@@ -21,7 +21,8 @@
       "WebFetch(domain:www.livehome3d.com)",
       "mcp__mapcraft__export_json",
       "Bash(npx vite:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "mcp__mapcraft__get_info"
     ]
   },
   "enableAllProjectMcpServers": true,

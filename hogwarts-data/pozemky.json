@@ -1,0 +1,423 @@
+{
+  "id": "bradavice_pozemky",
+  "name": "Bradavice - Pozemky",
+  "x": 0,
+  "y": 0,
+  "width": 200,
+  "height": 200,
+  "char": ".",
+  "description": "Hogwarts grounds: castle position, Hagrid's Hut, Quidditch pitch, Greenhouses, Great Lake, Forbidden Forest",
+  "tags": [],
+  "metadata": {},
+  "children": {
+    "hrad": {
+      "id": "hrad",
+      "name": "Hrad Bradavice",
+      "x": 50,
+      "y": 10,
+      "width": 100,
+      "height": 80,
+      "char": "H",
+      "description": "",
+      "tags": [
+        "building"
+      ],
+      "metadata": {
+        "description": "Main castle building"
+      }
+    },
+    "hlavni_cesta": {
+      "id": "hlavni_cesta",
+      "name": "Hlavní cesta",
+      "x": 95,
+      "y": 0,
+      "width": 6,
+      "height": 10,
+      "char": "=",
+      "description": "",
+      "tags": [
+        "path"
+      ],
+      "metadata": {
+        "description": "Front drive from castle gates to main entrance"
+      }
+    },
+    "cesta_k_hagridovi": {
+      "id": "cesta_k_hagridovi",
+      "name": "Cesta k Hagridovi",
+      "x": 80,
+      "y": 90,
+      "width": 3,
+      "height": 30,
+      "char": ".",
+      "description": "",
+      "tags": [
+        "path"
+      ],
+      "metadata": {}
+    },
+    "hagrid_chata": {
+      "id": "hagrid_chata",
+      "name": "Hagridova chata",
+      "x": 75,
+      "y": 120,
+      "width": 8,
+      "height": 6,
+      "char": "A",
+      "description": "",
+      "tags": [
+        "building"
+      ],
+      "metadata": {
+        "description": "Small wooden hut, 1 room + loft, enormous bed, Fang the boarhound"
+      },
+      "children": {
+        "dvere": {
+          "id": "dvere",
+          "name": "Vstupní dveře",
+          "x": 3,
+          "y": 0,
+          "width": 2,
+          "height": 0.3,
+          "char": "D",
+          "description": "",
+          "tags": [
+            "door"
+          ],
+          "metadata": {
+            "description": "Massive wooden door"
+          }
+        },
+        "postel": {
+          "id": "postel",
+          "name": "Hagridova postel",
+          "x": 5,
+          "y": 2,
+          "width": 2.5,
+          "height": 3,
+          "char": "#",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "Enormous bed taking up most of back wall"
+          }
+        },
+        "krb": {
+          "id": "krb",
+          "name": "Krb",
+          "x": 0,
+          "y": 1,
+          "width": 1.5,
+          "height": 2,
+          "char": "K",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "Fireplace - always a kettle on, dragon egg once"
+          }
+        },
+        "stul": {
+          "id": "stul",
+          "name": "Stůl",
+          "x": 2,
+          "y": 2,
+          "width": 2,
+          "height": 2,
+          "char": "T",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "Scrubbed wooden table with enormous mugs"
+          }
+        },
+        "tesak_pelech": {
+          "id": "tesak_pelech",
+          "name": "Tesákův pelech",
+          "x": 5.5,
+          "y": 0.5,
+          "width": 2,
+          "height": 1.5,
+          "char": "F",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "Fang the boarhound's bed by the door"
+          }
+        },
+        "clr_pruchod": {
+          "id": "clr_pruchod",
+          "name": "Průchod",
+          "x": 2,
+          "y": 0.3,
+          "width": 3,
+          "height": 1.7,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        }
+      }
+    },
+    "dynove_pole": {
+      "id": "dynove_pole",
+      "name": "Dýňové pole",
+      "x": 84,
+      "y": 118,
+      "width": 8,
+      "height": 8,
+      "char": "d",
+      "description": "",
+      "tags": [
+        "garden"
+      ],
+      "metadata": {
+        "description": "Hagrid's pumpkin patch behind the hut"
+      }
+    },
+    "skleniky": {
+      "id": "skleniky",
+      "name": "Skleníky",
+      "x": 55,
+      "y": 92,
+      "width": 30,
+      "height": 8,
+      "char": "S",
+      "description": "",
+      "tags": [
+        "building"
+      ],
+      "metadata": {
+        "description": "Multiple greenhouses for Herbology, Prof. Sprout"
+      },
+      "children": {}
+    },
+    "famfrpal": {
+      "id": "famfrpal",
+      "name": "Famfrpálové hřiště",
+      "x": 0,
+      "y": 100,
+      "width": 55,
+      "height": 25,
+      "char": "Q",
+      "description": "",
+      "tags": [
+        "sports"
+      ],
+      "metadata": {
+        "description": "Quidditch pitch - oval field, 3 goal hoops each end, stands around"
+      },
+      "children": {
+        "hriste": {
+          "id": "hriste",
+          "name": "Hrací plocha",
+          "x": 5,
+          "y": 3,
+          "width": 45,
+          "height": 19,
+          "char": ".",
+          "description": "",
+          "tags": [
+            "field"
+          ],
+          "metadata": {}
+        },
+        "branky_l": {
+          "id": "branky_l",
+          "name": "Branky levé",
+          "x": 2,
+          "y": 9,
+          "width": 2,
+          "height": 6,
+          "char": "O",
+          "description": "",
+          "tags": [
+            "goal"
+          ],
+          "metadata": {
+            "description": "3 golden hoops on tall poles, 15m high"
+          }
+        },
+        "branky_r": {
+          "id": "branky_r",
+          "name": "Branky pravé",
+          "x": 51,
+          "y": 9,
+          "width": 2,
+          "height": 6,
+          "char": "O",
+          "description": "",
+          "tags": [
+            "goal"
+          ],
+          "metadata": {}
+        },
+        "tribuna_s": {
+          "id": "tribuna_s",
+          "name": "Tribuna sever",
+          "x": 5,
+          "y": 0,
+          "width": 45,
+          "height": 3,
+          "char": "^",
+          "description": "",
+          "tags": [
+            "stands"
+          ],
+          "metadata": {
+            "description": "Spectator stands with house banners"
+          }
+        },
+        "tribuna_j": {
+          "id": "tribuna_j",
+          "name": "Tribuna jih",
+          "x": 5,
+          "y": 22,
+          "width": 45,
+          "height": 3,
+          "char": "v",
+          "description": "",
+          "tags": [
+            "stands"
+          ],
+          "metadata": {}
+        },
+        "tribuna_z": {
+          "id": "tribuna_z",
+          "name": "Tribuna západ",
+          "x": 0,
+          "y": 3,
+          "width": 5,
+          "height": 19,
+          "char": "<",
+          "description": "",
+          "tags": [
+            "stands"
+          ],
+          "metadata": {}
+        },
+        "tribuna_v": {
+          "id": "tribuna_v",
+          "name": "Tribuna východ + komentátor",
+          "x": 50,
+          "y": 3,
+          "width": 5,
+          "height": 19,
+          "char": ">",
+          "description": "",
+          "tags": [
+            "stands"
+          ],
+          "metadata": {
+            "description": "East stand - commentator's podium (Lee Jordan)"
+          }
+        }
+      }
+    },
+    "letadlovy_travnik": {
+      "id": "letadlovy_travnik",
+      "name": "Létadlový trávník",
+      "x": 20,
+      "y": 40,
+      "width": 25,
+      "height": 20,
+      "char": "~",
+      "description": "",
+      "tags": [
+        "grounds"
+      ],
+      "metadata": {
+        "description": "Flying lawn - Madam Hooch's broomstick lessons"
+      }
+    },
+    "vrba_mlaskavka": {
+      "id": "vrba_mlaskavka",
+      "name": "Vrba mláskavka",
+      "x": 90,
+      "y": 105,
+      "width": 5,
+      "height": 5,
+      "char": "W",
+      "description": "",
+      "tags": [
+        "landmark"
+      ],
+      "metadata": {
+        "description": "Whomping Willow - attacks anything near it, secret tunnel to Shrieking Shack"
+      }
+    },
+    "zakazany_les": {
+      "id": "zakazany_les",
+      "name": "Zakázaný les",
+      "x": 100,
+      "y": 100,
+      "width": 100,
+      "height": 100,
+      "char": "F",
+      "description": "",
+      "tags": [
+        "forest"
+      ],
+      "metadata": {
+        "description": "Forbidden Forest - centaurs, unicorns, Aragog's lair, dangerous creatures"
+      }
+    },
+    "jezero": {
+      "id": "jezero",
+      "name": "Velké jezero",
+      "x": 30,
+      "y": 145,
+      "width": 80,
+      "height": 55,
+      "char": "~",
+      "description": "",
+      "tags": [
+        "water"
+      ],
+      "metadata": {
+        "description": "Great Lake - giant squid, merpeople village, Durmstrang ship"
+      }
+    },
+    "lodejnice": {
+      "id": "lodejnice",
+      "name": "Lodějnice",
+      "x": 70,
+      "y": 135,
+      "width": 6,
+      "height": 4,
+      "char": "B",
+      "description": "",
+      "tags": [
+        "building"
+      ],
+      "metadata": {
+        "description": "Boathouse - first years arrive by boat across the lake"
+      }
+    },
+    "dumbledore_hrob": {
+      "id": "dumbledore_hrob",
+      "name": "Dumbledoreův hrob",
+      "x": 60,
+      "y": 137,
+      "width": 3,
+      "height": 3,
+      "char": "+",
+      "description": "",
+      "tags": [
+        "landmark"
+      ],
+      "metadata": {
+        "description": "White marble tomb on lake shore"
+      }
+    }
+  }
+}

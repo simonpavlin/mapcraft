@@ -1,0 +1,150 @@
+{
+  "id": "bradavice_2_patro",
+  "name": "Bradavice - 2. patro",
+  "x": 0,
+  "y": 0,
+  "width": 100,
+  "height": 80,
+  "char": ".",
+  "description": "2nd floor: Moaning Myrtle bathroom (Chamber of Secrets entrance), DADA office",
+  "tags": [],
+  "metadata": {},
+  "children": {
+    "velke_schodiste": {
+      "id": "velke_schodiste",
+      "name": "Velké schodiště",
+      "x": 38,
+      "y": 20,
+      "width": 10,
+      "height": 25,
+      "char": "T",
+      "description": "",
+      "tags": [
+        "stairs",
+        "structural"
+      ],
+      "metadata": {}
+    },
+    "chodba_hlavni": {
+      "id": "chodba_hlavni",
+      "name": "Hlavní chodba",
+      "x": 10,
+      "y": 16,
+      "width": 55,
+      "height": 4,
+      "char": "-",
+      "description": "",
+      "tags": [
+        "corridor"
+      ],
+      "metadata": {}
+    },
+    "chodba_vychod": {
+      "id": "chodba_vychod",
+      "name": "Východní chodba",
+      "x": 48,
+      "y": 8,
+      "width": 4,
+      "height": 8,
+      "char": "|",
+      "description": "",
+      "tags": [
+        "corridor"
+      ],
+      "metadata": {}
+    },
+    "ufnukana_zachod": {
+      "id": "ufnukana_zachod",
+      "name": "Záchod Ufňukané Uršuly",
+      "x": 52,
+      "y": 8,
+      "width": 8,
+      "height": 6,
+      "char": "W",
+      "description": "",
+      "tags": [
+        "room"
+      ],
+      "metadata": {
+        "description": "Moaning Myrtle bathroom - secret entrance to Chamber of Secrets through sink"
+      },
+      "children": {}
+    },
+    "opocn_kancelar": {
+      "id": "opocn_kancelar",
+      "name": "Kancelář učitele OPCOČN",
+      "x": 62,
+      "y": 10,
+      "width": 6,
+      "height": 5,
+      "char": "O",
+      "description": "",
+      "tags": [
+        "room",
+        "office"
+      ],
+      "metadata": {
+        "description": "DADA teacher office - changes occupant every year"
+      }
+    },
+    "chodba_k_zachodu": {
+      "id": "chodba_k_zachodu",
+      "name": "Chodba k záchodu",
+      "x": 52,
+      "y": 14,
+      "width": 16,
+      "height": 2,
+      "char": "-",
+      "description": "",
+      "tags": [
+        "corridor"
+      ],
+      "metadata": {}
+    },
+    "ucebna_11": {
+      "id": "ucebna_11",
+      "name": "Učebna 11",
+      "x": 10,
+      "y": 8,
+      "width": 10,
+      "height": 8,
+      "char": "U",
+      "description": "",
+      "tags": [
+        "room",
+        "classroom"
+      ],
+      "metadata": {
+        "description": "Classroom near main corridor"
+      }
+    },
+    "clr_hlavni": {
+      "id": "clr_hlavni",
+      "name": "Průchod hlavní chodbou",
+      "x": 10,
+      "y": 17,
+      "width": 55,
+      "height": 2,
+      "char": " ",
+      "description": "",
+      "tags": [
+        "clearance"
+      ],
+      "metadata": {}
+    },
+    "clr_k_zachodu": {
+      "id": "clr_k_zachodu",
+      "name": "Průchod k záchodu",
+      "x": 48,
+      "y": 9,
+      "width": 2,
+      "height": 7,
+      "char": " ",
+      "description": "",
+      "tags": [
+        "clearance"
+      ],
+      "metadata": {}
+    }
+  }
+}

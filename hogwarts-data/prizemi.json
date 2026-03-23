@@ -1,0 +1,965 @@
+{
+  "id": "bradavice_prizemi",
+  "name": "Bradavice - Přízemí",
+  "x": 0,
+  "y": 0,
+  "width": 100,
+  "height": 80,
+  "char": ".",
+  "description": "Hogwarts ground floor: Entrance Hall, Great Hall, Courtyard, classrooms, corridors",
+  "tags": [],
+  "metadata": {},
+  "children": {
+    "vstupni_hala": {
+      "id": "vstupni_hala",
+      "name": "Vstupní hala",
+      "x": 38,
+      "y": 0,
+      "width": 20,
+      "height": 15,
+      "char": "V",
+      "description": "",
+      "tags": [
+        "room",
+        "hall"
+      ],
+      "metadata": {
+        "ceiling_height": 10,
+        "description": "Cavernous entrance hall with marble staircase, giant hourglasses"
+      },
+      "children": {
+        "d_hlavni_vchod": {
+          "id": "d_hlavni_vchod",
+          "name": "Hlavní vchod",
+          "x": 7,
+          "y": 0,
+          "width": 5,
+          "height": 0.3,
+          "char": "D",
+          "description": "",
+          "tags": [
+            "door"
+          ],
+          "metadata": {
+            "style": "massive_oak",
+            "double": true
+          }
+        },
+        "d_velky_sal": {
+          "id": "d_velky_sal",
+          "name": "Dveře do Velkého sálu",
+          "x": 18,
+          "y": 2,
+          "width": 0.3,
+          "height": 5,
+          "char": "D",
+          "description": "",
+          "tags": [
+            "door"
+          ],
+          "metadata": {
+            "style": "double_door",
+            "direction": "east"
+          }
+        },
+        "d_sklepeni": {
+          "id": "d_sklepeni",
+          "name": "Dveře do sklepení",
+          "x": 0,
+          "y": 10,
+          "width": 0.3,
+          "height": 2,
+          "char": "D",
+          "description": "",
+          "tags": [
+            "door"
+          ],
+          "metadata": {
+            "style": "narrow",
+            "direction": "west",
+            "leads_to": "dungeons"
+          }
+        },
+        "d_nadvori": {
+          "id": "d_nadvori",
+          "name": "Dveře na nádvoří",
+          "x": 5,
+          "y": 14.7,
+          "width": 3,
+          "height": 0.3,
+          "char": "D",
+          "description": "",
+          "tags": [
+            "door"
+          ],
+          "metadata": {
+            "direction": "south"
+          }
+        },
+        "mramorove_schodiste": {
+          "id": "mramorove_schodiste",
+          "name": "Mramorové schodiště",
+          "x": 2,
+          "y": 6,
+          "width": 6,
+          "height": 8,
+          "char": "M",
+          "description": "",
+          "tags": [
+            "stairs"
+          ],
+          "metadata": {
+            "description": "Grand marble staircase to 1st floor",
+            "direction": "up"
+          }
+        },
+        "presypaci_hodiny": {
+          "id": "presypaci_hodiny",
+          "name": "Přesýpací hodiny",
+          "x": 14,
+          "y": 2,
+          "width": 3,
+          "height": 1.5,
+          "char": "h",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "4 giant hourglasses showing house points"
+          }
+        },
+        "clr_hlavni_pruchod": {
+          "id": "clr_hlavni_pruchod",
+          "name": "Hlavní průchod",
+          "x": 9,
+          "y": 1,
+          "width": 5,
+          "height": 13,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {
+            "description": "Main walkway through entrance hall"
+          }
+        },
+        "clr_k_salu": {
+          "id": "clr_k_salu",
+          "name": "Průchod k sálu",
+          "x": 14,
+          "y": 3,
+          "width": 5,
+          "height": 4,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {
+            "description": "Walkway to Great Hall doors"
+          }
+        }
+      }
+    },
+    "velky_sal": {
+      "id": "velky_sal",
+      "name": "Velký sál",
+      "x": 60,
+      "y": 2,
+      "width": 37,
+      "height": 12,
+      "char": "S",
+      "description": "",
+      "tags": [
+        "room",
+        "hall"
+      ],
+      "metadata": {
+        "ceiling_height": 14,
+        "description": "Great Hall - 4 house tables + staff table, enchanted ceiling"
+      },
+      "children": {
+        "ucitelsky_stul": {
+          "id": "ucitelsky_stul",
+          "name": "Učitelský stůl",
+          "x": 28,
+          "y": 3,
+          "width": 8,
+          "height": 6,
+          "char": "T",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "High Table / staff table on raised platform"
+          }
+        },
+        "clr_stredova_ulicka": {
+          "id": "clr_stredova_ulicka",
+          "name": "Středová ulička",
+          "x": 15,
+          "y": 0,
+          "width": 2,
+          "height": 12,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {
+            "description": "Central aisle between tables"
+          }
+        },
+        "clr_vstupni_prostor": {
+          "id": "clr_vstupni_prostor",
+          "name": "Vstupní prostor sálu",
+          "x": 0,
+          "y": 0,
+          "width": 2,
+          "height": 12,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {
+            "description": "Space at entrance end of Great Hall"
+          }
+        },
+        "clr_bocni_ulicka_s": {
+          "id": "clr_bocni_ulicka_s",
+          "name": "Boční ulička sever",
+          "x": 2,
+          "y": 2.5,
+          "width": 30,
+          "height": 1,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        },
+        "clr_bocni_ulicka_j": {
+          "id": "clr_bocni_ulicka_j",
+          "name": "Boční ulička jih",
+          "x": 2,
+          "y": 10,
+          "width": 30,
+          "height": 1,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        },
+        "stul_nebelvir_l": {
+          "id": "stul_nebelvir_l",
+          "name": "Stůl Nebelvíru (L)",
+          "x": 2,
+          "y": 1,
+          "width": 13,
+          "height": 1.5,
+          "char": "N",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "stul_nebelvir_r": {
+          "id": "stul_nebelvir_r",
+          "name": "Stůl Nebelvíru (R)",
+          "x": 17,
+          "y": 1,
+          "width": 10,
+          "height": 1.5,
+          "char": "N",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "stul_mrzimorr_l": {
+          "id": "stul_mrzimorr_l",
+          "name": "Stůl Mrzimoru (L)",
+          "x": 2,
+          "y": 3.5,
+          "width": 13,
+          "height": 1.5,
+          "char": "U",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "stul_mrzimorr_r": {
+          "id": "stul_mrzimorr_r",
+          "name": "Stůl Mrzimoru (R)",
+          "x": 17,
+          "y": 3.5,
+          "width": 10,
+          "height": 1.5,
+          "char": "U",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "stul_havraspar_l": {
+          "id": "stul_havraspar_l",
+          "name": "Stůl Havraspáru (L)",
+          "x": 2,
+          "y": 6,
+          "width": 13,
+          "height": 1.5,
+          "char": "R",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "stul_havraspar_r": {
+          "id": "stul_havraspar_r",
+          "name": "Stůl Havraspáru (R)",
+          "x": 17,
+          "y": 6,
+          "width": 10,
+          "height": 1.5,
+          "char": "R",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "stul_zmijozel_l": {
+          "id": "stul_zmijozel_l",
+          "name": "Stůl Zmijozelu (L)",
+          "x": 2,
+          "y": 8.5,
+          "width": 13,
+          "height": 1.5,
+          "char": "Z",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "stul_zmijozel_r": {
+          "id": "stul_zmijozel_r",
+          "name": "Stůl Zmijozelu (R)",
+          "x": 17,
+          "y": 8.5,
+          "width": 10,
+          "height": 1.5,
+          "char": "Z",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        }
+      }
+    },
+    "nadvori": {
+      "id": "nadvori",
+      "name": "Nádvoří (západ)",
+      "x": 30,
+      "y": 20,
+      "width": 8,
+      "height": 25,
+      "char": ".",
+      "description": "",
+      "tags": [
+        "courtyard"
+      ],
+      "metadata": {
+        "open_air": true,
+        "description": "Central courtyard where students congregate"
+      },
+      "children": {
+        "kasna": {
+          "id": "kasna",
+          "name": "Kašna",
+          "x": 5.5,
+          "y": 11,
+          "width": 2.5,
+          "height": 2.5,
+          "char": "O",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "Stone fountain in center of courtyard"
+          }
+        },
+        "lavicka_s": {
+          "id": "lavicka_s",
+          "name": "Lavička sever",
+          "x": 5.5,
+          "y": 3,
+          "width": 5,
+          "height": 0.5,
+          "char": "=",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "lavicka_j": {
+          "id": "lavicka_j",
+          "name": "Lavička jih",
+          "x": 5.5,
+          "y": 20,
+          "width": 5,
+          "height": 0.5,
+          "char": "=",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "lavicka_v": {
+          "id": "lavicka_v",
+          "name": "Lavička východ",
+          "x": 7,
+          "y": 8,
+          "width": 0.5,
+          "height": 5,
+          "char": "|",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "strom": {
+          "id": "strom",
+          "name": "Strom",
+          "x": 0.5,
+          "y": 17,
+          "width": 2,
+          "height": 2,
+          "char": "*",
+          "description": "",
+          "tags": [
+            "decor"
+          ],
+          "metadata": {
+            "description": "Old tree where students sit"
+          }
+        },
+        "clr_hlavni_pruchod": {
+          "id": "clr_hlavni_pruchod",
+          "name": "Hlavní průchod nádvořím",
+          "x": 3,
+          "y": 0,
+          "width": 2,
+          "height": 25,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        },
+        "clr_kolem_kasny": {
+          "id": "clr_kolem_kasny",
+          "name": "Průchod kolem kašny",
+          "x": 0,
+          "y": 8,
+          "width": 8,
+          "height": 2,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        }
+      }
+    },
+    "chodba_sever": {
+      "id": "chodba_sever",
+      "name": "Severní chodba",
+      "x": 10,
+      "y": 0,
+      "width": 28,
+      "height": 4,
+      "char": "-",
+      "description": "",
+      "tags": [
+        "corridor"
+      ],
+      "metadata": {
+        "description": "Main north corridor connecting west wing to Entrance Hall"
+      }
+    },
+    "chodba_vychod": {
+      "id": "chodba_vychod",
+      "name": "Východní chodba",
+      "x": 58,
+      "y": 14,
+      "width": 4,
+      "height": 31,
+      "char": "|",
+      "description": "",
+      "tags": [
+        "corridor"
+      ],
+      "metadata": {
+        "description": "East corridor along Great Hall to south wing"
+      }
+    },
+    "chodba_zapad": {
+      "id": "chodba_zapad",
+      "name": "Západní chodba",
+      "x": 26,
+      "y": 4,
+      "width": 4,
+      "height": 16,
+      "char": "|",
+      "description": "",
+      "tags": [
+        "corridor"
+      ],
+      "metadata": {
+        "description": "West corridor from north corridor to courtyard"
+      }
+    },
+    "chodba_jih": {
+      "id": "chodba_jih",
+      "name": "Jižní chodba",
+      "x": 30,
+      "y": 45,
+      "width": 32,
+      "height": 4,
+      "char": "-",
+      "description": "",
+      "tags": [
+        "corridor"
+      ],
+      "metadata": {
+        "description": "South corridor connecting courtyard to east wing"
+      }
+    },
+    "premenovani": {
+      "id": "premenovani",
+      "name": "Učebna přeměňování",
+      "x": 10,
+      "y": 4,
+      "width": 15,
+      "height": 10,
+      "char": "P",
+      "description": "",
+      "tags": [
+        "room",
+        "classroom"
+      ],
+      "metadata": {
+        "ceiling_height": 4.5,
+        "professor": "McGonagall",
+        "description": "Transfiguration classroom - large, rows of desks"
+      },
+      "children": {
+        "katedra": {
+          "id": "katedra",
+          "name": "Katedra McGonagallové",
+          "x": 6,
+          "y": 0.5,
+          "width": 3,
+          "height": 1.5,
+          "char": "K",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "Professor desk at front, McGonagall in cat form sometimes sits here"
+          }
+        },
+        "tabule": {
+          "id": "tabule",
+          "name": "Tabule",
+          "x": 6.5,
+          "y": 0,
+          "width": 2,
+          "height": 0.2,
+          "char": "T",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "lavice_1l": {
+          "id": "lavice_1l",
+          "name": "Lavice 1L",
+          "x": 1,
+          "y": 3,
+          "width": 4,
+          "height": 1,
+          "char": "=",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "lavice_1r": {
+          "id": "lavice_1r",
+          "name": "Lavice 1R",
+          "x": 9,
+          "y": 3,
+          "width": 4.5,
+          "height": 1,
+          "char": "=",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "lavice_2l": {
+          "id": "lavice_2l",
+          "name": "Lavice 2L",
+          "x": 1,
+          "y": 5,
+          "width": 4,
+          "height": 1,
+          "char": "=",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "lavice_2r": {
+          "id": "lavice_2r",
+          "name": "Lavice 2R",
+          "x": 9,
+          "y": 5,
+          "width": 4.5,
+          "height": 1,
+          "char": "=",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "lavice_3l": {
+          "id": "lavice_3l",
+          "name": "Lavice 3L",
+          "x": 1,
+          "y": 7,
+          "width": 4,
+          "height": 1,
+          "char": "=",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "lavice_3r": {
+          "id": "lavice_3r",
+          "name": "Lavice 3R",
+          "x": 9,
+          "y": 7,
+          "width": 4.5,
+          "height": 1,
+          "char": "=",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "skrin_zvirata": {
+          "id": "skrin_zvirata",
+          "name": "Skříň s přeměněnými zvířaty",
+          "x": 0.3,
+          "y": 0.5,
+          "width": 1.5,
+          "height": 8,
+          "char": "I",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "Cabinet with transformed animals in cages"
+          }
+        },
+        "klec_ptaci": {
+          "id": "klec_ptaci",
+          "name": "Klece s ptáky",
+          "x": 13,
+          "y": 0.5,
+          "width": 1.5,
+          "height": 3,
+          "char": "O",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "Bird cages for transfiguration practice"
+          }
+        },
+        "clr_ulicka": {
+          "id": "clr_ulicka",
+          "name": "Středová ulička",
+          "x": 5.5,
+          "y": 2,
+          "width": 3,
+          "height": 7,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        }
+      }
+    },
+    "sborovna": {
+      "id": "sborovna",
+      "name": "Sborovna",
+      "x": 10,
+      "y": 15,
+      "width": 12,
+      "height": 6,
+      "char": "B",
+      "description": "",
+      "tags": [
+        "room"
+      ],
+      "metadata": {
+        "ceiling_height": 4,
+        "description": "Staff room - gargoyles flanking entrance, long room"
+      },
+      "children": {
+        "dlouhy_stul": {
+          "id": "dlouhy_stul",
+          "name": "Dlouhý stůl",
+          "x": 2,
+          "y": 1.5,
+          "width": 8,
+          "height": 2,
+          "char": "=",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {
+            "description": "Long staff table for meetings"
+          }
+        },
+        "zidle_l": {
+          "id": "zidle_l",
+          "name": "Židle levé",
+          "x": 2,
+          "y": 0.5,
+          "width": 8,
+          "height": 0.8,
+          "char": "o",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "zidle_r": {
+          "id": "zidle_r",
+          "name": "Židle pravé",
+          "x": 2,
+          "y": 3.7,
+          "width": 8,
+          "height": 0.8,
+          "char": "o",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "krb": {
+          "id": "krb",
+          "name": "Krb",
+          "x": 5,
+          "y": 5,
+          "width": 2,
+          "height": 1,
+          "char": "K",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "skrin": {
+          "id": "skrin",
+          "name": "Skříň na dokumenty",
+          "x": 10,
+          "y": 0.5,
+          "width": 1.5,
+          "height": 5,
+          "char": "I",
+          "description": "",
+          "tags": [
+            "furniture"
+          ],
+          "metadata": {}
+        },
+        "clr_pruchod": {
+          "id": "clr_pruchod",
+          "name": "Průchod ke dveřím",
+          "x": 0,
+          "y": 1,
+          "width": 2,
+          "height": 4,
+          "char": " ",
+          "description": "",
+          "tags": [
+            "clearance"
+          ],
+          "metadata": {}
+        }
+      }
+    },
+    "filch": {
+      "id": "filch",
+      "name": "Filchova kancelář",
+      "x": 34,
+      "y": 15,
+      "width": 5,
+      "height": 4,
+      "char": "F",
+      "description": "",
+      "tags": [
+        "room",
+        "office"
+      ],
+      "metadata": {
+        "description": "Windowless office full of confiscated items"
+      }
+    },
+    "predsalonek": {
+      "id": "predsalonek",
+      "name": "Předsalonek",
+      "x": 56,
+      "y": 2,
+      "width": 4,
+      "height": 10,
+      "char": "p",
+      "description": "",
+      "tags": [
+        "room"
+      ],
+      "metadata": {
+        "description": "Antechamber between Entrance Hall and Great Hall"
+      }
+    },
+    "zadni_vstup_sal": {
+      "id": "zadni_vstup_sal",
+      "name": "Zadní vstup sálu",
+      "x": 97,
+      "y": 2,
+      "width": 4,
+      "height": 4,
+      "char": "z",
+      "description": "",
+      "tags": [
+        "room"
+      ],
+      "metadata": {
+        "description": "Staff entrance behind High Table"
+      }
+    },
+    "velke_schodiste": {
+      "id": "velke_schodiste",
+      "name": "Velké schodiště",
+      "x": 38,
+      "y": 20,
+      "width": 10,
+      "height": 25,
+      "char": "T",
+      "description": "",
+      "tags": [
+        "stairs",
+        "structural"
+      ],
+      "metadata": {
+        "ceiling_height": 45,
+        "description": "Grand Staircase - 142 moving staircases connecting all floors"
+      },
+      "children": {}
+    },
+    "vez_astronomicka_base": {
+      "id": "vez_astronomicka_base",
+      "name": "Astronomická věž (základ)",
+      "x": 62,
+      "y": 45,
+      "width": 10,
+      "height": 10,
+      "char": "A",
+      "description": "",
+      "tags": [
+        "tower",
+        "structural"
+      ],
+      "metadata": {
+        "description": "Base of Astronomy Tower - tallest tower"
+      }
+    },
+    "vez_hodinova_base": {
+      "id": "vez_hodinova_base",
+      "name": "Hodinová věž (základ)",
+      "x": 10,
+      "y": 45,
+      "width": 8,
+      "height": 8,
+      "char": "H",
+      "description": "",
+      "tags": [
+        "tower",
+        "structural"
+      ],
+      "metadata": {
+        "description": "Base of Clock Tower"
+      }
+    },
+    "vez_zvonova_base": {
+      "id": "vez_zvonova_base",
+      "name": "Zvonová věž (základ)",
+      "x": 0,
+      "y": 20,
+      "width": 8,
+      "height": 8,
+      "char": "Z",
+      "description": "",
+      "tags": [
+        "tower",
+        "structural"
+      ],
+      "metadata": {
+        "description": "Base of Bell Tower near Flying Lawn"
+      }
+    }
+  }
+}
