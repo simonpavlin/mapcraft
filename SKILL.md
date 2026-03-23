@@ -98,7 +98,7 @@ Wall containers appear as thin strips in the room plan view, which is fine.
 
 Import utilities:
 ```js
-import { wallWithOpenings, addWindow, addDoor, addFloor, addCeiling, addStairs, addFlatRoof, MAT, box, plane } from './building-utils.js';
+import { wallWithOpenings, addWindow, addDoor, addFloor, addCeiling, addFlatRoof, MAT, box, plane } from './building-utils.js';
 ```
 
 ### Walls with openings (doors & windows)
@@ -186,39 +186,18 @@ Rules:
 - To move a room: update MCP, then change ONLY `rx, rz` in code — furniture follows
 - Walls reference MCP door/window objects: `// mcp:d_loz (3.5, 6)` in wall opening comments
 
-### Stairs — use entry/exit based API
+### Stairs — build manually with boxes
 
-Three functions available:
-- `addStairFlight(group, opts)` — single straight flight from point A to point B
-- `addStairLanding(group, opts)` — platform at a given height
-- `addUTurnStairs(group, opts)` — convenience for U-turn (entry and exit on same side)
+There is no stair helper function. Build stairs manually using `box()` in a loop:
 
 ```js
-// Option 1: U-turn staircase (most common)
-// Entry at north side, stairs go south, turn, come back north
-addUTurnStairs(group, {
-  x: 8.5, z: 0.5,        // stairwell top-left corner
-  width: 3, depth: 5,     // stairwell size
-  entryY: 0,              // lower floor Y
-  exitY: 3,               // upper floor Y
-  entrySide: 'north',     // entry/exit both on north side
-});
-
-// Option 2: Manual flights (full control)
-// Flight 1: from entry going south, rising to landing
-addStairFlight(group, {
-  startX: 9.5, startZ: 1, startY: 0,    // bottom of flight
-  endX: 9.5, endZ: 4, endY: 1.5,        // top of flight
-  width: 1.8,
-});
-// Landing
-addStairLanding(group, { x: 10, z: 4.5, y: 1.5, width: 2.5, depth: 1.2 });
-// Flight 2: from landing going north, rising to exit
-addStairFlight(group, {
-  startX: 10.5, startZ: 4, startY: 1.5,
-  endX: 10.5, endZ: 1, endY: 3,
-  width: 1.8,
-});
+// Straight flight: 20 steps, 0.18m rise each, 0.28m deep, 1.2m wide
+const steps = 20, stepH = 0.18, stepD = 0.28, stepW = 1.2;
+for (let i = 0; i < steps; i++) {
+  const step = box(stepW, stepH, stepD, MAT.stairs);
+  step.position.set(x + stepW / 2, i * stepH + stepH / 2, z + i * stepD + stepD / 2);
+  group.add(step);
+}
 ```
 
 ### Floor, ceiling, roof

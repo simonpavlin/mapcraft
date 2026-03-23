@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   wallWithOpenings, addWindow, addDoor,
-  addFloor, addCeiling, addStairs, addFlatRoof,
+  addFloor, addCeiling, addFlatRoof,
   MAT, box, plane
 } from './building-utils.js';
 
@@ -416,15 +416,15 @@ function buildPalac(g) {
   // Roof
   addFlatRoof(g, px, pz, pw, pd, FH * 2, 0.3, roofTile);
 
-  // Stairs at (13, 0.5) relative → absolute (px+13, pz+0.5)
-  addStairs(g, {
-    x: px + 13, z: pz + 0.5,
-    width: 2.5, depth: 4,
-    floorHeight: FH,
-    direction: 'south',
-    material: stone,
-    railMaterial: iron,
-  });
+  // Stairs — disabled (addStairs removed)
+  // addStairs(g, {
+  //   x: px + 13, z: pz + 0.5,
+  //   width: 2.5, depth: 4,
+  //   floorHeight: FH,
+  //   direction: 'south',
+  //   material: stone,
+  //   railMaterial: iron,
+  // });
 
   // === Furniture ===
 

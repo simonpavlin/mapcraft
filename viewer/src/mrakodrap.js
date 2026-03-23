@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   wallWithOpenings, addWindow, addDoor,
-  addFloor, addCeiling, addFlatRoof, addStairs,
+  addFloor, addCeiling, addFlatRoof,
   MAT, box, plane
 } from './building-utils.js';
 
@@ -161,8 +161,8 @@ function buildCoreAllFloors(g) {
   for (let f = 0; f < FLOORS - 1; f++) {
     const y = f === 0 ? 0 : (LOBBY_H + (f - 1) * FH);
     const fh = f === 0 ? LOBBY_H : FH;
-    addStairs(g, { x: 11, z: 15.5, width: 3, depth: 4, floorHeight: fh, y, direction: 'south', material: concrete, railMaterial: steel });
-    addStairs(g, { x: 16, z: 11, width: 3, depth: 4, floorHeight: fh, y, direction: 'south', material: concrete, railMaterial: steel });
+    // addStairs(g, { x: 11, z: 15.5, width: 3, depth: 4, floorHeight: fh, y, direction: 'south', material: concrete, railMaterial: steel });
+    // addStairs(g, { x: 16, z: 11, width: 3, depth: 4, floorHeight: fh, y, direction: 'south', material: concrete, railMaterial: steel });
   }
 }
 

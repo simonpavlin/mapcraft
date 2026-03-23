@@ -7,6 +7,7 @@ import { createMestecko } from './mestecko.js';
 import { createDomekGaraz } from './domek-garaz.js';
 import { createPonorka } from './ponorka.js';
 import { createSklep } from './sklep.js';
+import { createOpevneni } from './opevneni.js';
 
 export function createWorld(scene) {
   createGround(scene);
@@ -18,6 +19,7 @@ export function createWorld(scene) {
   // createPonorka(scene, -50, 30);
   // createSklep(scene, -15, 30);
   createMestecko(scene, -100, 50);
+  createOpevneni(scene, 40, 30);
 }
 
 function createGround(scene) {

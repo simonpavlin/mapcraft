@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   wallWithOpenings, addWindow, addDoor,
-  addFloor, addCeiling, addFlatRoof, addUTurnStairs, addFloorOverlay,
+  addFloor, addCeiling, addFlatRoof, addFloorOverlay,
   MAT, box, plane
 } from './building-utils.js';
 
@@ -128,14 +128,14 @@ function buildHouse(g, hx, hz, wallMat, accentMat, roofMat, layout) {
     }
   }
 
-  // Stairs
-  if (layout[0].stairs) {
-    const s = layout[0].stairs;
-    addUTurnStairs(g, {
-      x: hx + s.x, z: hz + s.z, width: s.w, depth: s.d,
-      entryY: 0, exitY: FH, entrySide: s.side,
-    });
-  }
+  // Stairs — disabled (addUTurnStairs removed)
+  // if (layout[0].stairs) {
+  //   const s = layout[0].stairs;
+  //   addUTurnStairs(g, {
+  //     x: hx + s.x, z: hz + s.z, width: s.w, depth: s.d,
+  //     entryY: 0, exitY: FH, entrySide: s.side,
+  //   });
+  // }
 }
 
 function buildOuterWalls(g, hx, hz, W, D, y, wallMat, accentMat, openings) {

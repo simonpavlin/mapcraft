@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {
   wallWithOpenings, addWindow, addDoor,
   addFloor, addCeiling, addFlatRoof, addFloorOverlay,
-  boxWithOpenings, addUTurnStairs,
+  boxWithOpenings,
   MAT, box, plane
 } from './building-utils.js';
 
@@ -73,11 +73,11 @@ export function createDomekGaraz(scene, cx = 0, cz = 0) {
   // STAIRS
   // ═══════════════════════════════════════
 
-  addUTurnStairs(g, {
-    x: 9, z: 0, width: 3, depth: 5,
-    entryY: 0, exitY: Y1,
-    entrySide: 'north',
-  });
+  // addUTurnStairs(g, {
+  //   x: 9, z: 0, width: 3, depth: 5,
+  //   entryY: 0, exitY: Y1,
+  //   entrySide: 'north',
+  // });
 
   // ═══════════════════════════════════════
   // ROOF

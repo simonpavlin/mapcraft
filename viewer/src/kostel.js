@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   wallWithOpenings, addWindow, addDoor,
-  addFloor, addCeiling, addFlatRoof, addUTurnStairs, addFloorOverlay,
+  addFloor, addCeiling, addFlatRoof, addFloorOverlay,
   MAT, box, plane
 } from './building-utils.js';
 
@@ -294,8 +294,8 @@ function buildFara(g) {
   // Inner walls — patro
   buildFaraP2Walls(g, fx, fz);
 
-  // Schody
-  addUTurnStairs(g, { x: fx + 7, z: fz, width: 2.5, depth: 4, entryY: 0, exitY: FARA_FH, entrySide: 'south' });
+  // Schody — disabled (addUTurnStairs removed)
+  // addUTurnStairs(g, { x: fx + 7, z: fz, width: 2.5, depth: 4, entryY: 0, exitY: FARA_FH, entrySide: 'south' });
 
   // Nábytek
   furnishFaraP1(g, fx, fz);
