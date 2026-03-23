@@ -7,7 +7,7 @@ import {
 
 // Podkrovní loft — 18×12m, MCP pos (80,85) → 3D (-20, -15)
 // L-shaped obývák, zkosená ložnice, koupelna s výklenkem
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 const FH = 3.0;
 
 const mw = new THREE.MeshLambertMaterial({ color: 0xf0ece4, side: DS });

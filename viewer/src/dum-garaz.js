@@ -6,7 +6,7 @@ import * as THREE from 'three';
 // Přízemí: WC, vstup, schody, open-space obývák+kuchyně, dveře do garáže
 // 2. patro: schody, chodba, hlavní ložnice+koupelna, dětský pokoj, pracovna
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 const WALL = 0.15;
 const IW = 0.1;
 const FH = 3.0;

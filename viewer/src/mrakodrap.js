@@ -10,7 +10,7 @@ import {
 // Templates: lobby (P0), office (P1-P22), penthouse (P23-P24)
 // Core: elevators + 2 stairwells + WC at center of every floor
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 const BW = 30, BD = 30;
 const FH = 3.5;
 const FLOORS = 25;

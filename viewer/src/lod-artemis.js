@@ -10,7 +10,7 @@ import {
 // MCP coords: x → 3D x, y → 3D z
 // ═══════════════════════════════════════════════════════════
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 const FH = 3.0;
 
 // ── Hull & walls ──

@@ -6,6 +6,14 @@ This skill describes how to create 3D buildings using the MapCraft MCP server fo
 ## Step 1: Plan in MCP
 
 Use MCP tools to plan the building layout. All coordinates in **meters**.
+Plan in layers — don't try to specify everything at once:
+
+1. **Rooms** — place rooms, verify with check_collision
+2. **Doors & windows** — on wall boundaries of rooms
+3. **Clearance zones** — place objects with tag `clearance` in front of doors (0.8×1m) and along corridors to reserve walkable space
+4. **Furniture** — place furniture, check_collision against clearance zones to verify nothing blocks doors/paths
+5. **Wall details** (optional) — use wall containers for pictures, shelves, outlets on specific walls
+6. **3D generation** — only now write Three.js code
 
 ### Structure hierarchy
 ```
@@ -13,6 +21,7 @@ root/
   building/              (container)
     prizemi/             (container, same position as patro)
       rooms, doors, windows, furniture
+      room/stena_sever/  (wall container — for detailing wall surfaces)
     patro/               (container, same position as prizemi)
       rooms, doors, windows, furniture
     garaz/               (container, adjacent)
@@ -36,6 +45,54 @@ place_objects(path="building/prizemi", objects=[
 ### Verify after placement
 - `check_collision(path="building/prizemi", exclude_tags=["door","window","furniture"])` — rooms must not overlap
 - `get_ascii(path="building/prizemi")` — visual check that furniture doesn't block doors
+
+### Clearance zones — verify walkability
+After placing doors, add clearance objects to reserve space for walking. Then verify furniture doesn't block them.
+
+```
+// Reserve space in front of door
+place_object(path="building/prizemi/obyvak", id="clr_door1",
+  x=3.2, y=0, width=1.6, height=1.5, char=" ", tags=["clearance"])
+
+// Reserve corridor through room
+place_object(path="building/prizemi/obyvak", id="clr_corridor",
+  x=3.2, y=1.5, width=1.6, height=3, char=" ", tags=["clearance"])
+```
+
+After placing furniture, check that clearance zones are free:
+```
+check_collision(path="obyvak", x=3.2, y=0, width=1.6, height=4.5,
+  exclude_tags=["door","window","clearance"])
+→ should return only flat objects (rugs) — anything else is blocking the path
+```
+
+### Wall containers — detail wall surfaces
+To plan what goes on a specific wall (pictures, shelves, outlets, switches), create
+a container for that wall. Its children use wall-local coordinates: x = position along
+wall, y = height from floor.
+
+```
+place_object(path="obyvak", id="stena_zapad",
+  x=0, y=0, width=0.1, height=6,
+  is_container=true, tags=["wall"],
+  metadata='{"wall_height": 2.8, "description": "West wall with fireplace"}')
+
+place_objects(path="obyvak/stena_zapad", objects=[
+  { id: "obraz1", x: 1.0, y: 1.4, width: 0.8, height: 0.6, char: "#", tags: ["decor"] },
+  { id: "police", x: 3.0, y: 1.8, width: 1.5, height: 0.3, char: "=", tags: ["furniture"] },
+  { id: "zasuvka", x: 4.5, y: 0.3, width: 0.1, height: 0.1, char: ".", tags: ["electrical"] },
+])
+```
+
+Then view the wall layout:
+```
+get_ascii(path="obyvak/stena_zapad")
+→ shows wall as 2D surface (width along wall × height)
+→ check_collision works too — detects overlapping pictures etc.
+```
+
+This does NOT require any MCP changes — it's a convention using existing containers.
+Wall containers appear as thin strips in the room plan view, which is fine.
 
 ## Step 2: Generate 3D using building-utils.js
 

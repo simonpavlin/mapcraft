@@ -9,7 +9,7 @@ import {
 // 40×40m, hradby 2m, 4 rohové věže, brána na severu
 // Palác (3,22) 16×15, Velký sál (20,22) 17×10, Kuchyně (20,33) 10×5, Zbrojnice (31,33) 6×5
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 const FH = 4; // taller medieval floors
 
 const stone = new THREE.MeshLambertMaterial({ color: 0x8a8478, side: DS });

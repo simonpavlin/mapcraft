@@ -28,16 +28,49 @@ function resolveNode(root, path) {
   return node;
 }
 
-function renderAscii(node, maxCols = 60, maxRows = 30, filterChildren = null) {
-  const children = filterChildren || Object.values(node.children || {});
+function renderAscii(node, maxCols = 60, maxRows = 30, filterChildren = null, projection = 'plan') {
+  const allChildren = filterChildren || Object.values(node.children || {});
+
+  // Project children based on projection type
+  let children;
+  if (projection === 'plan') {
+    children = allChildren;
+  } else {
+    children = allChildren
+      .filter(c => c.elevation !== undefined && c.height_3d !== undefined)
+      .map(c => ({
+        ...c,
+        x: projection === 'front' ? c.x : c.y,
+        y: c.elevation,
+        width: projection === 'front' ? c.width : c.height,
+        height: c.height_3d,
+      }));
+  }
+
   if (children.length === 0) {
+    if (projection !== 'plan') {
+      return { ascii: [], legend: [], scaleInfo: `No objects with elevation data for ${projection} view` };
+    }
     return { ascii: [], legend: [], scaleInfo: `${node.width}m × ${node.height}m — empty` };
   }
-  const scaleX = node.width / maxCols;
-  const scaleY = node.height / maxRows;
+
+  // Determine viewport
+  let viewW, viewH, viewLabel;
+  if (projection === 'plan') {
+    viewW = node.width;
+    viewH = node.height;
+    viewLabel = `${node.width}m × ${node.height}m`;
+  } else {
+    viewW = projection === 'front' ? node.width : node.height;
+    viewH = node.metadata?.floor_height || Math.max(...children.map(c => c.y + c.height), 3);
+    viewLabel = `${viewW}m × ${viewH}m (${projection})`;
+  }
+
+  const scaleX = viewW / maxCols;
+  const scaleY = viewH / maxRows;
   const scale = Math.max(scaleX, scaleY, 0.1);
-  const cols = Math.min(maxCols, Math.ceil(node.width / scale));
-  const rows = Math.min(maxRows, Math.ceil(node.height / scale));
+  const cols = Math.min(maxCols, Math.ceil(viewW / scale));
+  const rows = Math.min(maxRows, Math.ceil(viewH / scale));
   const grid = [];
   for (let r = 0; r < rows; r++) grid.push(new Array(cols).fill('.'));
   const legend = [];
@@ -51,10 +84,14 @@ function renderAscii(node, maxCols = 60, maxRows = 30, filterChildren = null) {
       for (let c = sc; c < ec && c < cols; c++)
         if (r >= 0 && c >= 0) grid[r][c] = child.char;
   }
+
+  // For front/side views, flip Y so floor is at bottom
+  const finalGrid = (projection !== 'plan') ? grid.reverse() : grid;
+
   return {
-    ascii: grid.map(r => r.join('')),
+    ascii: finalGrid.map(r => r.join('')),
     legend,
-    scaleInfo: `1 cell = ${scale.toFixed(2)}m | ${cols}×${rows} cells | ${node.width}m × ${node.height}m`,
+    scaleInfo: `1 cell = ${scale.toFixed(2)}m | ${cols}×${rows} cells | ${viewLabel}`,
   };
 }
 
@@ -98,7 +135,7 @@ function collectTree(node, path = '') {
 }
 
 function serializeChild(c) {
-  return {
+  const out = {
     id: c.id,
     name: c.name,
     char: c.char,
@@ -111,6 +148,9 @@ function serializeChild(c) {
     hasGrid: !!c.children,
     childCount: Object.keys(c.children || {}).length,
   };
+  if (c.elevation !== undefined) out.elevation = c.elevation;
+  if (c.height_3d !== undefined) out.height_3d = c.height_3d;
+  return out;
 }
 
 const server = http.createServer((req, res) => {
@@ -137,7 +177,7 @@ const server = http.createServer((req, res) => {
 
     const maxCols = parseInt(url.searchParams.get('cols')) || 60;
     const maxRows = parseInt(url.searchParams.get('rows')) || 30;
-    const { ascii, legend, scaleInfo } = renderAscii(node, maxCols, maxRows);
+    const projection = url.searchParams.get('projection') || 'plan';
 
     const floors = detectFloors(node);
     const children = Object.values(node.children || {}).map(serializeChild);
@@ -166,12 +206,66 @@ const server = http.createServer((req, res) => {
       }
     }
 
+    // For front/side projection with floors: build combined cross-section
+    let floorSectionChildren = null;
+    let floorSectionHeight = null;
+    if (projection !== 'plan' && floors && floors.length > 0) {
+      floorSectionChildren = [];
+      let maxH = 0;
+      for (const floorInfo of floors) {
+        const floorNode = node.children[floorInfo.id];
+        if (!floorNode) continue;
+        const floorY = floorNode.metadata?.floor_y || 0;
+        const floorH = floorNode.metadata?.floor_height || 3;
+        maxH = Math.max(maxH, floorY + floorH);
+
+        // Add the floor container itself as a reference frame
+        floorSectionChildren.push({
+          ...serializeChild(floorNode),
+          elevation: floorY,
+          height_3d: floorH,
+          _floorId: floorInfo.id,
+        });
+
+        // Add all descendants of this floor with floor_y offset
+        for (const child of Object.values(floorNode.children || {})) {
+          const elev = (child.elevation ?? (child.metadata?.floor_y ?? 0));
+          floorSectionChildren.push({
+            ...serializeChild(child),
+            elevation: floorY + elev,
+            height_3d: child.height_3d ?? child.metadata?.floor_height ?? floorH,
+            _floorId: floorInfo.id,
+          });
+          // Recurse into room children
+          if (child.children) {
+            for (const gc of Object.values(child.children)) {
+              const gcElev = gc.elevation ?? 0;
+              floorSectionChildren.push({
+                ...serializeChild(gc),
+                x: child.x + gc.x,
+                y: child.y + gc.y,
+                elevation: floorY + gcElev,
+                height_3d: gc.height_3d ?? 0.5,
+                _floorId: floorInfo.id,
+                _depth: 2,
+              });
+            }
+          }
+        }
+      }
+      floorSectionHeight = maxH;
+    }
+
+    const { ascii, legend, scaleInfo } = renderAscii(node, maxCols, maxRows, null, projection);
+
     return json(res, {
       id: node.id, name: node.name, description: node.description || '',
       width: node.width, height: node.height,
       char: node.char, tags: node.tags || [], metadata: node.metadata || {},
       isContainer: !!node.children,
-      scaleInfo, ascii, legend, children, descendants, floors, path,
+      scaleInfo, ascii, legend, children, descendants, floors, path, projection,
+      floorSection: floorSectionChildren,
+      floorSectionHeight,
     });
   }
 

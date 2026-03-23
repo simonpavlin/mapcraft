@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 const CELL = 0.5; // meters per grid cell
 const WALL = 0.15;
 const IWALL = 0.1;

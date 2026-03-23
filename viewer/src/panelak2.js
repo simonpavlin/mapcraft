@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 
 const mat = {
   wallOuter: new THREE.MeshLambertMaterial({ color: 0xb0a898, side: DS }),

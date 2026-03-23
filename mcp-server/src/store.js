@@ -13,17 +13,64 @@ export class MapStore {
   }
 
   initSpace(name, width, height, description) {
-    this.root = {
-      id: '_root',
-      name,
-      description: description || '',
+    // Create root if it doesn't exist
+    if (!this.root) {
+      this.root = {
+        id: '_root',
+        name: 'Root',
+        description: '',
+        x: 0, y: 0,
+        width: 1, height: 1,
+        char: '.',
+        tags: [],
+        metadata: {},
+        children: {},
+      };
+    }
+
+    // Generate a safe ID from name
+    const id = name.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '') || 'space';
+
+    // Add as child container under root
+    this.root.children[id] = {
+      id, name,
       x: 0, y: 0,
       width, height,
       char: '.',
+      description: description || '',
       tags: [],
       metadata: {},
       children: {},
     };
+
+    // Expand root to fit all children
+    let maxW = 0, maxH = 0;
+    for (const child of Object.values(this.root.children)) {
+      maxW = Math.max(maxW, child.x + child.width);
+      maxH = Math.max(maxH, child.y + child.height);
+    }
+    this.root.width = maxW;
+    this.root.height = maxH;
+    this.root.name = Object.keys(this.root.children).length === 1
+      ? name
+      : `${Object.keys(this.root.children).length} spaces`;
+
+    this.save();
+    return id;
+  }
+
+  clearSpace(id) {
+    if (!this.root || !this.root.children[id]) return false;
+    delete this.root.children[id];
+    this.save();
+    return true;
+  }
+
+  clearAll() {
+    this.root = null;
     this.save();
   }
 
@@ -54,16 +101,54 @@ export class MapStore {
   }
 
   /**
-   * Collect all objects to render — optionally recursive.
-   * Returns flat array of { char, id, name, x, y, width, height } with absolute coords.
+   * Find collisions in projected space (front/side view).
    */
-  collectRenderObjects(node, recursive = false) {
+  findCollisionsProjected(parent, x, y, w, h, projection) {
+    const collisions = [];
+    for (const child of Object.values(parent.children || {})) {
+      if (child.elevation === undefined || child.height_3d === undefined) continue;
+      let px, py, pw, ph;
+      if (projection === 'front') {
+        px = child.x; py = child.elevation; pw = child.width; ph = child.height_3d;
+      } else { // side
+        px = child.y; py = child.elevation; pw = child.height; ph = child.height_3d;
+      }
+      if (rectsOverlap(x, y, w, h, px, py, pw, ph)) {
+        collisions.push({ ...child, px, py, pw, ph });
+      }
+    }
+    return collisions;
+  }
+
+  /**
+   * Collect all objects to render — optionally recursive.
+   * projection: 'plan' (default) | 'front' | 'side'
+   *   plan:  x → x, y → y (top-down, existing behavior)
+   *   front: x → x, elevation → y (looking from south, see width × height_3d)
+   *   side:  y → x, elevation → y (looking from east, see height × height_3d)
+   * Objects without elevation/height_3d are skipped in front/side projections.
+   */
+  collectRenderObjects(node, recursive = false, projection = 'plan') {
     const objects = [];
     function collect(parent, offsetX, offsetY) {
       for (const child of Object.values(parent.children || {})) {
         const absX = offsetX + child.x;
         const absY = offsetY + child.y;
-        objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: absY, width: child.width, height: child.height, shape: child.shape });
+
+        if (projection === 'plan') {
+          objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: absY, width: child.width, height: child.height, shape: child.shape });
+        } else if (projection === 'front') {
+          // front: looking from south — x stays, elevation becomes y
+          if (child.elevation !== undefined && child.height_3d !== undefined) {
+            objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: child.elevation, width: child.width, height: child.height_3d });
+          }
+        } else if (projection === 'side') {
+          // side: looking from east — plan-y becomes x, elevation becomes y
+          if (child.elevation !== undefined && child.height_3d !== undefined) {
+            objects.push({ char: child.char, id: child.id, name: child.name, x: absY, y: child.elevation, width: child.height, height: child.height_3d });
+          }
+        }
+
         if (recursive && child.children) {
           collect(child, absX, absY);
         }
@@ -73,18 +158,41 @@ export class MapStore {
     return objects;
   }
 
-  renderAscii(node, maxCols = 60, maxRows = 30, recursive = false) {
-    const objects = this.collectRenderObjects(node, recursive);
+  renderAscii(node, maxCols = 60, maxRows = 30, recursive = false, projection = 'plan') {
+    const objects = this.collectRenderObjects(node, recursive, projection);
     if (objects.length === 0) {
+      if (projection !== 'plan') {
+        return { ascii: [`(no objects with elevation/height_3d for ${projection} view)`], legend: [], scaleInfo: '' };
+      }
       return { ascii: [`(empty: ${node.width}m × ${node.height}m)`], legend: [], scaleInfo: '' };
     }
 
-    const scaleX = node.width / maxCols;
-    const scaleY = node.height / maxRows;
+    // Determine viewport size based on projection
+    let viewW, viewH, viewLabel;
+    if (projection === 'plan') {
+      viewW = node.width;
+      viewH = node.height;
+      viewLabel = `${node.width}m × ${node.height}m`;
+    } else {
+      // For front/side, compute bounding box from objects (elevation can vary)
+      let maxX = 0, maxY = 0;
+      for (const o of objects) {
+        maxX = Math.max(maxX, o.x + o.width);
+        maxY = Math.max(maxY, o.y + o.height);
+      }
+      viewW = projection === 'front' ? node.width : node.height;
+      viewH = maxY || 3; // fallback to 3m if no height data
+      // Use room floor_height from metadata if available
+      if (node.metadata?.floor_height) viewH = node.metadata.floor_height;
+      viewLabel = `${viewW}m × ${viewH}m (${projection} view)`;
+    }
+
+    const scaleX = viewW / maxCols;
+    const scaleY = viewH / maxRows;
     const scale = Math.max(scaleX, scaleY, 0.1);
 
-    const cols = Math.min(maxCols, Math.ceil(node.width / scale));
-    const rows = Math.min(maxRows, Math.ceil(node.height / scale));
+    const cols = Math.min(maxCols, Math.ceil(viewW / scale));
+    const rows = Math.min(maxRows, Math.ceil(viewH / scale));
 
     const grid = [];
     for (let r = 0; r < rows; r++) grid.push(new Array(cols).fill('.'));
@@ -124,10 +232,13 @@ export class MapStore {
       }
     }
 
+    // For front/side views, flip Y so floor is at bottom
+    const finalGrid = (projection !== 'plan') ? grid.reverse() : grid;
+
     return {
-      ascii: grid.map(r => r.join('')),
+      ascii: finalGrid.map(r => r.join('')),
       legend,
-      scaleInfo: `1 cell = ${scale.toFixed(2)}m | ${cols}×${rows} cells | ${node.width}m × ${node.height}m`,
+      scaleInfo: `1 cell = ${scale.toFixed(2)}m | ${cols}×${rows} cells | ${viewLabel}`,
     };
   }
 

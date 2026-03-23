@@ -20,7 +20,8 @@
       "WebFetch(domain:www.archtoolbox.com)",
       "WebFetch(domain:www.livehome3d.com)",
       "mcp__mapcraft__export_json",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(cd:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

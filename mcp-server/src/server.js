@@ -7,7 +7,7 @@ const store = new MapStore();
 
 const server = new McpServer({
   name: 'mapcraft',
-  version: '0.4.0',
+  version: '0.5.0',
 });
 
 // ──────────────────────────────────────────────
@@ -19,14 +19,28 @@ server.tool(
   'Get the MapCraft usage guide',
   {},
   async () => ok(`
-# MapCraft v0.4 — Spatial Object Planner
+# MapCraft v0.5 — Spatial Object Planner
 
 ## Core concept
 Hierarchical spatial database. All coordinates in METERS.
 Objects can overlap freely — collision is advisory only (use check_collision when needed).
 
+## Spaces
+init_space creates a NEW space without deleting existing ones. Multiple spaces coexist.
+- init_space("Byt 3kk", 12, 10) → creates space with id "byt_3kk"
+- init_space("Zahrada", 20, 15) → adds another space alongside
+- Use path="byt_3kk/obyvak" to place objects inside a space
+- clear_space("byt_3kk") removes one space, clear_all removes everything
+
 ## Coordinate system
 x = left→right, y = top→bottom on plan. Maps to 3D: plan-x → 3D x, plan-y → 3D z.
+
+## Projection views
+get_ascii and check_collision support projection parameter:
+- plan (default) — top-down view (x × y)
+- front — from south (x × elevation) — objects need elevation + height_3d
+- side — from east (y × elevation)
+Set elevation and height_3d on objects to enable front/side views. These are optional — add them later when you need vertical planning.
 
 ## Walls are IMPLICIT — rooms touch edge-to-edge
 - Room dimensions represent INTERIOR space, not including walls
@@ -194,16 +208,38 @@ place_objects(path="building/prizemi/schody", objects=[
 
 server.tool(
   'init_space',
-  'Initialize root space in METERS. Clears existing data.',
+  'Create a new space. Units are up to you (meters, centimeters, etc). Does NOT clear existing spaces — adds alongside them. Use path="{id}" to place objects inside. Returns the generated ID.',
   {
     name: z.string(),
-    width: z.number().min(1).max(10000),
-    height: z.number().min(1).max(10000),
+    width: z.number().min(0.01).max(10000),
+    height: z.number().min(0.01).max(10000),
     description: z.string().optional(),
   },
   async ({ name, width, height, description }) => {
-    store.initSpace(name, width, height, description || '');
-    return ok(`Space "${name}" initialized: ${width}m × ${height}m`);
+    const id = store.initSpace(name, width, height, description || '');
+    return ok(`Space "${name}" created (id: "${id}"): ${width}m × ${height}m. Use path="${id}" to add objects.`);
+  }
+);
+
+server.tool(
+  'clear_space',
+  'Remove a space and all its contents. Use clear_all to remove everything.',
+  {
+    id: z.string().describe('Space ID to remove'),
+  },
+  async ({ id }) => {
+    if (store.clearSpace(id)) return ok(`Space "${id}" removed.`);
+    return err(`Space "${id}" not found.`);
+  }
+);
+
+server.tool(
+  'clear_all',
+  'Remove ALL spaces and data. Use with caution.',
+  {},
+  async () => {
+    store.clearAll();
+    return ok('All data cleared.');
   }
 );
 
@@ -228,8 +264,10 @@ server.tool(
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
     metadata: z.string().optional().describe('JSON string of key-value data for 3D generation'),
+    elevation: z.number().optional().describe('Height of object bottom above floor (meters). Used for front/side projection views. Leave empty for plan-only objects.'),
+    height_3d: z.number().min(0.01).optional().describe('Vertical height of object (meters). Used for front/side projection views. Leave empty for plan-only objects.'),
   },
-  async ({ path, id, name, x, y, width, height, char, shape, is_container, description, tags, metadata }) => {
+  async ({ path, id, name, x, y, width, height, char, shape, is_container, description, tags, metadata, elevation, height_3d }) => {
     const parent = store.resolve(path || '/');
     if (!parent) return err(`Parent "${path}" not found`);
 
@@ -258,6 +296,8 @@ server.tool(
       tags: tags || [],
       metadata: meta,
       children: is_container ? {} : undefined,
+      elevation: elevation ?? undefined,
+      height_3d: height_3d ?? undefined,
     };
 
     store.save();
@@ -291,6 +331,8 @@ server.tool(
       description: z.string().optional(),
       tags: z.array(z.string()).optional(),
       metadata: z.string().optional(),
+      elevation: z.number().optional(),
+      height_3d: z.number().min(0.01).optional(),
     })).describe('Array of objects to place'),
   },
   async ({ path, objects }) => {
@@ -311,6 +353,8 @@ server.tool(
         tags: o.tags || [],
         metadata: parseMeta(o.metadata),
         children: o.is_container ? {} : undefined,
+        elevation: o.elevation ?? undefined,
+        height_3d: o.height_3d ?? undefined,
       };
       const type = o.is_container ? '+' : '·';
       const meta = o.metadata ? ' {…}' : '';
@@ -391,8 +435,10 @@ server.tool(
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
     metadata: z.string().optional().describe('Merged with existing metadata'),
+    elevation: z.number().optional().describe('Height above floor (meters). Set to -1 to clear.'),
+    height_3d: z.number().optional().describe('Vertical height (meters). Set to -1 to clear.'),
   },
-  async ({ path, x, y, width, height, shape, name, char, description, tags, metadata }) => {
+  async ({ path, x, y, width, height, shape, name, char, description, tags, metadata, elevation, height_3d }) => {
     const node = store.resolve(path);
     if (!node || node === store.root) return err('Not found or root');
     if (x !== undefined) node.x = x;
@@ -411,6 +457,8 @@ server.tool(
     if (description !== undefined) node.description = description;
     if (tags !== undefined) node.tags = tags;
     if (metadata) node.metadata = { ...(node.metadata || {}), ...parseMeta(metadata) };
+    if (elevation !== undefined) node.elevation = elevation < 0 ? undefined : elevation;
+    if (height_3d !== undefined) node.height_3d = height_3d < 0 ? undefined : height_3d;
     store.save();
     const pos = `(${node.x},${node.y}) ${node.width}×${node.height}m`;
     return ok(`Updated "${node.name}" → ${pos}`);
@@ -451,7 +499,7 @@ server.tool(
 
 server.tool(
   'check_collision',
-  'Advisory check: does a rectangle overlap with existing objects? Does NOT block placement.',
+  'Advisory check: does a rectangle overlap with existing objects? Does NOT block placement. Use projection for elevation checks.',
   {
     path: z.string().optional(),
     x: z.number().min(0),
@@ -459,16 +507,30 @@ server.tool(
     width: z.number().min(0.01),
     height: z.number().min(0.01),
     exclude_tags: z.array(z.string()).optional().describe('Ignore objects with these tags (e.g. ["door","window"])'),
+    projection: z.enum(['plan', 'front', 'side']).optional().describe('Check in projected space: plan (default), front (x × elevation), side (y × elevation)'),
   },
-  async ({ path, x, y, width, height, exclude_tags }) => {
+  async ({ path, x, y, width, height, exclude_tags, projection }) => {
     const parent = store.resolve(path || '/');
     if (!parent) return err('Not found');
-    let collisions = store.findCollisions(parent, x, y, width, height);
+
+    const proj = projection || 'plan';
+    let collisions;
+
+    if (proj === 'plan') {
+      collisions = store.findCollisions(parent, x, y, width, height);
+    } else {
+      // For front/side, project objects then check collisions
+      collisions = store.findCollisionsProjected(parent, x, y, width, height, proj);
+    }
+
     if (exclude_tags?.length) {
       collisions = collisions.filter(c => !(c.tags || []).some(t => exclude_tags.includes(t)));
     }
-    if (collisions.length === 0) return ok(`Area (${x},${y}) ${width}×${height}m is FREE`);
-    return ok(`Overlaps with: ${collisions.map(c => `[${c.char}] "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m`).join(', ')}`);
+    if (collisions.length === 0) return ok(`Area (${x},${y}) ${width}×${height}m is FREE (${proj})`);
+    const fmt = proj === 'plan'
+      ? c => `[${c.char}] "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m`
+      : c => `[${c.char}] "${c.name}" (${c.px},${c.py}) ${c.pw}×${c.ph}m`;
+    return ok(`Overlaps with: ${collisions.map(fmt).join(', ')}`);
   }
 );
 
@@ -478,17 +540,20 @@ server.tool(
 
 server.tool(
   'get_ascii',
-  'ASCII visualization. Auto-scales to fit. Use recursive=true to show all nested objects (windows, furniture inside rooms).',
+  'ASCII visualization. Auto-scales to fit. Use recursive=true to show all nested objects. Use projection for different views: plan (top-down, default), front (from south, shows x + elevation), side (from east, shows y + elevation).',
   {
     path: z.string().optional(),
     max_cols: z.number().int().min(10).max(120).optional(),
     max_rows: z.number().int().min(5).max(60).optional(),
     recursive: z.boolean().optional().describe('Show all nested objects (children of children, etc). Default: false — only direct children.'),
     tag: z.string().optional().describe('Only show objects with this tag'),
+    projection: z.enum(['plan', 'front', 'side']).optional().describe('View projection: plan (top-down, default), front (from south — x × elevation), side (from east — y × elevation). Objects need elevation + height_3d for front/side.'),
   },
-  async ({ path, max_cols, max_rows, recursive, tag }) => {
+  async ({ path, max_cols, max_rows, recursive, tag, projection }) => {
     const node = store.resolve(path || '/');
     if (!node) return err('Not found');
+
+    const proj = projection || 'plan';
 
     // If tag filter, temporarily filter children
     let originalChildren;
@@ -501,7 +566,7 @@ server.tool(
       node.children = filtered;
     }
 
-    const { ascii, legend, scaleInfo } = store.renderAscii(node, max_cols || 60, max_rows || 30, recursive || false);
+    const { ascii, legend, scaleInfo } = store.renderAscii(node, max_cols || 60, max_rows || 30, recursive || false, proj);
 
     if (originalChildren) node.children = originalChildren;
 
@@ -615,7 +680,7 @@ function shapeBBox(points) {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('MapCraft MCP v0.4 running');
+  console.error('MapCraft MCP v0.5 running');
 }
 
 main().catch(console.error);

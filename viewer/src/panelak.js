@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 
 // Materials
 const mat = {

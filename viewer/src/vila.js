@@ -12,7 +12,7 @@ import * as THREE from 'three';
 //   satna:      (7.5, 10)  3×3m
 //   terasa:     (11, 6.5)  5×6.5m
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 const WALL = 0.15;
 const IWALL = 0.1;
 const H = 3.0; // floor height

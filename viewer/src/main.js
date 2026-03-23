@@ -7,10 +7,10 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb); // sky blue
 scene.fog = new THREE.Fog(0x87ceeb, 50, 200);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 500);
 camera.position.set(0, 1.7, 5); // eye height
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.shadowMap.enabled = true;

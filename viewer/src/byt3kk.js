@@ -18,7 +18,7 @@ import {
 //   obývák (0,7) 14×4        — celý jih
 //   balkon (2,11) 10×2       — za jižní stěnou
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 const FH = 2.8;
 
 const mw = new THREE.MeshLambertMaterial({ color: 0xf0ece4, side: DS });

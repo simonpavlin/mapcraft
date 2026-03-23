@@ -130,13 +130,15 @@ function buildCharLookup() {
 
 let currentPath = '/', currentTab = 'overview', treeData = null, nodeData = null;
 let expandedPaths = new Set(['/']), selectedFloor = null, selectedFloorData = null;
+let currentProjection = 'plan';
 
 async function fetchTree() {
   try { treeData = await (await fetch('/api/tree')).json(); renderTree(); } catch {}
 }
+function switchProjection(p) { currentProjection = p; fetchNode(currentPath); }
 async function fetchNode(path) {
   try {
-    nodeData = await (await fetch(`/api/node?path=${encodeURIComponent(path)}`)).json();
+    nodeData = await (await fetch(`/api/node?path=${encodeURIComponent(path)}&projection=${currentProjection}`)).json();
     // Auto-select first floor if floors detected and none selected
     if (nodeData.floors?.length > 0 && !selectedFloor) {
       await selectFloor(nodeData.floors[0].id);
@@ -148,7 +150,7 @@ async function fetchNode(path) {
 let navHistory = ['/'];
 function navigateTo(path) {
   if (currentPath !== path) navHistory.push(currentPath);
-  currentPath = path; selectedFloor = null; selectedFloorData = null;
+  currentPath = path; selectedFloor = null; selectedFloorData = null; currentProjection = 'plan';
   const parts = path.split('/').filter(Boolean);
   let p = ''; expandedPaths.add('/');
   for (const part of parts) { p = p ? `${p}/${part}` : part; expandedPaths.add(p); }
@@ -293,6 +295,11 @@ function renderToolbar() {
   for (const [id, label] of [['overview','Přehled'],['ascii','ASCII'],['floorplan','Půdorys'],['objects','Objekty']]) {
     h += `<div class="tab ${currentTab===id?'active':''}" onclick="switchTab('${id}')">${label}</div>`;
   }
+  // Projection buttons
+  h += '<span class="floor-label" style="margin-left:16px">Pohled:</span>';
+  for (const [id, label] of [['plan','↓ Půdorys'],['front','→ Zepředu'],['side','→ Z boku']]) {
+    h += `<div class="floor-btn ${currentProjection===id?'active':''}" onclick="switchProjection('${id}')">${label}</div>`;
+  }
   // Floor buttons
   if (d.floors && d.floors.length > 0) {
     h += '<span class="floor-label">Patro:</span>';
@@ -391,7 +398,6 @@ function renderFloorplan() {
   // Determine what to show
   let children, descendants, viewWidth = d.width, viewHeight = d.height;
   if (hasFloors && selectedFloor && selectedFloorData) {
-    // Use directly fetched floor data
     children = selectedFloorData.children || [];
     descendants = selectedFloorData.descendants || [];
     viewWidth = selectedFloorData.width || d.width;
@@ -401,6 +407,43 @@ function renderFloorplan() {
     descendants = allDescendants;
   }
 
+  // Apply projection
+  if (currentProjection !== 'plan') {
+    // If we have floor section data from server (multi-floor cross-section), use it
+    if (d.floorSection && d.floorSection.length > 0) {
+      const projFn = (c) => {
+        if (c.elevation === undefined || c.height_3d === undefined) return null;
+        return {
+          ...c,
+          x: currentProjection === 'front' ? c.x : c.y,
+          y: c.elevation,
+          width: currentProjection === 'front' ? c.width : c.height,
+          height: c.height_3d,
+        };
+      };
+      const projected = d.floorSection.map(projFn).filter(Boolean);
+      children = projected.filter(c => !c._depth || c._depth <= 1);
+      descendants = projected.filter(c => c._depth && c._depth > 1);
+      viewWidth = currentProjection === 'front' ? d.width : d.height;
+      viewHeight = d.floorSectionHeight || 6;
+    } else {
+      const projFn = (c) => {
+        if (c.elevation === undefined || c.height_3d === undefined) return null;
+        return {
+          ...c,
+          x: currentProjection === 'front' ? c.x : c.y,
+          y: c.elevation,
+          width: currentProjection === 'front' ? c.width : c.height,
+          height: c.height_3d,
+        };
+      };
+      children = children.map(projFn).filter(Boolean);
+      descendants = descendants.map(projFn).filter(Boolean);
+      viewWidth = currentProjection === 'front' ? d.width : d.height;
+      viewHeight = d.metadata?.floor_height || Math.max(...[...children, ...descendants].map(c => c.y + c.height), 3);
+    }
+  }
+
   if (children.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Prázdný prostor</h2></div>'; return; }
 
   const PAD = 40, maxW = 900, maxH = 600;
@@ -408,9 +451,12 @@ function renderFloorplan() {
   const scale = Math.min((maxW - PAD*2) / vpw, (maxH - PAD*2) / vph);
   const cw = Math.ceil(vpw * scale + PAD*2), ch = Math.ceil(vph * scale + PAD*2);
 
-  const floorLabel = hasFloors && selectedFloor ? ` — ${floors.find(f=>f.id===selectedFloor)?.name || selectedFloor}` : '';
+  const isFloorSection = currentProjection !== 'plan' && d.floorSection && d.floorSection.length > 0;
+  const floorLabel = (!isFloorSection && hasFloors && selectedFloor) ? ` — ${floors.find(f=>f.id===selectedFloor)?.name || selectedFloor}` : '';
+  const sectionLabel = isFloorSection ? ' — řez všemi patry' : '';
+  const viewNames = { plan: 'Půdorys', front: 'Pohled zepředu', side: 'Pohled z boku' };
   let h = '<div class="view-with-panel"><div class="view-main"><div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow:auto">';
-  h += `<p style="margin-bottom:8px;font-size:12px;color:var(--tx2)">Půdorys — ${vpw}m × ${vph}m${floorLabel}</p>`;
+  h += `<p style="margin-bottom:8px;font-size:12px;color:var(--tx2)">${viewNames[currentProjection]} — ${Number(vpw).toFixed(1)}m × ${Number(vph).toFixed(1)}m${floorLabel}${sectionLabel}</p>`;
   h += `<canvas id="fp-canvas" width="${cw}" height="${ch}" style="border:1px solid var(--bd);border-radius:4px;cursor:crosshair"></canvas>`;
   if (descendants.length > 0) {
     h += `<p style="margin-top:8px;font-size:11px;color:var(--tx2)"><span style="display:inline-block;width:12px;height:12px;border:2px solid var(--ac);opacity:.6;vertical-align:middle;margin-right:4px"></span> přímé objekty &nbsp; <span style="display:inline-block;width:12px;height:12px;border:1px dashed var(--tx2);opacity:.6;vertical-align:middle;margin-right:4px"></span> vnořené objekty</p>`;
@@ -424,18 +470,50 @@ function renderFloorplan() {
   ctx.fillStyle = '#1a1a2e';
   ctx.fillRect(0, 0, cw, ch);
 
-  drawFloorContent(ctx, children, descendants, vpw, vph, scale, PAD, shapePath);
+  if (currentProjection !== 'plan') {
+    // Invert Y coords so floor (elevation=0) is at bottom of canvas
+    const flipY = (obj) => ({ ...obj, y: vph - obj.y - obj.height });
+    const flippedChildren = children.map(flipY);
+    const flippedDescendants = descendants.map(flipY);
+    drawFloorContent(ctx, flippedChildren, flippedDescendants, vpw, vph, scale, PAD, shapePath);
+
+    // Draw floor lines for each level
+    ctx.strokeStyle = '#4a4a6a'; ctx.lineWidth = 2; ctx.setLineDash([]);
+    ctx.fillStyle = '#606080'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+
+    if (d.floorSection && d.floors) {
+      // Multi-floor: draw a line + label for each floor
+      for (const f of d.floors) {
+        const floorNode = d.children?.find(c => c.id === f.id);
+        const floorY = floorNode?.metadata?.floor_y ?? 0;
+        const canvasY = PAD + (vph - floorY) * scale;
+        ctx.beginPath(); ctx.moveTo(PAD, canvasY); ctx.lineTo(PAD + vpw * scale, canvasY); ctx.stroke();
+        ctx.fillText(f.name + ' (' + floorY + 'm)', PAD + 4, canvasY - 4);
+      }
+    } else {
+      // Single room: just ground line
+      ctx.beginPath(); ctx.moveTo(PAD, PAD + vph * scale); ctx.lineTo(PAD + vpw * scale, PAD + vph * scale); ctx.stroke();
+      ctx.textBaseline = 'top';
+      ctx.fillText('podlaha', PAD + 4, PAD + vph * scale + 4);
+    }
+  } else {
+    drawFloorContent(ctx, children, descendants, vpw, vph, scale, PAD, shapePath);
+  }
 
   // Dimension labels
   ctx.fillStyle = '#606080'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
   ctx.fillText(`${vpw}m`, PAD+vpw*scale/2, PAD+vph*scale+6);
   ctx.save(); ctx.translate(PAD-8, PAD+vph*scale/2); ctx.rotate(-Math.PI/2); ctx.textBaseline = 'bottom'; ctx.fillText(`${vph}m`, 0, 0); ctx.restore();
 
+  // For elevation views, use flipped coords for hit detection
+  const hitChildren = currentProjection !== 'plan' ? children.map(c => ({ ...c, y: vph - c.y - c.height })) : children;
+  const hitAll = currentProjection !== 'plan' ? [...children, ...descendants].map(c => ({ ...c, y: vph - c.y - c.height })) : [...children, ...descendants];
+
   canvas.onclick = (e) => {
     const rect = canvas.getBoundingClientRect();
     const wx = (e.clientX-rect.left-PAD)/scale, wy = (e.clientY-rect.top-PAD)/scale;
     let best = null, bestArea = Infinity;
-    for (const c of children) {
+    for (const c of hitChildren) {
       if (wx >= c.x && wx <= c.x+c.width && wy >= c.y && wy <= c.y+c.height) {
         const area = c.width*c.height;
         if (c.hasGrid && area < bestArea) { best = c; bestArea = area; }
@@ -445,12 +523,11 @@ function renderFloorplan() {
   };
 
   // Info panel on hover
-  const allObjects = [...children, ...descendants];
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
     const wx = (e.clientX - rect.left - PAD) / scale, wy = (e.clientY - rect.top - PAD) / scale;
     let best = null, bestArea = Infinity;
-    for (const c of allObjects) {
+    for (const c of hitAll) {
       if (wx >= c.x && wx <= c.x + c.width && wy >= c.y && wy <= c.y + c.height) {
         const area = c.width * c.height;
         if (area < bestArea) { best = c; bestArea = area; }

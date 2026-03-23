@@ -5,7 +5,7 @@ import {
   MAT, box, plane
 } from './building-utils.js';
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 const FH = 2.8;
 
 // Deterministic pseudo-random

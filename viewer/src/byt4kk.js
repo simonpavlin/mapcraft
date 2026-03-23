@@ -18,7 +18,7 @@ import {
 //   pracovna (11.5, 5) 4.5×3.5 — východ dole
 //   obývák (5.5, 4.5) 6×7.5   — střed+jih
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 const FH = 2.8;
 
 const mw = new THREE.MeshLambertMaterial({ color: 0xf0ece4, side: DS });    // vnější zdi

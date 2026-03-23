@@ -8,7 +8,7 @@ import {
 // Kostel s farou — MCP (60,60) → 3D (-40, -40)
 // Kostel: věž(0,5) → předsíň(4,4.5) → loď(7,2) 15×10 → presbytář(22,3) 6×8
 // Sakristie(22,11.5), Fara(15,16) 14×9
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 const CHURCH_H = 8;   // hlavní loď výška
 const PRESB_H = 9;    // presbytář ještě vyšší
 const TOWER_H = 20;

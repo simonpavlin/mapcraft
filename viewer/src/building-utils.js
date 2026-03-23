@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const DS = THREE.DoubleSide;
+const DS = THREE.FrontSide;
 
 // ════════════════════════════════════════════════
 // MATERIALS — shared default palette
@@ -34,7 +34,11 @@ export function box(w, h, d, mat) {
 }
 
 export function plane(w, h, mat) {
-  return new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat.clone());
+  m.material.polygonOffset = true;
+  m.material.polygonOffsetFactor = -1;
+  m.material.polygonOffsetUnits = -1;
+  return m;
 }
 
 // ════════════════════════════════════════════════
@@ -233,13 +237,15 @@ export function addDoor(group, opts) {
 // ════════════════════════════════════════════════
 
 export function addFloor(group, x, z, w, d, y = 0, material = MAT.floor) {
-  group.add(pos(box(w, 0.15, d, material), x + w / 2, y + 0.075, z + d / 2));
+  // Floor slab top at y+0.13 — leaves gap so objects at y+0.15 don't z-fight
+  group.add(pos(box(w, 0.13, d, material), x + w / 2, y + 0.065, z + d / 2));
 }
 
 export function addCeiling(group, x, z, w, d, floorHeight, y = 0, material = MAT.ceiling) {
   const c = plane(w, d, material);
   c.rotation.x = Math.PI / 2;
-  c.position.set(x + w / 2, y + floorHeight - 0.01, z + d / 2);
+  // Offset down enough so beams/objects at floorHeight don't z-fight
+  c.position.set(x + w / 2, y + floorHeight - 0.03, z + d / 2);
   group.add(c);
 }
 
