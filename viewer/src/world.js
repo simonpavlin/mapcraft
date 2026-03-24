@@ -11,7 +11,7 @@ import { createOpevneni } from './opevneni.js';
 import { createSchodiste } from './schodiste.js';
 import { createPalacSchodiste } from './palac-schodiste.js';
 import { createTociteSchodiste } from './tocite-schodiste.js';
-import { createHogwarts } from './hogwarts.js';
+// import { createHogwarts } from './hogwarts.js';
 
 export function createWorld(scene) {
   createGround(scene);
@@ -27,7 +27,7 @@ export function createWorld(scene) {
   // createSchodiste(scene, 60, 0);
   // createPalacSchodiste(scene, 80, 0);
   // createTociteSchodiste(scene, 100, 0);
-  createHogwarts(scene, 0, -100);
+  // createHogwarts(scene, 0, -100);
 }
 
 function createGround(scene) {
