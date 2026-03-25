@@ -23,6 +23,9 @@
   .tree-tag { font-size:9px; padding:1px 4px; border-radius:3px; background:var(--ac2); color:var(--tx); margin-left:2px; }
   .tree-children { margin-left:16px; }
   .tree-children.collapsed { display:none; }
+  .tree-del { font-size:11px; color:var(--tx2); cursor:pointer; margin-left:4px; padding:2px 4px; border-radius:3px; opacity:0; transition:opacity .15s; }
+  .tree-row:hover .tree-del { opacity:1; }
+  .tree-del:hover { background:var(--ac); color:#fff; }
   #main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
   #breadcrumb { padding:10px 20px; background:var(--sf); border-bottom:1px solid var(--bd); display:flex; align-items:center; gap:6px; font-size:13px; flex-wrap:wrap; }
   .crumb { color:var(--tx2); cursor:pointer; } .crumb:hover { color:var(--ac); } .crumb.current { color:var(--tx); font-weight:600; }
@@ -80,7 +83,7 @@
 </head>
 <body>
 <div id="sidebar">
-  <div id="sidebar-header"><h1>MapCraft</h1><p>Map Explorer v0.4</p></div>
+  <div id="sidebar-header"><h1>MapCraft</h1><p>Map Explorer v0.6</p></div>
   <div id="tree-container"><div id="tree"></div></div>
 </div>
 <div id="main">
@@ -94,6 +97,29 @@
 <script>
 const COLORS = {'#':'#8b8b8b','.':'#3a3a4a','A':'#e94560','B':'#4ade80','C':'#60a5fa','D':'#facc15','E':'#c084fc','F':'#fb923c','G':'#2dd4bf','H':'#a78bfa','I':'#f87171','K':'#fbbf24','L':'#34d399','M':'#a3e635','O':'#fb923c','P':'#c4b5fd','R':'#fb7185','S':'#f472b6','T':'#4ade80','V':'#38bdf8','W':'#94a3b8','o':'#60a5fa','~':'#38bdf8','=':'#9ca3af','1':'#f59e0b','2':'#8b5cf6'};
 function cc(ch) { return COLORS[ch] || '#e0e0e0'; }
+function drawRotationArrow(ctx, rx, ry, rw, rh, rotation, color) {
+  const cx = rx + rw / 2, cy = ry + rh / 2;
+  const arrowLen = Math.min(rw, rh) * 0.3;
+  const headSize = Math.max(3, arrowLen * 0.35);
+  // Direction: 0=up(↑), 90=right(→), 180=down(↓), 270=left(←)
+  const angles = { 0: -Math.PI/2, 90: 0, 180: Math.PI/2, 270: Math.PI };
+  const angle = angles[rotation] ?? 0;
+  const ex = cx + Math.cos(angle) * arrowLen;
+  const ey = cy + Math.sin(angle) * arrowLen;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineWidth = Math.max(1.5, arrowLen * 0.12); ctx.lineCap = 'round';
+  ctx.globalAlpha = 0.8;
+  // Line
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.stroke();
+  // Arrowhead
+  ctx.beginPath();
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - headSize * Math.cos(angle - 0.5), ey - headSize * Math.sin(angle - 0.5));
+  ctx.lineTo(ex - headSize * Math.cos(angle + 0.5), ey - headSize * Math.sin(angle + 0.5));
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
 function esc(s) { return s ? s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 
 // Info panel helpers
@@ -109,6 +135,10 @@ function updateInfoPanel(obj) {
   h += `<div class="hi-row"><b>Pozice:</b> (${obj.x}, ${obj.y})</div>`;
   h += `<div class="hi-row"><b>Rozměry:</b> ${obj.width} × ${obj.height}m</div>`;
   h += `<div class="hi-row"><b>Plocha:</b> ${(obj.width * obj.height).toFixed(0)} m²</div>`;
+  if (obj.rotation) {
+    const arrows = {0:'↑ sever',90:'→ východ',180:'↓ jih',270:'← západ'};
+    h += `<div class="hi-row"><b>Otočení:</b> ${obj.rotation}° ${arrows[obj.rotation]||''}</div>`;
+  }
   if (obj.tags?.length) {
     h += '<div class="hi-tags">';
     for (const t of obj.tags) h += `<span class="tag">${esc(t)}</span>`;
@@ -176,14 +206,26 @@ function renderTree() {
 }
 function renderTreeNode(n) {
   const has = n.children?.length > 0, exp = expandedPaths.has(n.path), act = currentPath === n.path;
+  const isProject = n.tags?.includes('project');
   let h = `<div class="tree-node"><div class="tree-row ${act?'active':''}" onclick="treeClick(event,'${n.path}',${has})">`;
   h += `<span class="tree-toggle">${has?(exp?'▼':'▶'):'·'}</span>`;
   h += `<span class="tree-name">${esc(n.name)}</span>`;
   if (n.childCount > 0) h += `<span class="tree-badge">${n.childCount}</span>`;
+  if (isProject) h += `<span class="tree-tag" style="background:var(--ac)">projekt</span>`;
+  if (isProject) h += `<span class="tree-del" onclick="deleteNode(event,'${n.path}','${esc(n.name)}')" title="Smazat projekt">✕</span>`;
   if (n.tags?.includes('floor')) h += `<span class="tree-tag">floor</span>`;
   h += '</div>';
   if (has) { h += `<div class="tree-children ${exp?'':'collapsed'}">`; for (const c of n.children) h += renderTreeNode(c); h += '</div>'; }
   return h + '</div>';
+}
+async function deleteNode(e, path, name) {
+  e.stopPropagation();
+  if (!confirm(`Smazat "${name}" a veškerý obsah?`)) return;
+  try {
+    await fetch(`/api/delete?path=${encodeURIComponent(path)}`, { method: 'POST' });
+    if (currentPath.startsWith(path)) { currentPath = '/'; }
+    await refresh();
+  } catch (err) { console.error(err); }
 }
 function switchTab(t) { currentTab = t; renderContent(); }
 async function selectFloor(id) {
@@ -211,8 +253,18 @@ function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, P
     const color = cc(c.char);
     const isDoor = c.tags?.includes('door');
     const isWindow = c.tags?.includes('window');
-    if (isDoor) { ctx.fillStyle = color + '80'; ctx.fillRect(rx, ry, rw, rh); continue; }
+    const isClearance = c.tags?.includes('clearance');
+    if (isDoor) {
+      ctx.fillStyle = color + '80'; ctx.fillRect(rx, ry, rw, rh);
+      if (c.rotation && rw > 8 && rh > 8) drawRotationArrow(ctx, rx, ry, rw, rh, c.rotation, '#ffffff');
+      continue;
+    }
     if (isWindow) { ctx.fillStyle = '#88ccee44'; ctx.fillRect(rx, ry, rw, rh); continue; }
+    if (isClearance) {
+      ctx.strokeStyle = '#ffffff18'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+      ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]);
+      continue;
+    }
     ctx.fillStyle = color + '25';
     shapePath(ctx, c, rx, ry, scale); ctx.fill();
     ctx.strokeStyle = color; ctx.lineWidth = 2;
@@ -234,6 +286,10 @@ function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, P
       const metaStr = Object.entries(c.metadata).map(([k,v]) => `${k}:${v}`).join(' ');
       ctx.fillText(metaStr.substring(0, Math.floor(rw/5)), rx+rw/2, ry+rh-6, rw-6);
     }
+    // Draw rotation arrow
+    if (c.rotation && rw > 14 && rh > 14) {
+      drawRotationArrow(ctx, rx, ry, rw, rh, c.rotation, color);
+    }
   }
   // Descendants
   if (floorDescendants.length > 0) {
@@ -247,9 +303,19 @@ function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, P
       const isDoor = dc.tags?.includes('door');
       const isWindow = dc.tags?.includes('window');
       const isFurniture = dc.tags?.includes('furniture');
+      const isClearance = dc.tags?.includes('clearance');
       const opacity = Math.max(15, 40 - dc._depth * 10);
-      if (isDoor) { ctx.fillStyle = color + Math.round(opacity * 1.5).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh); continue; }
+      if (isDoor) {
+        ctx.fillStyle = color + Math.round(opacity * 1.5).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh);
+        if (dc.rotation && rw > 8 && rh > 8) drawRotationArrow(ctx, rx, ry, rw, rh, dc.rotation, '#ffffffaa');
+        continue;
+      }
       if (isWindow) { ctx.fillStyle = '#88ccee' + Math.round(opacity).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh); continue; }
+      if (isClearance) {
+        ctx.strokeStyle = '#ffffff10'; ctx.lineWidth = 0.5; ctx.setLineDash([2,3]);
+        ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]);
+        continue;
+      }
       ctx.fillStyle = color + Math.round(opacity * 0.6).toString(16).padStart(2,'0');
       shapePath(ctx, dc, rx, ry, scale); ctx.fill();
       ctx.strokeStyle = color + Math.round(opacity * 2).toString(16).padStart(2,'0');
@@ -266,6 +332,10 @@ function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, P
         ctx.font = `${fs2}px 'Segoe UI',sans-serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(label, rx+rw/2, ry+rh/2, rw-4);
+      }
+      // Draw rotation arrow for descendants
+      if (dc.rotation && rw > 10 && rh > 10) {
+        drawRotationArrow(ctx, rx, ry, rw, rh, dc.rotation, color);
       }
     }
   }
@@ -545,7 +615,7 @@ function renderObjects() {
   if (children.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádné objekty</h2></div>'; return; }
 
   let h = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;overflow:auto">';
-  h += '<table class="children-table"><thead><tr><th>Znak</th><th>ID</th><th>Název</th><th>Pozice</th><th>Rozměry</th><th>Tagy</th><th>Metadata</th></tr></thead><tbody>';
+  h += '<table class="children-table"><thead><tr><th>Znak</th><th>ID</th><th>Název</th><th>Pozice</th><th>Rozměry</th><th>Směr</th><th>Tagy</th><th>Metadata</th></tr></thead><tbody>';
   for (const c of children) {
     const childPath = currentPath === '/' ? c.id : `${currentPath}/${c.id}`;
     const color = cc(c.char);
@@ -556,6 +626,8 @@ function renderObjects() {
     h += `<td>${esc(c.name)}${c.description ? `<br><span style="font-size:11px;color:var(--tx2)">${esc(c.description)}</span>` : ''}</td>`;
     h += `<td>(${c.x}, ${c.y})</td>`;
     h += `<td>${c.width}×${c.height}m</td>`;
+    const rotArrows = {0:'↑',90:'→',180:'↓',270:'←'};
+    h += `<td>${c.rotation ? `${rotArrows[c.rotation]||''} ${c.rotation}°` : ''}</td>`;
     h += `<td>${(c.tags||[]).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</td>`;
     h += `<td>${metaKeys.map(k => `<span class="meta-pill">${esc(k)}:${esc(c.metadata[k])}</span>`).join('')}</td>`;
     h += '</tr>';

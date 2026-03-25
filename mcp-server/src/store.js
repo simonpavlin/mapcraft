@@ -12,6 +12,57 @@ export class MapStore {
     this.root = this._load();
   }
 
+  createProject(name, description) {
+    // Ensure root exists
+    if (!this.root) {
+      this.root = {
+        id: '_root',
+        name: 'Projekty',
+        description: '',
+        x: 0, y: 0,
+        width: 1, height: 1,
+        char: '.',
+        tags: [],
+        metadata: {},
+        children: {},
+      };
+    }
+
+    // Generate safe ID from name
+    const id = name.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '') || 'project';
+
+    // Add project as child of root
+    this.root.children[id] = {
+      id, name,
+      x: 0, y: 0,
+      width: 1, height: 1,
+      char: '.',
+      description: description || '',
+      tags: ['project'],
+      metadata: { project: true, created: new Date().toISOString() },
+      children: {},
+    };
+
+    // Update root name
+    const projectCount = Object.values(this.root.children).filter(c => (c.tags || []).includes('project')).length;
+    this.root.name = projectCount === 1 ? name : `${projectCount} projektů`;
+
+    this.save();
+    return id;
+  }
+
+  deleteProject(id) {
+    if (!this.root || !this.root.children[id]) return false;
+    delete this.root.children[id];
+    const projectCount = Object.keys(this.root.children).length;
+    this.root.name = projectCount === 0 ? 'Prázdné' : projectCount === 1 ? Object.values(this.root.children)[0].name : `${projectCount} projektů`;
+    this.save();
+    return true;
+  }
+
   initSpace(name, width, height, description) {
     // Create root if it doesn't exist
     if (!this.root) {
@@ -240,6 +291,174 @@ export class MapStore {
       legend,
       scaleInfo: `1 cell = ${scale.toFixed(2)}m | ${cols}×${rows} cells | ${viewLabel}`,
     };
+  }
+
+  /**
+   * Deep-copy a template into a target parent at given position/rotation.
+   *
+   * For templates with children (door+clearance, furniture group, etc.):
+   * - Creates a neutral container sized to the full bounding box
+   * - Adds a `_body` child for the template's own visual (char, tags)
+   * - Adds all original children alongside _body
+   * - Rotates ALL parts (body + children) correctly within the bbox
+   *
+   * For leaf objects: simple copy with dimension swap.
+   */
+  stampObject(sourcePath, targetPath, newId, x, y, rotation) {
+    const source = this.resolve(sourcePath);
+    if (!source) return { error: 'Source not found' };
+    const target = this.resolve(targetPath);
+    if (!target) return { error: 'Target not found' };
+    if (!target.children) return { error: 'Target is not a container' };
+    if (target.children[newId]) return { error: `"${newId}" already exists in target` };
+
+    const rot = rotation || 0;
+    const hasChildren = source.children && Object.keys(source.children).length > 0;
+
+    if (!hasChildren) {
+      // Leaf: simple copy
+      const copy = this._deepCopy(source, newId);
+      copy.x = x;
+      copy.y = y;
+      copy.rotation = rot;
+      if (rot === 90 || rot === 270) {
+        const tmp = copy.width; copy.width = copy.height; copy.height = tmp;
+      }
+      copy.metadata = { ...(copy.metadata || {}), _template: sourcePath };
+      target.children[newId] = copy;
+      this.save();
+      return { id: newId, name: copy.name };
+    }
+
+    // Container template: collect body + children as flat parts list
+    const bbox = this._subtreeBBox(source);
+    const parts = [];
+
+    // _body = the visual representation of the source object itself
+    parts.push({
+      id: '_body',
+      name: source.name,
+      x: 0, y: 0,
+      width: source.width, height: source.height,
+      char: source.char,
+      description: '',
+      tags: [...(source.tags || []).filter(t => t !== 'template')],
+      metadata: {},
+      rotation: 0,
+    });
+
+    // Original children
+    for (const child of Object.values(source.children)) {
+      parts.push(this._deepCopy(child));
+    }
+
+    // Rotate all parts within the full bbox
+    if (rot !== 0) {
+      for (const part of parts) {
+        const cx = part.x, cy = part.y, cw = part.width, ch = part.height;
+        if (rot === 90) {
+          part.x = bbox.h - cy - ch;
+          part.y = cx;
+        } else if (rot === 180) {
+          part.x = bbox.w - cx - cw;
+          part.y = bbox.h - cy - ch;
+        } else if (rot === 270) {
+          part.x = cy;
+          part.y = bbox.w - cx - cw;
+        }
+        if (rot === 90 || rot === 270) {
+          const tmp = part.width; part.width = part.height; part.height = tmp;
+        }
+        // Recurse for grandchildren
+        if (part.children && Object.keys(part.children).length > 0) {
+          this._rotateChildren(part, cw, ch, rot);
+        }
+      }
+    }
+
+    // Build neutral container sized to rotated bbox
+    const rotW = (rot === 90 || rot === 270) ? bbox.h : bbox.w;
+    const rotH = (rot === 90 || rot === 270) ? bbox.w : bbox.h;
+
+    const stamp = {
+      id: newId,
+      name: source.name,
+      x, y,
+      width: rotW,
+      height: rotH,
+      char: '.',
+      description: source.description || '',
+      tags: ['stamp'],
+      metadata: { ...(source.metadata || {}), _template: sourcePath },
+      rotation: rot,
+      children: {},
+    };
+
+    for (const part of parts) {
+      stamp.children[part.id] = part;
+    }
+
+    target.children[newId] = stamp;
+    this.save();
+    return { id: newId, name: source.name };
+  }
+
+  /** Compute bounding box of node + all children. */
+  _subtreeBBox(node) {
+    let maxW = node.width, maxH = node.height;
+    for (const child of Object.values(node.children || {})) {
+      maxW = Math.max(maxW, child.x + child.width);
+      maxH = Math.max(maxH, child.y + child.height);
+    }
+    return { w: maxW, h: maxH };
+  }
+
+  _rotateChildren(node, origW, origH, rotation) {
+    for (const child of Object.values(node.children || {})) {
+      const cx = child.x, cy = child.y, cw = child.width, ch = child.height;
+      if (rotation === 90) {
+        child.x = origH - cy - ch;
+        child.y = cx;
+      } else if (rotation === 180) {
+        child.x = origW - cx - cw;
+        child.y = origH - cy - ch;
+      } else if (rotation === 270) {
+        child.x = cy;
+        child.y = origW - cx - cw;
+      }
+      if (rotation === 90 || rotation === 270) {
+        const tmp = child.width;
+        child.width = child.height;
+        child.height = tmp;
+      }
+      if (child.children && Object.keys(child.children).length > 0) {
+        this._rotateChildren(child, cw, ch, rotation);
+      }
+    }
+  }
+
+  _deepCopy(node, newId) {
+    const copy = {
+      id: newId || node.id,
+      name: node.name,
+      x: node.x, y: node.y,
+      width: node.width, height: node.height,
+      char: node.char,
+      shape: node.shape ? JSON.parse(JSON.stringify(node.shape)) : undefined,
+      description: node.description || '',
+      tags: [...(node.tags || [])],
+      metadata: { ...(node.metadata || {}) },
+      rotation: node.rotation || 0,
+      elevation: node.elevation,
+      height_3d: node.height_3d,
+    };
+    if (node.children) {
+      copy.children = {};
+      for (const [id, child] of Object.entries(node.children)) {
+        copy.children[id] = this._deepCopy(child);
+      }
+    }
+    return copy;
   }
 
   exportJSON(path, tag) {

@@ -3,24 +3,78 @@
 ## Overview
 This skill describes how to create 3D buildings using the MapCraft MCP server for planning and `building-utils.js` for 3D generation.
 
+## Step 0: Start a project & prepare templates
+
+**Always** begin with `create_project` to start fresh. Then create spaces:
+1. **Main space** — the actual building plan
+2. **Templates space** — reusable components (doors, windows, furniture groups)
+
+```
+create_project("Rodinný dům")
+init_space("Prizemi", 15, 12)      // main plan
+init_space("Sablony", 20, 20)     // templates workspace
+```
+
+### Design reusable templates first
+Before placing anything in the main plan, design reusable components in the templates space.
+Each template is a container with its clearance zones included:
+
+```
+// Door template with clearance zone
+place_object(path="sablony", id="dvere_80", name="Dveře 80cm",
+  x=0, y=0, width=0.8, height=0.2, char="D", is_container=true, tags=["door","template"])
+place_object(path="sablony/dvere_80", id="clr", name="Průchod",
+  x=0, y=0.2, width=0.8, height=0.8, char="_", tags=["clearance"])
+
+// Window template with furniture-free zone
+place_object(path="sablony", id="okno_150", name="Okno 150cm",
+  x=0, y=0, width=1.5, height=0.1, char="o", is_container=true, tags=["window","template"],
+  metadata='{"sill_height":0.9,"win_height":1.5}')
+place_object(path="sablony/okno_150", id="clr", name="Volný prostor",
+  x=0, y=0.1, width=1.5, height=0.6, char="_", tags=["clearance"])
+
+// Furniture: armchair facing a direction
+place_object(path="sablony", id="kreslo", name="Křeslo",
+  x=0, y=0, width=0.8, height=0.9, char="K", tags=["furniture","template"], rotation=0)
+```
+
+### Stamp templates to actual locations
+Use `stamp_object` to copy templates with position and rotation:
+```
+stamp_object(source="sablony/dvere_80", target="prizemi", id="d_obyvak", x=5, y=3, rotation=0)
+stamp_object(source="sablony/dvere_80", target="prizemi", id="d_loznice", x=8, y=3, rotation=90)
+stamp_object(source="sablony/kreslo", target="prizemi/obyvak", id="kreslo1", x=2, y=3, rotation=180)
+```
+
+### Rotation
+- 0° = facing north (↑), 90° = east (→), 180° = south (↓), 270° = west (←)
+- Rotation arrows are visible in the UI floorplan view
+- Use for furniture direction: chair facing table, sofa facing TV
+- When stamping at 90° or 270°, width/height are automatically swapped
+
 ## Step 1: Plan in MCP
 
 Use MCP tools to plan the building layout. All coordinates in **meters**.
 Plan in layers — don't try to specify everything at once:
 
-1. **Rooms** — place rooms, verify with check_collision
-2. **Doors & windows** — on wall boundaries of rooms
-3. **Clearance zones** — place objects with tag `clearance` in front of doors (0.8×1m) and along corridors to reserve walkable space
-4. **Furniture** — place furniture, check_collision against clearance zones to verify nothing blocks doors/paths
-5. **Wall details** (optional) — use wall containers for pictures, shelves, outlets on specific walls
-6. **3D generation** — only now write Three.js code
+1. **Templates** — design reusable doors, windows, furniture with clearance zones
+2. **Rooms** — place rooms, verify with check_collision
+3. **Doors & windows** — stamp templates or place directly on wall boundaries
+4. **Clearance zones** — included in templates, or add manually with tag `clearance`
+5. **Furniture** — stamp templates or place directly, check_collision against clearance zones
+6. **Wall details** (optional) — use wall containers for pictures, shelves, outlets on specific walls
+7. **3D generation** — only now write Three.js code
 
 ### Structure hierarchy
 ```
-root/
-  building/              (container)
+root/                    (project)
+  sablony/               (templates space)
+    dvere_80/            (door template with clearance child)
+    okno_150/            (window template)
+    kreslo               (furniture template with rotation)
+  building/              (main plan)
     prizemi/             (container, same position as patro)
-      rooms, doors, windows, furniture
+      rooms, doors (stamped), windows (stamped), furniture
       room/stena_sever/  (wall container — for detailing wall surfaces)
     patro/               (container, same position as prizemi)
       rooms, doors, windows, furniture

@@ -1,5 +1,5 @@
 import http from 'http';
-import { readFileSync, existsSync, statSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, statSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
@@ -145,6 +145,7 @@ function serializeChild(c) {
     description: c.description || '',
     tags: c.tags || [],
     metadata: c.metadata || {},
+    rotation: c.rotation || 0,
     hasGrid: !!c.children,
     childCount: Object.keys(c.children || {}).length,
   };
@@ -278,6 +279,24 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/api/raw') {
     const root = loadMap();
     return json(res, root);
+  }
+
+  if (url.pathname === '/api/delete' && req.method === 'POST') {
+    const path = url.searchParams.get('path');
+    if (!path) return json(res, { error: 'Missing path' }, 400);
+    const root = loadMap();
+    if (!root) return json(res, { error: 'No map data' }, 404);
+    const parts = path.split('/').filter(Boolean);
+    if (parts.length === 0) return json(res, { error: 'Cannot delete root' }, 400);
+    const parentPath = parts.slice(0, -1).join('/') || '/';
+    const childId = parts[parts.length - 1];
+    const parent = resolveNode(root, parentPath);
+    if (!parent || !parent.children || !parent.children[childId]) {
+      return json(res, { error: `Not found: ${path}` }, 404);
+    }
+    delete parent.children[childId];
+    writeFileSync(MAP_FILE, JSON.stringify(root, null, 2));
+    return json(res, { ok: true, deleted: path });
   }
 
   res.writeHead(404);

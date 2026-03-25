@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createControls } from './controls.js';
+import { updateDoors, setCamera } from './mcp-renderer.js';
 
 // Scene setup
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb); // sky blue
 scene.fog = new THREE.Fog(0x87ceeb, 50, 200);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 500);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.05, 500);
 camera.position.set(0, 1.7, 5); // eye height
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
@@ -34,11 +35,9 @@ sunLight.shadow.camera.top = 50;
 sunLight.shadow.camera.bottom = -50;
 scene.add(sunLight);
 
-// Build the world
-createWorld(scene);
-
 // Controls
 const controls = createControls(camera, renderer.domElement);
+setCamera(camera);
 
 // Resize handler
 window.addEventListener('resize', () => {
@@ -54,7 +53,15 @@ function animate() {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
   controls.update(delta);
+  updateDoors(delta);
   renderer.render(scene, camera);
 }
+
+// Build world (async), then start rendering
+createWorld(scene).then(() => {
+  console.log('World loaded from MCP');
+}).catch(e => {
+  console.error('Failed to load MCP world:', e);
+});
 
 animate();

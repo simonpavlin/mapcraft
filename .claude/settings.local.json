@@ -22,7 +22,16 @@
       "mcp__mapcraft__export_json",
       "Bash(npx vite:*)",
       "Bash(cd:*)",
-      "mcp__mapcraft__get_info"
+      "mcp__mapcraft__get_info",
+      "mcp__mapcraft__move_object",
+      "mcp__mapcraft__create_project",
+      "mcp__mapcraft__stamp_object",
+      "Bash(curl -sL -o flowers.jpg \"https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=400&q=80\")",
+      "Bash(python3 -c \"import PIL; import numpy; import cv2; print\\(''OK''\\)\")",
+      "Bash(pip3 install:*)",
+      "Bash(python3 -c \"import pip\")",
+      "Bash(python3 -m pip install pillow numpy opencv-python-headless)",
+      "Bash(npm list:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": [
+    "mapcraft"
+  ],
+  "enableAllProjectMcpServers": true
+}

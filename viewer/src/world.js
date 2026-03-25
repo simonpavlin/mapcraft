@@ -11,10 +11,19 @@ import { createOpevneni } from './opevneni.js';
 import { createSchodiste } from './schodiste.js';
 import { createPalacSchodiste } from './palac-schodiste.js';
 import { createTociteSchodiste } from './tocite-schodiste.js';
+import { createBunkr } from './bunkr.js';
+import { buildFromMCP } from './mcp-renderer.js';
+import { createMetroVagon } from './metro-vagon.js';
+import { createKavarna } from './kavarna.js';
 // import { createHogwarts } from './hogwarts.js';
 
-export function createWorld(scene) {
+export async function createWorld(scene) {
   createGround(scene);
+  createBunkr(scene, 0, 0);
+  createMetroVagon(scene, -25, 0);
+  createKavarna(scene, -35, 0);
+  // Data-driven from MCP map.json
+  await buildFromMCP(scene, 'budova', 20, 0);
   // createLoft(scene, -20, -15);
   // createKostel(scene, -40, -40);
   // createLodArtemis(scene, 20, -10);

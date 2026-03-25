@@ -1,0 +1,3234 @@
+{
+  "id": "_root",
+  "name": "Loft Kavárna Karlín",
+  "description": "",
+  "x": 0,
+  "y": 0,
+  "width": 10,
+  "height": 10,
+  "char": ".",
+  "tags": [],
+  "metadata": {
+    "project": true
+  },
+  "children": {
+    "sablony": {
+      "id": "sablony",
+      "name": "Šablony",
+      "x": 0,
+      "y": 0,
+      "width": 10,
+      "height": 10,
+      "char": ".",
+      "description": "",
+      "tags": [],
+      "metadata": {},
+      "children": {
+        "kreslo": {
+          "id": "kreslo",
+          "name": "Křeslo",
+          "x": 0,
+          "y": 0,
+          "width": 0.6,
+          "height": 0.6,
+          "char": "K",
+          "description": "",
+          "tags": [
+            "furniture",
+            "template"
+          ],
+          "metadata": {},
+          "rotation": 0,
+          "children": {
+            "clr": {
+              "id": "clr",
+              "name": "Nohy",
+              "x": 0,
+              "y": 0.6,
+              "width": 0.6,
+              "height": 0.4,
+              "char": "c",
+              "description": "",
+              "tags": [
+                "clearance"
+              ],
+              "metadata": {},
+              "rotation": 0
+            }
+          }
+        },
+        "dvere_90": {
+          "id": "dvere_90",
+          "name": "Dveře 90cm",
+          "x": 2,
+          "y": 0,
+          "width": 0.9,
+          "height": 0.2,
+          "char": "D",
+          "description": "",
+          "tags": [
+            "door",
+            "template"
+          ],
+          "metadata": {},
+          "rotation": 0,
+          "children": {
+            "clr": {
+              "id": "clr",
+              "name": "Průchod",
+              "x": 0,
+              "y": 0.2,
+              "width": 0.9,
+              "height": 1,
+              "char": "c",
+              "description": "",
+              "tags": [
+                "clearance"
+              ],
+              "metadata": {},
+              "rotation": 0
+            }
+          }
+        },
+        "kytka": {
+          "id": "kytka",
+          "name": "Vysoká kytka",
+          "x": 4,
+          "y": 0,
+          "width": 0.4,
+          "height": 0.4,
+          "char": "*",
+          "description": "",
+          "tags": [
+            "furniture",
+            "template"
+          ],
+          "metadata": {},
+          "rotation": 0,
+          "children": {
+            "clr": {
+              "id": "clr",
+              "name": "Prostor",
+              "x": 0,
+              "y": 0.4,
+              "width": 0.4,
+              "height": 0.2,
+              "char": "c",
+              "description": "",
+              "tags": [
+                "clearance"
+              ],
+              "metadata": {},
+              "rotation": 0
+            }
+          }
+        },
+        "svetlo": {
+          "id": "svetlo",
+          "name": "Stropní svítidlo",
+          "x": 6,
+          "y": 0,
+          "width": 0.4,
+          "height": 0.4,
+          "char": "O",
+          "description": "",
+          "tags": [
+            "lighting",
+            "template"
+          ],
+          "metadata": {},
+          "rotation": 0,
+          "elevation": 2.8,
+          "height_3d": 0.15
+        }
+      }
+    },
+    "budova": {
+      "id": "budova",
+      "name": "Budova",
+      "x": 0,
+      "y": 0,
+      "width": 10,
+      "height": 8,
+      "char": ".",
+      "description": "",
+      "tags": [],
+      "metadata": {},
+      "children": {
+        "cekarna": {
+          "id": "cekarna",
+          "name": "L-Čekárna",
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 8,
+          "char": ".",
+          "shape": [
+            [
+              0,
+              0
+            ],
+            [
+              10,
+              0
+            ],
+            [
+              10,
+              5
+            ],
+            [
+              4,
+              5
+            ],
+            [
+              4,
+              8
+            ],
+            [
+              0,
+              8
+            ]
+          ],
+          "description": "",
+          "tags": [
+            "room"
+          ],
+          "metadata": {},
+          "rotation": 0,
+          "children": {
+            "d_s1": {
+              "id": "d_s1",
+              "name": "Dveře 90cm",
+              "x": 2,
+              "y": 0,
+              "width": 0.9,
+              "height": 1.2,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/dvere_90"
+              },
+              "rotation": 0,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Dveře 90cm",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.9,
+                  "height": 0.2,
+                  "char": "D",
+                  "description": "",
+                  "tags": [
+                    "door"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Průchod",
+                  "x": 0,
+                  "y": 0.2,
+                  "width": 0.9,
+                  "height": 1,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "d_s2": {
+              "id": "d_s2",
+              "name": "Dveře 90cm",
+              "x": 7,
+              "y": 0,
+              "width": 0.9,
+              "height": 1.2,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/dvere_90"
+              },
+              "rotation": 0,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Dveře 90cm",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.9,
+                  "height": 0.2,
+                  "char": "D",
+                  "description": "",
+                  "tags": [
+                    "door"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Průchod",
+                  "x": 0,
+                  "y": 0.2,
+                  "width": 0.9,
+                  "height": 1,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "d_v1": {
+              "id": "d_v1",
+              "name": "Dveře 90cm",
+              "x": 8.8,
+              "y": 2,
+              "width": 1.2,
+              "height": 0.9,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/dvere_90"
+              },
+              "rotation": 90,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Dveře 90cm",
+                  "x": 1,
+                  "y": 0,
+                  "width": 0.2,
+                  "height": 0.9,
+                  "char": "D",
+                  "description": "",
+                  "tags": [
+                    "door"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Průchod",
+                  "x": 0,
+                  "y": 0,
+                  "width": 1,
+                  "height": 0.9,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "d_z": {
+              "id": "d_z",
+              "name": "Dveře 90cm",
+              "x": 0,
+              "y": 2,
+              "width": 1.2,
+              "height": 0.9,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/dvere_90"
+              },
+              "rotation": 270,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Dveře 90cm",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.2,
+                  "height": 0.9,
+                  "char": "D",
+                  "description": "",
+                  "tags": [
+                    "door"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Průchod",
+                  "x": 0.2,
+                  "y": 0,
+                  "width": 1,
+                  "height": 0.9,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "d_j": {
+              "id": "d_j",
+              "name": "Dveře 90cm",
+              "x": 1.5,
+              "y": 6.8,
+              "width": 0.9,
+              "height": 1.2,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/dvere_90"
+              },
+              "rotation": 180,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Dveře 90cm",
+                  "x": 0,
+                  "y": 1,
+                  "width": 0.9,
+                  "height": 0.2,
+                  "char": "D",
+                  "description": "",
+                  "tags": [
+                    "door"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Průchod",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.9,
+                  "height": 1,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "d_roh": {
+              "id": "d_roh",
+              "name": "Dveře 90cm",
+              "x": 6,
+              "y": 3.8,
+              "width": 0.9,
+              "height": 1.2,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/dvere_90"
+              },
+              "rotation": 0,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Dveře 90cm",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.9,
+                  "height": 0.2,
+                  "char": "D",
+                  "description": "",
+                  "tags": [
+                    "door"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Průchod",
+                  "x": 0,
+                  "y": 0.2,
+                  "width": 0.9,
+                  "height": 1,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "ky_sz": {
+              "id": "ky_sz",
+              "name": "Vysoká kytka",
+              "x": 0.1,
+              "y": 0.1,
+              "width": 0.4,
+              "height": 0.6000000000000001,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kytka"
+              },
+              "rotation": 0,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Vysoká kytka",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.4,
+                  "height": 0.4,
+                  "char": "*",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Prostor",
+                  "x": 0,
+                  "y": 0.4,
+                  "width": 0.4,
+                  "height": 0.2,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_n2": {
+              "id": "k_n2",
+              "name": "Křeslo",
+              "x": 1.1,
+              "y": 0.1,
+              "width": 0.6,
+              "height": 1,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 0,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0.6,
+                  "width": 0.6,
+                  "height": 0.4,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "ky_sv": {
+              "id": "ky_sv",
+              "name": "Vysoká kytka",
+              "x": 9.5,
+              "y": 0.1,
+              "width": 0.4,
+              "height": 0.6000000000000001,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kytka"
+              },
+              "rotation": 0,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Vysoká kytka",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.4,
+                  "height": 0.4,
+                  "char": "*",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Prostor",
+                  "x": 0,
+                  "y": 0.4,
+                  "width": 0.4,
+                  "height": 0.2,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_n3": {
+              "id": "k_n3",
+              "name": "Křeslo",
+              "x": 4,
+              "y": 0.1,
+              "width": 0.6,
+              "height": 1,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 0,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0.6,
+                  "width": 0.6,
+                  "height": 0.4,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_n4": {
+              "id": "k_n4",
+              "name": "Křeslo",
+              "x": 4.8,
+              "y": 0.1,
+              "width": 0.6,
+              "height": 1,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 0,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0.6,
+                  "width": 0.6,
+                  "height": 0.4,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_n5": {
+              "id": "k_n5",
+              "name": "Křeslo",
+              "x": 5.6,
+              "y": 0.1,
+              "width": 0.6,
+              "height": 1,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 0,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0.6,
+                  "width": 0.6,
+                  "height": 0.4,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "ky_roh": {
+              "id": "ky_roh",
+              "name": "Vysoká kytka",
+              "x": 3.5,
+              "y": 4.5,
+              "width": 0.4,
+              "height": 0.6000000000000001,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kytka"
+              },
+              "rotation": 180,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Vysoká kytka",
+                  "x": 0,
+                  "y": 0.20000000000000007,
+                  "width": 0.4,
+                  "height": 0.4,
+                  "char": "*",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Prostor",
+                  "x": 0,
+                  "y": 5.551115123125783e-17,
+                  "width": 0.4,
+                  "height": 0.2,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_e2": {
+              "id": "k_e2",
+              "name": "Křeslo",
+              "x": 8.9,
+              "y": 1.1,
+              "width": 1,
+              "height": 0.6,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 90,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0.4,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.4,
+                  "height": 0.6,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_e3": {
+              "id": "k_e3",
+              "name": "Křeslo",
+              "x": 8.9,
+              "y": 3.3,
+              "width": 1,
+              "height": 0.6,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 90,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0.4,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.4,
+                  "height": 0.6,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_ih1": {
+              "id": "k_ih1",
+              "name": "Křeslo",
+              "x": 4.5,
+              "y": 3.9,
+              "width": 0.6,
+              "height": 1,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 180,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0.4,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.4,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_ih2": {
+              "id": "k_ih2",
+              "name": "Křeslo",
+              "x": 5.3,
+              "y": 3.9,
+              "width": 0.6,
+              "height": 1,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 180,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0.4,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.4,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "sv_1": {
+              "id": "sv_1",
+              "name": "Stropní svítidlo",
+              "x": 2.3,
+              "y": 1.5,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "O",
+              "description": "",
+              "tags": [
+                "lighting",
+                "template"
+              ],
+              "metadata": {
+                "_template": "sablony/svetlo"
+              },
+              "rotation": 0,
+              "elevation": 2.8,
+              "height_3d": 0.15
+            },
+            "k_ih3": {
+              "id": "k_ih3",
+              "name": "Křeslo",
+              "x": 7.5,
+              "y": 3.9,
+              "width": 0.6,
+              "height": 1,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 180,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0.4,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.4,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "sv_2": {
+              "id": "sv_2",
+              "name": "Stropní svítidlo",
+              "x": 7.3,
+              "y": 1.5,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "O",
+              "description": "",
+              "tags": [
+                "lighting",
+                "template"
+              ],
+              "metadata": {
+                "_template": "sablony/svetlo"
+              },
+              "rotation": 0,
+              "elevation": 2.8,
+              "height_3d": 0.15
+            },
+            "k_ih4": {
+              "id": "k_ih4",
+              "name": "Křeslo",
+              "x": 8.3,
+              "y": 3.9,
+              "width": 0.6,
+              "height": 1,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 180,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0.4,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.4,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "sv_3": {
+              "id": "sv_3",
+              "name": "Stropní svítidlo",
+              "x": 7.3,
+              "y": 3.5,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "O",
+              "description": "",
+              "tags": [
+                "lighting",
+                "template"
+              ],
+              "metadata": {
+                "_template": "sablony/svetlo"
+              },
+              "rotation": 0,
+              "elevation": 2.8,
+              "height_3d": 0.15
+            },
+            "sv_4": {
+              "id": "sv_4",
+              "name": "Stropní svítidlo",
+              "x": 1.5,
+              "y": 6.3,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "O",
+              "description": "",
+              "tags": [
+                "lighting",
+                "template"
+              ],
+              "metadata": {
+                "_template": "sablony/svetlo"
+              },
+              "rotation": 0,
+              "elevation": 2.8,
+              "height_3d": 0.15
+            },
+            "k_iv1": {
+              "id": "k_iv1",
+              "name": "Křeslo",
+              "x": 2.9,
+              "y": 5.3,
+              "width": 1,
+              "height": 0.6,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 90,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0.4,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.4,
+                  "height": 0.6,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_iv2": {
+              "id": "k_iv2",
+              "name": "Křeslo",
+              "x": 2.9,
+              "y": 6.1,
+              "width": 1,
+              "height": 0.6,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 90,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0.4,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.4,
+                  "height": 0.6,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_s2": {
+              "id": "k_s2",
+              "name": "Křeslo",
+              "x": 2.7,
+              "y": 6.9,
+              "width": 0.6,
+              "height": 1,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 180,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0.4,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.4,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_w2": {
+              "id": "k_w2",
+              "name": "Křeslo",
+              "x": 0.1,
+              "y": 1.1,
+              "width": 1,
+              "height": 0.6,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 270,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0.6,
+                  "y": 0,
+                  "width": 0.4,
+                  "height": 0.6,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_w3": {
+              "id": "k_w3",
+              "name": "Křeslo",
+              "x": 0.1,
+              "y": 3.3,
+              "width": 1,
+              "height": 0.6,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 270,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0.6,
+                  "y": 0,
+                  "width": 0.4,
+                  "height": 0.6,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_w4": {
+              "id": "k_w4",
+              "name": "Křeslo",
+              "x": 0.1,
+              "y": 4.2,
+              "width": 1,
+              "height": 0.6,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 270,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0.6,
+                  "y": 0,
+                  "width": 0.4,
+                  "height": 0.6,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_w5": {
+              "id": "k_w5",
+              "name": "Křeslo",
+              "x": 0.1,
+              "y": 5.2,
+              "width": 1,
+              "height": 0.6,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 270,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0.6,
+                  "y": 0,
+                  "width": 0.4,
+                  "height": 0.6,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "k_w6": {
+              "id": "k_w6",
+              "name": "Křeslo",
+              "x": 0.1,
+              "y": 6,
+              "width": 1,
+              "height": 0.6,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kreslo"
+              },
+              "rotation": 270,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Křeslo",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0.6,
+                  "height": 0.6,
+                  "char": "K",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Nohy",
+                  "x": 0.6,
+                  "y": 0,
+                  "width": 0.4,
+                  "height": 0.6,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "ky_jv": {
+              "id": "ky_jv",
+              "name": "Vysoká kytka",
+              "x": 9.5,
+              "y": 4.3,
+              "width": 0.4,
+              "height": 0.6000000000000001,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kytka"
+              },
+              "rotation": 180,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Vysoká kytka",
+                  "x": 0,
+                  "y": 0.20000000000000007,
+                  "width": 0.4,
+                  "height": 0.4,
+                  "char": "*",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Prostor",
+                  "x": 0,
+                  "y": 5.551115123125783e-17,
+                  "width": 0.4,
+                  "height": 0.2,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "ky_jz": {
+              "id": "ky_jz",
+              "name": "Vysoká kytka",
+              "x": 0.1,
+              "y": 7.3,
+              "width": 0.4,
+              "height": 0.6000000000000001,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kytka"
+              },
+              "rotation": 180,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Vysoká kytka",
+                  "x": 0,
+                  "y": 0.20000000000000007,
+                  "width": 0.4,
+                  "height": 0.4,
+                  "char": "*",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Prostor",
+                  "x": 0,
+                  "y": 5.551115123125783e-17,
+                  "width": 0.4,
+                  "height": 0.2,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "ky_jv2": {
+              "id": "ky_jv2",
+              "name": "Vysoká kytka",
+              "x": 3.5,
+              "y": 7.3,
+              "width": 0.4,
+              "height": 0.6000000000000001,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "stamp"
+              ],
+              "metadata": {
+                "_template": "sablony/kytka"
+              },
+              "rotation": 180,
+              "children": {
+                "_body": {
+                  "id": "_body",
+                  "name": "Vysoká kytka",
+                  "x": 0,
+                  "y": 0.20000000000000007,
+                  "width": 0.4,
+                  "height": 0.4,
+                  "char": "*",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                },
+                "clr": {
+                  "id": "clr",
+                  "name": "Prostor",
+                  "x": 0,
+                  "y": 5.551115123125783e-17,
+                  "width": 0.4,
+                  "height": 0.2,
+                  "char": "c",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "loft_kavarna_karlin": {
+      "id": "loft_kavarna_karlin",
+      "name": "Loft Kavárna Karlín",
+      "x": 0,
+      "y": 0,
+      "width": 7,
+      "height": 5.5,
+      "char": ".",
+      "description": "Loft café based on Loft Café Karlín photo",
+      "tags": [
+        "project"
+      ],
+      "metadata": {
+        "project": true,
+        "created": "2026-03-24T21:04:34.423Z"
+      },
+      "children": {
+        "kavarna": {
+          "id": "kavarna",
+          "name": "Kavarna",
+          "x": 0,
+          "y": 0,
+          "width": 7,
+          "height": 5.5,
+          "char": ".",
+          "description": "",
+          "tags": [],
+          "metadata": {},
+          "children": {
+            "prostor": {
+              "id": "prostor",
+              "name": "Kavárna",
+              "x": 0,
+              "y": 0,
+              "width": 7,
+              "height": 5.5,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "room"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "children": {}
+            },
+            "bar": {
+              "id": "bar",
+              "name": "Barový pult",
+              "x": 0.1,
+              "y": 2.5,
+              "width": 3.5,
+              "height": 0.6,
+              "char": "B",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "bar_height": 1.1
+              },
+              "rotation": 0
+            },
+            "bar_zadni": {
+              "id": "bar_zadni",
+              "name": "Zadní pult (příprava)",
+              "x": 0.1,
+              "y": 3.3,
+              "width": 3.5,
+              "height": 0.5,
+              "char": "b",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "counter_height": 0.9
+              },
+              "rotation": 0
+            },
+            "stol1": {
+              "id": "stol1",
+              "name": "Stolek červený",
+              "x": 1.5,
+              "y": 0.5,
+              "width": 0.7,
+              "height": 0.7,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "stol2": {
+              "id": "stol2",
+              "name": "Stolek žlutý",
+              "x": 3.5,
+              "y": 0.5,
+              "width": 0.7,
+              "height": 0.7,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "stol3": {
+              "id": "stol3",
+              "name": "Stolek u okna",
+              "x": 5.2,
+              "y": 0.5,
+              "width": 0.7,
+              "height": 0.7,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "stol4": {
+              "id": "stol4",
+              "name": "Stolek zadní",
+              "x": 5.2,
+              "y": 2.5,
+              "width": 0.7,
+              "height": 0.7,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "zidle1a": {
+              "id": "zidle1a",
+              "name": "Židle",
+              "x": 1.2,
+              "y": 0.1,
+              "width": 0.45,
+              "height": 0.45,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 180
+            },
+            "zidle1b": {
+              "id": "zidle1b",
+              "name": "Židle",
+              "x": 2,
+              "y": 1.3,
+              "width": 0.45,
+              "height": 0.45,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "zidle2a": {
+              "id": "zidle2a",
+              "name": "Židle",
+              "x": 3.3,
+              "y": 0.1,
+              "width": 0.45,
+              "height": 0.45,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 180
+            },
+            "zidle2b": {
+              "id": "zidle2b",
+              "name": "Židle",
+              "x": 3.8,
+              "y": 1.3,
+              "width": 0.45,
+              "height": 0.45,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "zidle3a": {
+              "id": "zidle3a",
+              "name": "Židle",
+              "x": 5,
+              "y": 0.1,
+              "width": 0.45,
+              "height": 0.45,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 180
+            },
+            "zidle3b": {
+              "id": "zidle3b",
+              "name": "Židle",
+              "x": 5.6,
+              "y": 1.3,
+              "width": 0.45,
+              "height": 0.45,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "zidle4a": {
+              "id": "zidle4a",
+              "name": "Židle",
+              "x": 5,
+              "y": 2.3,
+              "width": 0.45,
+              "height": 0.45,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 180
+            },
+            "zidle4b": {
+              "id": "zidle4b",
+              "name": "Židle",
+              "x": 5.6,
+              "y": 3.3,
+              "width": 0.45,
+              "height": 0.45,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "stolicka1": {
+              "id": "stolicka1",
+              "name": "Barová stolička",
+              "x": 0.5,
+              "y": 2,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "stolicka2": {
+              "id": "stolicka2",
+              "name": "Barová stolička",
+              "x": 1.2,
+              "y": 2,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "stolicka3": {
+              "id": "stolicka3",
+              "name": "Barová stolička",
+              "x": 1.9,
+              "y": 2,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "stolicka4": {
+              "id": "stolicka4",
+              "name": "Barová stolička",
+              "x": 2.6,
+              "y": 2,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "vitrina": {
+              "id": "vitrina",
+              "name": "Prosklená vitrína",
+              "x": 5.5,
+              "y": 4,
+              "width": 1,
+              "height": 0.7,
+              "char": "V",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "type": "display_fridge",
+                "height_3d": 1.8
+              },
+              "rotation": 0
+            },
+            "police": {
+              "id": "police",
+              "name": "Regál zadní stěna",
+              "x": 4.5,
+              "y": 5.1,
+              "width": 2,
+              "height": 0.4,
+              "char": "R",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "type": "shelf",
+                "height_3d": 2.2
+              },
+              "rotation": 0
+            },
+            "tabule": {
+              "id": "tabule",
+              "name": "Tabule menu",
+              "x": 1.5,
+              "y": 5.1,
+              "width": 2.5,
+              "height": 0.1,
+              "char": "M",
+              "description": "",
+              "tags": [
+                "decor"
+              ],
+              "metadata": {
+                "type": "chalkboard",
+                "wall_mount_height": 1.2
+              },
+              "rotation": 0
+            },
+            "kavovar": {
+              "id": "kavovar",
+              "name": "Kávovar",
+              "x": 1.5,
+              "y": 3.5,
+              "width": 0.6,
+              "height": 0.5,
+              "char": "K",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "type": "espresso_machine"
+              },
+              "rotation": 0
+            },
+            "d_vstup": {
+              "id": "d_vstup",
+              "name": "Vstupní dveře",
+              "x": 3,
+              "y": 0,
+              "width": 1,
+              "height": 0.15,
+              "char": "D",
+              "description": "",
+              "tags": [
+                "door"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "w_front1": {
+              "id": "w_front1",
+              "name": "Výloha levá",
+              "x": 0.5,
+              "y": 0,
+              "width": 2,
+              "height": 0.1,
+              "char": "o",
+              "description": "",
+              "tags": [
+                "window"
+              ],
+              "metadata": {
+                "sill_height": 0,
+                "win_height": 2.5
+              },
+              "rotation": 0
+            },
+            "w_front2": {
+              "id": "w_front2",
+              "name": "Výloha pravá",
+              "x": 4.5,
+              "y": 0,
+              "width": 2,
+              "height": 0.1,
+              "char": "o",
+              "description": "",
+              "tags": [
+                "window"
+              ],
+              "metadata": {
+                "sill_height": 0,
+                "win_height": 2.5
+              },
+              "rotation": 0
+            }
+          }
+        },
+        "kavarna2": {
+          "id": "kavarna2",
+          "name": "Kavarna2",
+          "x": 0,
+          "y": 0,
+          "width": 6.5,
+          "height": 5,
+          "char": ".",
+          "description": "Přepracovaný plán podle fotky — přesnější rozměry a pozice",
+          "tags": [],
+          "metadata": {},
+          "children": {
+            "prostor": {
+              "id": "prostor",
+              "name": "Kavárna",
+              "x": 0,
+              "y": 0,
+              "width": 6.5,
+              "height": 5,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "room"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "children": {}
+            },
+            "bar": {
+              "id": "bar",
+              "name": "Barový pult",
+              "x": 0.15,
+              "y": 2.8,
+              "width": 3.2,
+              "height": 0.6,
+              "char": "B",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "style": "reclaimed_wood",
+                "top": "wood"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 1.1
+            },
+            "prep": {
+              "id": "prep",
+              "name": "Přípravný pult",
+              "x": 0.15,
+              "y": 3.6,
+              "width": 3.2,
+              "height": 0.55,
+              "char": "b",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "style": "white"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.9
+            },
+            "kavovar": {
+              "id": "kavovar",
+              "name": "Kávovar",
+              "x": 1.2,
+              "y": 3.65,
+              "width": 0.65,
+              "height": 0.5,
+              "char": "K",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "type": "espresso_machine"
+              },
+              "rotation": 0,
+              "elevation": 0.9,
+              "height_3d": 0.5
+            },
+            "mlynek": {
+              "id": "mlynek",
+              "name": "Mlýnek",
+              "x": 2,
+              "y": 3.7,
+              "width": 0.25,
+              "height": 0.25,
+              "char": "m",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 0.9,
+              "height_3d": 0.4
+            },
+            "d_vstup": {
+              "id": "d_vstup",
+              "name": "Vstupní dveře",
+              "x": 2.8,
+              "y": 0,
+              "width": 1,
+              "height": 0.15,
+              "char": "D",
+              "description": "",
+              "tags": [
+                "door"
+              ],
+              "metadata": {
+                "style": "glass",
+                "door_height": 2.3
+              },
+              "rotation": 0
+            },
+            "w_front_l": {
+              "id": "w_front_l",
+              "name": "Výloha levá",
+              "x": 0.3,
+              "y": 0,
+              "width": 2,
+              "height": 0.1,
+              "char": "o",
+              "description": "",
+              "tags": [
+                "window"
+              ],
+              "metadata": {
+                "sill_height": 0,
+                "win_height": 2.5
+              },
+              "rotation": 0
+            },
+            "w_front_r": {
+              "id": "w_front_r",
+              "name": "Výloha pravá",
+              "x": 4.3,
+              "y": 0,
+              "width": 1.8,
+              "height": 0.1,
+              "char": "o",
+              "description": "",
+              "tags": [
+                "window"
+              ],
+              "metadata": {
+                "sill_height": 0,
+                "win_height": 2.5
+              },
+              "rotation": 0
+            },
+            "s1": {
+              "id": "s1",
+              "name": "Barová stolička",
+              "x": 0.4,
+              "y": 2.3,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "red"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "s2": {
+              "id": "s2",
+              "name": "Barová stolička",
+              "x": 1.05,
+              "y": 2.3,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "red"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "s3": {
+              "id": "s3",
+              "name": "Barová stolička",
+              "x": 1.7,
+              "y": 2.3,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "red"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "s4": {
+              "id": "s4",
+              "name": "Barová stolička",
+              "x": 2.35,
+              "y": 2.3,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "red"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "t1": {
+              "id": "t1",
+              "name": "Stolek 1",
+              "x": 1,
+              "y": 0.7,
+              "width": 0.7,
+              "height": 0.7,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "top": "wood"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "t2": {
+              "id": "t2",
+              "name": "Stolek 2",
+              "x": 3.2,
+              "y": 0.7,
+              "width": 0.7,
+              "height": 0.7,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "top": "wood"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "t3": {
+              "id": "t3",
+              "name": "Stolek 3",
+              "x": 5,
+              "y": 0.7,
+              "width": 0.65,
+              "height": 0.65,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "top": "wood"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "t4": {
+              "id": "t4",
+              "name": "Stolek 4",
+              "x": 5,
+              "y": 2.6,
+              "width": 0.65,
+              "height": 0.65,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "top": "wood"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "z1a": {
+              "id": "z1a",
+              "name": "Židle Tolix červená",
+              "x": 0.8,
+              "y": 0.15,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "red",
+                "style": "tolix"
+              },
+              "rotation": 180
+            },
+            "z1b": {
+              "id": "z1b",
+              "name": "Židle tmavá",
+              "x": 1.4,
+              "y": 1.5,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "dark",
+                "style": "curved_back"
+              },
+              "rotation": 0
+            },
+            "z2a": {
+              "id": "z2a",
+              "name": "Židle žlutá",
+              "x": 3,
+              "y": 0.2,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "yellow",
+                "style": "tolix"
+              },
+              "rotation": 180
+            },
+            "z2b": {
+              "id": "z2b",
+              "name": "Židle žlutá",
+              "x": 3.6,
+              "y": 1.5,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "yellow",
+                "style": "tolix"
+              },
+              "rotation": 0
+            },
+            "z3a": {
+              "id": "z3a",
+              "name": "Židle tmavá",
+              "x": 4.85,
+              "y": 0.2,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "dark"
+              },
+              "rotation": 180
+            },
+            "z3b": {
+              "id": "z3b",
+              "name": "Židle tmavá",
+              "x": 5.45,
+              "y": 1.45,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "dark",
+                "style": "curved_back"
+              },
+              "rotation": 0
+            },
+            "z4a": {
+              "id": "z4a",
+              "name": "Židle žlutá",
+              "x": 4.85,
+              "y": 2.4,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "yellow",
+                "style": "tolix"
+              },
+              "rotation": 180
+            },
+            "z4b": {
+              "id": "z4b",
+              "name": "Židle žlutá",
+              "x": 5.45,
+              "y": 3.35,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "yellow",
+                "style": "tolix"
+              },
+              "rotation": 0
+            },
+            "vitrina": {
+              "id": "vitrina",
+              "name": "Prosklená vitrína/lednice",
+              "x": 5.3,
+              "y": 4,
+              "width": 0.7,
+              "height": 0.65,
+              "char": "V",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "type": "display_fridge",
+                "illuminated": true
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 1.9
+            },
+            "regal": {
+              "id": "regal",
+              "name": "Industriální regál",
+              "x": 4,
+              "y": 4.6,
+              "width": 1.2,
+              "height": 0.4,
+              "char": "R",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "style": "industrial_metal",
+                "shelves": 5
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 2.2
+            },
+            "tabule": {
+              "id": "tabule",
+              "name": "Tabule s menu",
+              "x": 0.8,
+              "y": 4.6,
+              "width": 2.8,
+              "height": 0.05,
+              "char": "M",
+              "description": "",
+              "tags": [
+                "decor"
+              ],
+              "metadata": {
+                "type": "chalkboard",
+                "wall": "north"
+              },
+              "rotation": 0,
+              "elevation": 1,
+              "height_3d": 1.3
+            },
+            "sloupek": {
+              "id": "sloupek",
+              "name": "Sloupek/trám",
+              "x": 4.5,
+              "y": 0.1,
+              "width": 0.15,
+              "height": 0.15,
+              "char": "I",
+              "description": "",
+              "tags": [
+                "structural"
+              ],
+              "metadata": {
+                "type": "column",
+                "material": "wood"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 3.2
+            }
+          }
+        },
+        "kavarna3": {
+          "id": "kavarna3",
+          "name": "Kavarna3",
+          "x": 0,
+          "y": 0,
+          "width": 6,
+          "height": 5,
+          "char": ".",
+          "description": "Finální plán — zpřesněný dle analýzy fotky",
+          "tags": [],
+          "metadata": {},
+          "children": {
+            "prostor": {
+              "id": "prostor",
+              "name": "Kavárna",
+              "x": 0,
+              "y": 0,
+              "width": 6,
+              "height": 5,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "room"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "children": {}
+            },
+            "bar": {
+              "id": "bar",
+              "name": "Barový pult",
+              "x": 0.15,
+              "y": 2.5,
+              "width": 3,
+              "height": 0.6,
+              "char": "B",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "style": "reclaimed_wood"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 1.1
+            },
+            "prep": {
+              "id": "prep",
+              "name": "Přípravný pult",
+              "x": 0.15,
+              "y": 3.3,
+              "width": 3,
+              "height": 0.55,
+              "char": "b",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.9
+            },
+            "kavovar": {
+              "id": "kavovar",
+              "name": "Kávovar",
+              "x": 1,
+              "y": 3.35,
+              "width": 0.65,
+              "height": 0.5,
+              "char": "K",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 0.9,
+              "height_3d": 0.5
+            },
+            "mlynek": {
+              "id": "mlynek",
+              "name": "Mlýnek",
+              "x": 1.8,
+              "y": 3.4,
+              "width": 0.25,
+              "height": 0.25,
+              "char": "m",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 0.9,
+              "height_3d": 0.4
+            },
+            "d_vstup": {
+              "id": "d_vstup",
+              "name": "Vstupní dveře",
+              "x": 2.5,
+              "y": 0,
+              "width": 1,
+              "height": 0.15,
+              "char": "D",
+              "description": "",
+              "tags": [
+                "door"
+              ],
+              "metadata": {
+                "door_height": 2.3
+              },
+              "rotation": 0
+            },
+            "w_front_l": {
+              "id": "w_front_l",
+              "name": "Výloha levá",
+              "x": 0.2,
+              "y": 0,
+              "width": 1.8,
+              "height": 0.1,
+              "char": "o",
+              "description": "",
+              "tags": [
+                "window"
+              ],
+              "metadata": {
+                "sill_height": 0,
+                "win_height": 2.5
+              },
+              "rotation": 0
+            },
+            "w_front_r": {
+              "id": "w_front_r",
+              "name": "Výloha pravá",
+              "x": 3.9,
+              "y": 0,
+              "width": 1.8,
+              "height": 0.1,
+              "char": "o",
+              "description": "",
+              "tags": [
+                "window"
+              ],
+              "metadata": {
+                "sill_height": 0,
+                "win_height": 2.5
+              },
+              "rotation": 0
+            },
+            "s1": {
+              "id": "s1",
+              "name": "Barová stolička",
+              "x": 0.35,
+              "y": 2,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "red"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "s2": {
+              "id": "s2",
+              "name": "Barová stolička",
+              "x": 0.95,
+              "y": 2,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "red"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "s3": {
+              "id": "s3",
+              "name": "Barová stolička",
+              "x": 1.55,
+              "y": 2,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "red"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "s4": {
+              "id": "s4",
+              "name": "Barová stolička",
+              "x": 2.15,
+              "y": 2,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "red"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "t1": {
+              "id": "t1",
+              "name": "Stolek 1",
+              "x": 1.2,
+              "y": 0.7,
+              "width": 0.7,
+              "height": 0.7,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "z1a": {
+              "id": "z1a",
+              "name": "Židle Tolix červená",
+              "x": 1.1,
+              "y": 0.15,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "red"
+              },
+              "rotation": 180
+            },
+            "z1b": {
+              "id": "z1b",
+              "name": "Židle tmavá",
+              "x": 1.4,
+              "y": 1.5,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "dark"
+              },
+              "rotation": 0
+            },
+            "t2": {
+              "id": "t2",
+              "name": "Stolek 2",
+              "x": 3,
+              "y": 0.8,
+              "width": 0.7,
+              "height": 0.7,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "z2a": {
+              "id": "z2a",
+              "name": "Židle žlutá",
+              "x": 2.85,
+              "y": 0.25,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "yellow"
+              },
+              "rotation": 180
+            },
+            "z2b": {
+              "id": "z2b",
+              "name": "Židle žlutá",
+              "x": 3.25,
+              "y": 1.6,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "yellow"
+              },
+              "rotation": 0
+            },
+            "t3": {
+              "id": "t3",
+              "name": "Stolek 3",
+              "x": 4.6,
+              "y": 0.7,
+              "width": 0.65,
+              "height": 0.65,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "z3a": {
+              "id": "z3a",
+              "name": "Židle tmavá",
+              "x": 4.5,
+              "y": 0.15,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "dark"
+              },
+              "rotation": 180
+            },
+            "z3b": {
+              "id": "z3b",
+              "name": "Židle tmavá",
+              "x": 4.95,
+              "y": 1.45,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "dark"
+              },
+              "rotation": 0
+            },
+            "t4": {
+              "id": "t4",
+              "name": "Stolek 4",
+              "x": 4.6,
+              "y": 2.7,
+              "width": 0.65,
+              "height": 0.65,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
+            },
+            "z4a": {
+              "id": "z4a",
+              "name": "Židle žlutá",
+              "x": 4.5,
+              "y": 2.2,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "yellow"
+              },
+              "rotation": 180
+            },
+            "z4b": {
+              "id": "z4b",
+              "name": "Židle žlutá",
+              "x": 4.95,
+              "y": 3.45,
+              "width": 0.4,
+              "height": 0.4,
+              "char": "z",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "color": "yellow"
+              },
+              "rotation": 0
+            },
+            "vitrina": {
+              "id": "vitrina",
+              "name": "Prosklená vitrína",
+              "x": 5,
+              "y": 3.9,
+              "width": 0.7,
+              "height": 0.65,
+              "char": "V",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 1.9
+            },
+            "regal": {
+              "id": "regal",
+              "name": "Industriální regál",
+              "x": 3.8,
+              "y": 4.6,
+              "width": 1.1,
+              "height": 0.4,
+              "char": "R",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 2.2
+            },
+            "tabule": {
+              "id": "tabule",
+              "name": "Tabule s menu",
+              "x": 0.6,
+              "y": 4.6,
+              "width": 2.8,
+              "height": 0.05,
+              "char": "M",
+              "description": "",
+              "tags": [
+                "decor"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 1,
+              "height_3d": 1.3
+            },
+            "sloupek": {
+              "id": "sloupek",
+              "name": "Dřevěný sloupek",
+              "x": 4.2,
+              "y": 0.1,
+              "width": 0.15,
+              "height": 0.15,
+              "char": "I",
+              "description": "",
+              "tags": [
+                "structural"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 3.2
+            }
+          }
+        }
+      }
+    }
+  }
+}

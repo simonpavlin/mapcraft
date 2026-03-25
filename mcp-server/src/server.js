@@ -7,7 +7,7 @@ const store = new MapStore();
 
 const server = new McpServer({
   name: 'mapcraft',
-  version: '0.5.0',
+  version: '0.6.0',
 });
 
 // ──────────────────────────────────────────────
@@ -19,18 +19,50 @@ server.tool(
   'Get the MapCraft usage guide',
   {},
   async () => ok(`
-# MapCraft v0.5 — Spatial Object Planner
+# MapCraft v0.6 — Spatial Object Planner
 
 ## Core concept
 Hierarchical spatial database. All coordinates in METERS.
 Objects can overlap freely — collision is advisory only (use check_collision when needed).
 
-## Spaces
-init_space creates a NEW space without deleting existing ones. Multiple spaces coexist.
-- init_space("Byt 3kk", 12, 10) → creates space with id "byt_3kk"
-- init_space("Zahrada", 20, 15) → adds another space alongside
-- Use path="byt_3kk/obyvak" to place objects inside a space
-- clear_space("byt_3kk") removes one space, clear_all removes everything
+## Projects & Spaces
+Always start with create_project to begin a fresh planning session.
+A project contains multiple independent spaces that don't share coordinates.
+
+- create_project("Rodinný dům") → fresh project
+- init_space("Prizemi", 12, 10) → creates a working space
+- init_space("Sablony", 20, 20) → separate space for reusable templates
+- Use path="prizemi/obyvak" to place objects inside a space
+- clear_space("prizemi") removes one space
+
+## Rotation
+All objects support rotation (0°, 90°, 180°, 270°).
+- 0° = facing north (↑), 90° = facing east (→), 180° = facing south (↓), 270° = facing west (←)
+- Set rotation when placing: place_object(..., rotation: 90)
+- Rotation is shown as an arrow in the UI floorplan view
+- Use rotation for furniture direction: chair facing table, sofa facing TV, etc.
+- When stamping a template, you can override rotation
+
+## Templates & Stamps — reusable objects
+The key workflow: PREPARE objects as templates, then STAMP them to final locations.
+
+1. Create a "templates" space: init_space("Sablony", 20, 20)
+2. Design reusable objects there (with clearance zones, sub-objects, etc.)
+3. Use stamp_object to copy a template to the actual location
+4. One template → many instances at different positions/rotations
+
+Example:
+  init_space("Sablony", 20, 20)
+  // Design a door template with clearance
+  place_objects(path="sablony", objects=[
+    { id: "dvere_80", name: "Dveře 80cm", x: 0, y: 0, width: 0.8, height: 0.2, char: "D", is_container: true, tags: ["door","template"] },
+  ])
+  place_objects(path="sablony/dvere_80", objects=[
+    { id: "clr", name: "Průchod", x: 0, y: 0.2, width: 0.8, height: 0.8, char: "_", tags: ["clearance"] },
+  ])
+  // Now stamp this door to multiple locations:
+  stamp_object(source="sablony/dvere_80", target="prizemi", id="d_obyvak", x=5, y=3, rotation=0)
+  stamp_object(source="sablony/dvere_80", target="prizemi", id="d_loznice", x=8, y=3, rotation=90)
 
 ## Coordinate system
 x = left→right, y = top→bottom on plan. Maps to 3D: plan-x → 3D x, plan-y → 3D z.
@@ -78,6 +110,7 @@ Every object can carry arbitrary key-value metadata for 3D generation:
 - Stairs: see Stairs section below
 
 ## Workflow — think like an architect
+0. **CREATE PROJECT** — always start with create_project("Project name"). Then init_space for the main plan AND a templates space.
 1. **PROGRAM first** — before placing anything, list required rooms with target m2:
    - Master bedroom: 15m2 (3.6x4.2m), Secondary bedroom: 11m2 (3x3.6m)
    - Living room: 27m2 (4.5x6m), Kitchen: 17m2 (3.5x5m)
@@ -96,6 +129,25 @@ Every object can carry arbitrary key-value metadata for 3D generation:
    - Kitchen work triangle (sink-stove-fridge): 3.6-7.9m total
 7. **VERIFY**: get_ascii(recursive=true) — check no furniture blocks doors/windows, clearances OK
 8. Generate 3D code with MCP references
+
+## Template workflow — prepare & reuse
+Design reusable components in a separate "templates" space, then stamp them into the actual plan:
+1. init_space("Sablony", 20, 20) — create templates space
+2. Design each reusable component:
+   - Door with clearance zone: dvere_80 (container) → clr (clearance child)
+   - Window with clearance: okno_150 (container) → furniture-free zone
+   - Furniture group: jidelni_set (table + 4 chairs + clearance)
+   - Bathroom module: koupelna_standard (vana, umyvadlo, WC, clearance zones)
+3. Verify templates: get_ascii(path="sablony/dvere_80") — check clearance looks right
+4. stamp_object(source="sablony/dvere_80", target="prizemi", id="d1", x=5, y=3, rotation=0)
+5. Same template, different location/rotation:
+   stamp_object(source="sablony/dvere_80", target="prizemi", id="d2", x=8, y=3, rotation=90)
+
+Benefits:
+- Clearance zones are designed ONCE, copied everywhere
+- Consistent sizing across all instances
+- Easy to update: redesign template, re-stamp
+- Rotation automatically adjusts orientation
 
 ## Collision verification rules
 - Rooms ("room" tag) must NOT overlap with other rooms on the same floor
@@ -208,14 +260,40 @@ place_objects(path="building/prizemi/schody", objects=[
 
 server.tool(
   'init_space',
-  'Create a new space. Units are up to you (meters, centimeters, etc). Does NOT clear existing spaces — adds alongside them. Use path="{id}" to place objects inside. Returns the generated ID.',
+  'Create a new space inside a project (or root). Does NOT clear existing spaces — adds alongside them.',
   {
     name: z.string(),
     width: z.number().min(0.01).max(10000),
     height: z.number().min(0.01).max(10000),
     description: z.string().optional(),
+    project: z.string().optional().describe('Project ID to create space in. If omitted, creates under root.'),
   },
-  async ({ name, width, height, description }) => {
+  async ({ name, width, height, description, project }) => {
+    if (project) {
+      // Create space inside a project
+      const parent = store.resolve(project);
+      if (!parent) return err(`Project "${project}" not found`);
+      if (!parent.children) return err(`"${project}" is not a container`);
+      const id = name.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_|_$/g, '') || 'space';
+      parent.children[id] = {
+        id, name, x: 0, y: 0, width, height,
+        char: '.', description: description || '',
+        tags: [], metadata: {}, children: {},
+      };
+      // Expand parent
+      let maxW = 0, maxH = 0;
+      for (const child of Object.values(parent.children)) {
+        maxW = Math.max(maxW, child.x + child.width);
+        maxH = Math.max(maxH, child.y + child.height);
+      }
+      parent.width = maxW;
+      parent.height = maxH;
+      store.save();
+      return ok(`Space "${name}" created (id: "${id}") inside project "${project}": ${width}m × ${height}m. Use path="${project}/${id}" to add objects.`);
+    }
     const id = store.initSpace(name, width, height, description || '');
     return ok(`Space "${name}" created (id: "${id}"): ${width}m × ${height}m. Use path="${id}" to add objects.`);
   }
@@ -244,6 +322,60 @@ server.tool(
 );
 
 // ──────────────────────────────────────────────
+// TOOL: create_project
+// ──────────────────────────────────────────────
+
+server.tool(
+  'create_project',
+  'Create a new project. Does NOT delete existing projects — adds alongside them. Use init_space with path="project_id/space_name" to add spaces inside the project.',
+  {
+    name: z.string().describe('Project name'),
+    description: z.string().optional(),
+  },
+  async ({ name, description }) => {
+    const id = store.createProject(name, description || '');
+    return ok(`Project "${name}" created (id: "${id}"). Use path="${id}/..." to add spaces and objects inside this project.`);
+  }
+);
+
+server.tool(
+  'delete_project',
+  'Delete a project and all its contents.',
+  {
+    id: z.string().describe('Project ID to delete'),
+  },
+  async ({ id }) => {
+    if (store.deleteProject(id)) return ok(`Project "${id}" deleted.`);
+    return err(`Project "${id}" not found.`);
+  }
+);
+
+// ──────────────────────────────────────────────
+// TOOL: stamp_object
+// ──────────────────────────────────────────────
+
+server.tool(
+  'stamp_object',
+  'Copy a template object (with all children) to a target location. Use this to reuse prepared objects — design once in templates space, stamp many times to actual locations. Supports rotation.',
+  {
+    source: z.string().describe('Path to the template object to copy'),
+    target: z.string().describe('Path to the parent where the copy will be placed'),
+    id: z.string().describe('ID for the new copy'),
+    x: z.number().min(0),
+    y: z.number().min(0),
+    rotation: z.number().optional().describe('Rotation in degrees: 0 (↑ north), 90 (→ east), 180 (↓ south), 270 (← west). Default: 0'),
+  },
+  async ({ source, target, id, x, y, rotation }) => {
+    const rot = rotation || 0;
+    if (![0, 90, 180, 270].includes(rot)) return err('Rotation must be 0, 90, 180, or 270');
+    const result = store.stampObject(source, target, id, x, y, rot);
+    if (result.error) return err(result.error);
+    const arrows = { 0: '↑', 90: '→', 180: '↓', 270: '←' };
+    return ok(`Stamped "${result.name}" as "${id}" at (${x},${y}) ${arrows[rot]} ${rot}° (from template: ${source})`);
+  }
+);
+
+// ──────────────────────────────────────────────
 // TOOL: place_object
 // ──────────────────────────────────────────────
 
@@ -264,10 +396,11 @@ server.tool(
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
     metadata: z.string().optional().describe('JSON string of key-value data for 3D generation'),
+    rotation: z.number().optional().describe('Rotation in degrees: 0 (↑ north), 90 (→ east), 180 (↓ south), 270 (← west). Default: 0'),
     elevation: z.number().optional().describe('Height of object bottom above floor (meters). Used for front/side projection views. Leave empty for plan-only objects.'),
     height_3d: z.number().min(0.01).optional().describe('Vertical height of object (meters). Used for front/side projection views. Leave empty for plan-only objects.'),
   },
-  async ({ path, id, name, x, y, width, height, char, shape, is_container, description, tags, metadata, elevation, height_3d }) => {
+  async ({ path, id, name, x, y, width, height, char, shape, is_container, description, tags, metadata, rotation, elevation, height_3d }) => {
     const parent = store.resolve(path || '/');
     if (!parent) return err(`Parent "${path}" not found`);
 
@@ -287,6 +420,9 @@ server.tool(
     }
     if (!w || !h) return err('width and height required (or provide shape)');
 
+    const rot = rotation || 0;
+    if (rot && ![0, 90, 180, 270].includes(rot)) return err('Rotation must be 0, 90, 180, or 270');
+
     parent.children[id] = {
       id, name,
       x, y, width: w, height: h,
@@ -295,6 +431,7 @@ server.tool(
       description: description || '',
       tags: tags || [],
       metadata: meta,
+      rotation: rot,
       children: is_container ? {} : undefined,
       elevation: elevation ?? undefined,
       height_3d: height_3d ?? undefined,
@@ -302,7 +439,8 @@ server.tool(
 
     store.save();
     const type = is_container ? 'container' : 'leaf';
-    return ok(`Placed "${name}" [${char}] at (${x},${y}) ${w}×${h}m (${type})${metadata ? ' +metadata' : ''}${parsedShape ? ' shape:' + parsedShape.length + 'pts' : ''}`);
+    const arrows = { 0: '', 90: ' →', 180: ' ↓', 270: ' ←' };
+    return ok(`Placed "${name}" [${char}] at (${x},${y}) ${w}×${h}m${arrows[rot] || ''} (${type})${metadata ? ' +metadata' : ''}${parsedShape ? ' shape:' + parsedShape.length + 'pts' : ''}`);
   }
 );
 
@@ -331,6 +469,7 @@ server.tool(
       description: z.string().optional(),
       tags: z.array(z.string()).optional(),
       metadata: z.string().optional(),
+      rotation: z.number().optional().describe('0/90/180/270 degrees'),
       elevation: z.number().optional(),
       height_3d: z.number().min(0.01).optional(),
     })).describe('Array of objects to place'),
@@ -345,6 +484,7 @@ server.tool(
         results.push(`SKIP "${o.id}" — already exists`);
         continue;
       }
+      const rot = o.rotation || 0;
       parent.children[o.id] = {
         id: o.id, name: o.name,
         x: o.x, y: o.y, width: o.width, height: o.height,
@@ -352,13 +492,15 @@ server.tool(
         description: o.description || '',
         tags: o.tags || [],
         metadata: parseMeta(o.metadata),
+        rotation: rot,
         children: o.is_container ? {} : undefined,
         elevation: o.elevation ?? undefined,
         height_3d: o.height_3d ?? undefined,
       };
       const type = o.is_container ? '+' : '·';
       const meta = o.metadata ? ' {…}' : '';
-      results.push(`${type} [${o.char}] ${o.id} at (${o.x},${o.y}) ${o.width}×${o.height}m${meta}`);
+      const arrows = { 0: '', 90: ' →', 180: ' ↓', 270: ' ←' };
+      results.push(`${type} [${o.char}] ${o.id} at (${o.x},${o.y}) ${o.width}×${o.height}m${arrows[rot] || ''}${meta}`);
     }
 
     store.save();
@@ -435,10 +577,11 @@ server.tool(
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
     metadata: z.string().optional().describe('Merged with existing metadata'),
+    rotation: z.number().optional().describe('Rotation in degrees: 0, 90, 180, 270'),
     elevation: z.number().optional().describe('Height above floor (meters). Set to -1 to clear.'),
     height_3d: z.number().optional().describe('Vertical height (meters). Set to -1 to clear.'),
   },
-  async ({ path, x, y, width, height, shape, name, char, description, tags, metadata, elevation, height_3d }) => {
+  async ({ path, x, y, width, height, shape, name, char, description, tags, metadata, rotation, elevation, height_3d }) => {
     const node = store.resolve(path);
     if (!node || node === store.root) return err('Not found or root');
     if (x !== undefined) node.x = x;
@@ -457,6 +600,7 @@ server.tool(
     if (description !== undefined) node.description = description;
     if (tags !== undefined) node.tags = tags;
     if (metadata) node.metadata = { ...(node.metadata || {}), ...parseMeta(metadata) };
+    if (rotation !== undefined) node.rotation = rotation;
     if (elevation !== undefined) node.elevation = elevation < 0 ? undefined : elevation;
     if (height_3d !== undefined) node.height_3d = height_3d < 0 ? undefined : height_3d;
     store.save();
@@ -487,7 +631,9 @@ server.tool(
       const container = c.children ? `[+${Object.keys(c.children).length}]` : '';
       const tags = c.tags?.length ? ` [${c.tags.join(',')}]` : '';
       const meta = c.metadata && Object.keys(c.metadata).length ? ` {${Object.entries(c.metadata).map(([k,v]) => `${k}:${JSON.stringify(v)}`).join(', ')}}` : '';
-      lines.push(`  [${c.char}] ${c.id} "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m${container}${tags}${meta}`);
+      const rotArrows = { 0: '', 90: ' →', 180: ' ↓', 270: ' ←' };
+      const rotStr = c.rotation ? (rotArrows[c.rotation] || ` ${c.rotation}°`) : '';
+      lines.push(`  [${c.char}] ${c.id} "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m${rotStr}${container}${tags}${meta}`);
     }
     return ok(lines.join('\n'));
   }
@@ -595,10 +741,13 @@ server.tool(
     const meta = node.metadata && Object.keys(node.metadata).length
       ? Object.entries(node.metadata).map(([k, v]) => `  ${k}: ${JSON.stringify(v)}`).join('\n')
       : '  (none)';
+    const arrows = { 0: '↑', 90: '→', 180: '↓', 270: '←' };
+    const rot = node.rotation || 0;
     return ok([
       `Name: ${node.name}`,
       `Position: (${node.x}, ${node.y})`,
       `Size: ${node.width}m × ${node.height}m`,
+      `Rotation: ${rot}° ${arrows[rot] || ''}`,
       `Char: [${node.char}]`,
       `Type: ${node.children ? 'container' : 'leaf'}`,
       `Description: ${node.description || '(none)'}`,
@@ -680,7 +829,7 @@ function shapeBBox(points) {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('MapCraft MCP v0.5 running');
+  console.error('MapCraft MCP v0.6 running');
 }
 
 main().catch(console.error);
