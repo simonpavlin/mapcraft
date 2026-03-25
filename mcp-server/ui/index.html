@@ -83,7 +83,7 @@
 </head>
 <body>
 <div id="sidebar">
-  <div id="sidebar-header"><h1>MapCraft</h1><p>Map Explorer v0.6</p></div>
+  <div id="sidebar-header"><h1>MapCraft</h1><p>Map Explorer v0.7</p></div>
   <div id="tree-container"><div id="tree"></div></div>
 </div>
 <div id="main">
@@ -121,23 +121,36 @@ function drawRotationArrow(ctx, rx, ry, rw, rh, rotation, color) {
   ctx.restore();
 }
 function esc(s) { return s ? s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+function escAttr(s) { return s ? s.toString().replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 
 // Info panel helpers
 function updateInfoPanel(obj) {
   const el = document.getElementById('hover-info');
   if (!el) return;
   if (!obj) { el.innerHTML = '<div class="hi-empty">Najeď na objekt</div>'; return; }
-  const color = cc(obj.char);
-  let h = `<div class="hi-char" style="background:${color}22;color:${color}">${esc(obj.char)}</div>`;
+  const isFolder = obj.isSpatial === false;
+  const color = isFolder ? '#8888aa' : cc(obj.char);
+  let h = '';
+  if (isFolder) {
+    h += `<div class="hi-char" style="background:${color}22;color:${color}">📁</div>`;
+  } else {
+    h += `<div class="hi-char" style="background:${color}22;color:${color}">${esc(obj.char)}</div>`;
+  }
   h += `<div class="hi-name">${esc(obj.name)}</div>`;
   if (obj.description) h += `<div class="hi-desc">${esc(obj.description)}</div>`;
   h += `<div class="hi-row"><b>ID:</b> ${esc(obj.id)}</div>`;
-  h += `<div class="hi-row"><b>Pozice:</b> (${obj.x}, ${obj.y})</div>`;
-  h += `<div class="hi-row"><b>Rozměry:</b> ${obj.width} × ${obj.height}m</div>`;
-  h += `<div class="hi-row"><b>Plocha:</b> ${(obj.width * obj.height).toFixed(0)} m²</div>`;
-  if (obj.rotation) {
-    const arrows = {0:'↑ sever',90:'→ východ',180:'↓ jih',270:'← západ'};
-    h += `<div class="hi-row"><b>Otočení:</b> ${obj.rotation}° ${arrows[obj.rotation]||''}</div>`;
+  h += `<div class="hi-row"><b>Typ:</b> ${isFolder ? 'folder' : 'spatial'}</div>`;
+  if (!isFolder) {
+    h += `<div class="hi-row"><b>Pozice:</b> (${obj.x}, ${obj.y})</div>`;
+    h += `<div class="hi-row"><b>Rozměry:</b> ${obj.width} × ${obj.height}m</div>`;
+    h += `<div class="hi-row"><b>Plocha:</b> ${(obj.width * obj.height).toFixed(0)} m²</div>`;
+    if (obj.rotation) {
+      const arrows = {0:'↑ sever',90:'→ východ',180:'↓ jih',270:'← západ'};
+      h += `<div class="hi-row"><b>Otočení:</b> ${obj.rotation}° ${arrows[obj.rotation]||''}</div>`;
+    }
+  }
+  if (obj.childCount > 0) {
+    h += `<div class="hi-row"><b>Children:</b> ${obj.childCount}</div>`;
   }
   if (obj.tags?.length) {
     h += '<div class="hi-tags">';
@@ -177,7 +190,7 @@ async function fetchNode(path) {
     renderContent();
   } catch {}
 }
-let navHistory = ['/'];
+let navHistory = [];
 function navigateTo(path) {
   if (currentPath !== path) navHistory.push(currentPath);
   currentPath = path; selectedFloor = null; selectedFloorData = null; currentProjection = 'plan';
@@ -187,10 +200,15 @@ function navigateTo(path) {
   fetchNode(path); renderTree();
 }
 function navigateBack() {
-  if (currentPath === '/') return;
-  const parts = currentPath.split('/').filter(Boolean);
-  parts.pop();
-  navigateTo(parts.length === 0 ? '/' : parts.join('/'));
+  if (navHistory.length > 0) {
+    const prev = navHistory.pop();
+    currentPath = prev; selectedFloor = null; selectedFloorData = null; currentProjection = 'plan';
+    fetchNode(prev); renderTree();
+  } else if (currentPath !== '/') {
+    const parts = currentPath.split('/').filter(Boolean);
+    parts.pop();
+    navigateTo(parts.length === 0 ? '/' : parts.join('/'));
+  }
 }
 // Mouse back button + Backspace
 window.addEventListener('mouseup', (e) => { if (e.button === 3) { e.preventDefault(); navigateBack(); } });
@@ -207,12 +225,14 @@ function renderTree() {
 function renderTreeNode(n) {
   const has = n.children?.length > 0, exp = expandedPaths.has(n.path), act = currentPath === n.path;
   const isProject = n.tags?.includes('project');
-  let h = `<div class="tree-node"><div class="tree-row ${act?'active':''}" onclick="treeClick(event,'${n.path}',${has})">`;
-  h += `<span class="tree-toggle">${has?(exp?'▼':'▶'):'·'}</span>`;
+  const isFolder = !n.isSpatial;
+  let h = `<div class="tree-node"><div class="tree-row ${act?'active':''}" onclick="treeClick(event,'${escAttr(n.path)}',${has})">`;
+  h += `<span class="tree-toggle">${has?(exp?'▼':'▶'):(isFolder?'📁':'·')}</span>`;
   h += `<span class="tree-name">${esc(n.name)}</span>`;
   if (n.childCount > 0) h += `<span class="tree-badge">${n.childCount}</span>`;
   if (isProject) h += `<span class="tree-tag" style="background:var(--ac)">projekt</span>`;
-  if (isProject) h += `<span class="tree-del" onclick="deleteNode(event,'${n.path}','${esc(n.name)}')" title="Smazat projekt">✕</span>`;
+  else if (isFolder && n.path !== '/') h += `<span class="tree-tag" style="background:var(--sf2)">folder</span>`;
+  if (n.path !== '/') h += `<span class="tree-del" onclick="deleteNode(event,'${escAttr(n.path)}','${escAttr(n.name)}')" title="Smazat">✕</span>`;
   if (n.tags?.includes('floor')) h += `<span class="tree-tag">floor</span>`;
   h += '</div>';
   if (has) { h += `<div class="tree-children ${exp?'':'collapsed'}">`; for (const c of n.children) h += renderTreeNode(c); h += '</div>'; }
@@ -343,6 +363,9 @@ function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, P
 
 function renderContent() {
   if (!nodeData || nodeData.error) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2></div>'; return; }
+  // If folder and on a spatial-only tab, switch to overview
+  const isFolder = !nodeData.isSpatial;
+  if (isFolder && (currentTab === 'ascii' || currentTab === 'floorplan')) currentTab = 'overview';
   renderBreadcrumb(); renderToolbar();
   switch(currentTab) {
     case 'overview': renderOverview(); break;
@@ -360,41 +383,49 @@ function renderBreadcrumb() {
 }
 function renderToolbar() {
   const d = nodeData;
+  const isFolder = !d.isSpatial;
   let h = '';
-  // Tabs
-  for (const [id, label] of [['overview','Přehled'],['ascii','ASCII'],['floorplan','Půdorys'],['objects','Objekty']]) {
+  // Tabs — folders only get Přehled and Objekty
+  const tabs = isFolder
+    ? [['overview','Přehled'],['objects','Objekty']]
+    : [['overview','Přehled'],['ascii','ASCII'],['floorplan','Půdorys'],['objects','Objekty']];
+  for (const [id, label] of tabs) {
     h += `<div class="tab ${currentTab===id?'active':''}" onclick="switchTab('${id}')">${label}</div>`;
   }
-  // Projection buttons
-  h += '<span class="floor-label" style="margin-left:16px">Pohled:</span>';
-  for (const [id, label] of [['plan','↓ Půdorys'],['front','→ Zepředu'],['side','→ Z boku']]) {
-    h += `<div class="floor-btn ${currentProjection===id?'active':''}" onclick="switchProjection('${id}')">${label}</div>`;
+  // Projection buttons — only for spatial nodes
+  if (!isFolder) {
+    h += '<span class="floor-label" style="margin-left:16px">Pohled:</span>';
+    for (const [id, label] of [['plan','↓ Půdorys'],['front','→ Zepředu'],['side','→ Z boku']]) {
+      h += `<div class="floor-btn ${currentProjection===id?'active':''}" onclick="switchProjection('${id}')">${label}</div>`;
+    }
   }
   // Floor buttons
   if (d.floors && d.floors.length > 0) {
     h += '<span class="floor-label">Patro:</span>';
     for (const f of d.floors) {
-      h += `<div class="floor-btn ${selectedFloor===f.id?'active':''}" onclick="selectFloor('${f.id}')">[${esc(f.char)}] ${esc(f.name)}</div>`;
+      const charLabel = f.char ? `[${esc(f.char)}] ` : '';
+      h += `<div class="floor-btn ${selectedFloor===f.id?'active':''}" onclick="selectFloor('${f.id}')">${charLabel}${esc(f.name)}</div>`;
     }
   }
   document.getElementById('toolbar').innerHTML = h;
 }
 
-function getVisibleChildren() {
-  if (!nodeData) return [];
-  return nodeData.children || [];
-}
-
 function renderOverview() {
   const d = nodeData;
+  const isFolder = !d.isSpatial;
   let h = '<div class="info-grid">';
   h += infoCard('Název', d.name, d.description || '');
-  h += infoCard('Znak', `<span style="font-family:monospace;font-size:28px;color:${cc(d.char)}">${esc(d.char||'-')}</span>`, '');
-  if (d.width && d.height) {
-    h += infoCard('Rozměry', `${d.width}m × ${d.height}m`, d.scaleInfo || '');
-    h += infoCard('Plocha', `${(d.width * d.height).toFixed(0)} m²`, '');
+  h += infoCard('Typ', isFolder ? '<span style="font-size:22px">📁</span> Folder' : `<span style="font-family:monospace;font-size:28px;color:${cc(d.char)}">${esc(d.char||'-')}</span> Spatial`, '');
+  if (d.width > 0 && d.height > 0) {
+    h += infoCard('Rozměry', `${d.width}m × ${d.height}m`, isFolder ? 'auto z children' : (d.scaleInfo || ''));
+    if (!isFolder) h += infoCard('Plocha', `${(d.width * d.height).toFixed(0)} m²`, '');
   }
-  h += infoCard('Objekty', (d.children||[]).length.toString(), '');
+  const childFolders = (d.children||[]).filter(c => !c.isSpatial).length;
+  const childSpatial = (d.children||[]).filter(c => c.isSpatial).length;
+  const childInfo = [];
+  if (childSpatial > 0) childInfo.push(`${childSpatial} spatial`);
+  if (childFolders > 0) childInfo.push(`${childFolders} folders`);
+  h += infoCard('Objekty', (d.children||[]).length.toString(), childInfo.join(', '));
   if (d.tags?.length > 0) h += infoCard('Tagy', d.tags.map(t => `<span class="tag">${esc(t)}</span>`).join(' '), '');
   if (d.floors) h += infoCard('Patra', d.floors.map(f => `[${esc(f.char)}] ${esc(f.name)}`).join(', '), 'Přepínač v toolbaru');
   h += '</div>';
@@ -409,15 +440,155 @@ function renderOverview() {
     h += '</table></div>';
   }
 
-  // ASCII preview
-  if (d.ascii?.length > 0) {
+  // ASCII preview — only for spatial nodes
+  if (!isFolder && d.ascii?.length > 0) {
     h += '<h3 style="margin-bottom:8px;font-size:14px;color:var(--tx2)">Náhled</h3>';
     h += '<div id="ascii-view" style="max-height:400px;overflow:auto">';
     h += `<div id="ascii-grid">${colorizeAscii(d.ascii)}</div>`;
     h += renderLegend(d.legend);
     h += '</div>';
   }
+
+  // Folder tile preview — show spatial children as tiles
+  if (isFolder) {
+    const spatialKids = (d.children||[]).filter(c => c.isSpatial !== false);
+    const folderKids = (d.children||[]).filter(c => c.isSpatial === false && c.childCount > 0);
+    const tiles = [...spatialKids, ...folderKids];
+    if (tiles.length > 0) {
+      h += '<h3 style="margin-bottom:8px;font-size:14px;color:var(--tx2)">Prostory</h3>';
+      h += `<div id="folder-tiles-wrap"></div>`;
+    }
+  }
+
   document.getElementById('content').innerHTML = h;
+
+  // Render folder tiles on canvas after DOM insert
+  if (isFolder) {
+    renderFolderTiles();
+  }
+}
+
+function renderFolderTiles() {
+  const d = nodeData;
+  if (!d) return;
+  const wrap = document.getElementById('folder-tiles-wrap');
+  if (!wrap) return;
+
+  const allChildren = d.children || [];
+  const allDescendants = d.descendants || [];
+  const spatialKids = allChildren.filter(c => c.isSpatial !== false);
+  const folderKids = allChildren.filter(c => c.isSpatial === false && c.childCount > 0);
+  const tiles = [...spatialKids, ...folderKids];
+  if (tiles.length === 0) return;
+
+  const cols = Math.min(tiles.length, Math.max(2, Math.ceil(Math.sqrt(tiles.length))));
+  const rows = Math.ceil(tiles.length / cols);
+  const TILE_PAD = 12, TILE_LABEL_H = 28, TILE_MAX_W = 380, TILE_MAX_H = 300;
+
+  const tileInfos = tiles.map(tile => {
+    const tw = tile.width || 1, th = tile.height || 1;
+    const tileScale = Math.min((TILE_MAX_W - 20) / tw, (TILE_MAX_H - TILE_LABEL_H - 20) / th, 40);
+    const pw = Math.ceil(tw * tileScale), ph = Math.ceil(th * tileScale);
+    return { tile, tw, th, tileScale, pw, ph };
+  });
+
+  const colWidths = [], rowHeights = [];
+  for (let i = 0; i < tileInfos.length; i++) {
+    const col = i % cols, row = Math.floor(i / cols);
+    const ti = tileInfos[i];
+    colWidths[col] = Math.max(colWidths[col] || 0, ti.pw + 20);
+    rowHeights[row] = Math.max(rowHeights[row] || 0, ti.ph + TILE_LABEL_H + 20);
+  }
+
+  const totalW = colWidths.reduce((a, b) => a + b, 0) + TILE_PAD * (cols + 1);
+  const totalH = rowHeights.reduce((a, b) => a + b, 0) + TILE_PAD * (rows + 1);
+
+  wrap.innerHTML = `<canvas id="folder-canvas" width="${totalW}" height="${totalH}" style="border:1px solid var(--bd);border-radius:4px;cursor:pointer"></canvas>`;
+
+  const canvas = document.getElementById('folder-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, totalW, totalH);
+
+  const tileRects = [];
+
+  for (let i = 0; i < tileInfos.length; i++) {
+    const col = i % cols, row = Math.floor(i / cols);
+    const ti = tileInfos[i];
+    const tile = ti.tile;
+
+    let tileX = TILE_PAD;
+    for (let c = 0; c < col; c++) tileX += colWidths[c] + TILE_PAD;
+    let tileY = TILE_PAD;
+    for (let r = 0; r < row; r++) tileY += rowHeights[r] + TILE_PAD;
+    const tileW = colWidths[col], tileH = rowHeights[row];
+
+    ctx.fillStyle = '#16213e';
+    ctx.strokeStyle = '#2a2a4a';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(tileX, tileY, tileW, tileH, 6); ctx.fill(); ctx.stroke();
+
+    const color = tile.isSpatial !== false ? cc(tile.char) : '#8888aa';
+    ctx.fillStyle = color;
+    ctx.font = 'bold 12px "Segoe UI",sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    const label = tile.isSpatial !== false ? `${tile.name} (${ti.tw}×${ti.th}m)` : `📁 ${tile.name}`;
+    ctx.fillText(label, tileX + 10, tileY + 6);
+
+    const contentX = tileX + 10, contentY = tileY + TILE_LABEL_H;
+    const s = ti.tileScale;
+
+    ctx.strokeStyle = '#3a3a5a'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+    ctx.strokeRect(contentX, contentY, ti.pw, ti.ph);
+    ctx.setLineDash([]);
+
+    const tileDesc = allDescendants.filter(dc => dc._rootParentId === tile.id && dc.isSpatial !== false);
+    const tileChildren = tileDesc.filter(dc => dc._depth === 1);
+    const tileDeep = tileDesc.filter(dc => dc._depth > 1);
+
+    const origTransform = ctx.getTransform();
+    ctx.translate(contentX, contentY);
+    for (const c of tileChildren) {
+      const rx = c.x * s, ry = c.y * s, rw = c.width * s, rh = c.height * s;
+      const cl = cc(c.char);
+      if (c.tags?.includes('door')) { ctx.fillStyle = cl + '80'; ctx.fillRect(rx, ry, rw, rh); continue; }
+      if (c.tags?.includes('window')) { ctx.fillStyle = '#88ccee44'; ctx.fillRect(rx, ry, rw, rh); continue; }
+      if (c.tags?.includes('clearance')) { ctx.strokeStyle = '#ffffff18'; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]); continue; }
+      ctx.fillStyle = cl + '25'; ctx.fillRect(rx, ry, rw, rh);
+      ctx.strokeStyle = cl; ctx.lineWidth = 1.5; ctx.strokeRect(rx, ry, rw, rh);
+      const nm = c.name;
+      const maxF = Math.min(rw / (nm.length * 0.55), rh / 3, 12);
+      const fs = Math.max(6, Math.floor(maxF));
+      if (fs >= 6 && rw > 14 && rh > 10) {
+        ctx.fillStyle = cl; ctx.font = `bold ${fs}px 'Segoe UI',sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(nm, rx + rw / 2, ry + rh / 2, rw - 4);
+      }
+    }
+    for (const dc of tileDeep) {
+      const rx = dc.x * s, ry = dc.y * s, rw = dc.width * s, rh = dc.height * s;
+      const cl = cc(dc.char);
+      const op = Math.max(15, 35 - dc._depth * 8);
+      if (dc.tags?.includes('door') || dc.tags?.includes('window') || dc.tags?.includes('clearance')) continue;
+      ctx.fillStyle = cl + Math.round(op * 0.6).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh);
+      ctx.strokeStyle = cl + Math.round(op * 2).toString(16).padStart(2,'0');
+      ctx.lineWidth = 0.5; ctx.setLineDash([2,2]); ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]);
+    }
+    ctx.setTransform(origTransform);
+
+    tileRects.push({ tile, contentX, contentY, pw: ti.pw, ph: ti.ph });
+  }
+
+  canvas.onclick = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    for (const tr of tileRects) {
+      if (mx >= tr.contentX - 10 && mx <= tr.contentX + tr.pw + 10 && my >= tr.contentY - TILE_LABEL_H && my <= tr.contentY + tr.ph + 10) {
+        navigateTo(currentPath === '/' ? tr.tile.id : `${currentPath}/${tr.tile.id}`);
+        return;
+      }
+    }
+  };
 }
 
 function renderAscii() {
@@ -465,21 +636,20 @@ function renderFloorplan() {
   const floors = d.floors;
   const hasFloors = floors && floors.length > 0;
 
-  // Determine what to show
+  // Determine what to show — filter out folder nodes (no spatial data)
   let children, descendants, viewWidth = d.width, viewHeight = d.height;
   if (hasFloors && selectedFloor && selectedFloorData) {
-    children = selectedFloorData.children || [];
-    descendants = selectedFloorData.descendants || [];
+    children = (selectedFloorData.children || []).filter(c => c.isSpatial !== false);
+    descendants = (selectedFloorData.descendants || []).filter(c => c.isSpatial !== false);
     viewWidth = selectedFloorData.width || d.width;
     viewHeight = selectedFloorData.height || d.height;
   } else {
-    children = allChildren;
-    descendants = allDescendants;
+    children = allChildren.filter(c => c.isSpatial !== false);
+    descendants = allDescendants.filter(c => c.isSpatial !== false);
   }
 
   // Apply projection
   if (currentProjection !== 'plan') {
-    // If we have floor section data from server (multi-floor cross-section), use it
     if (d.floorSection && d.floorSection.length > 0) {
       const projFn = (c) => {
         if (c.elevation === undefined || c.height_3d === undefined) return null;
@@ -541,18 +711,15 @@ function renderFloorplan() {
   ctx.fillRect(0, 0, cw, ch);
 
   if (currentProjection !== 'plan') {
-    // Invert Y coords so floor (elevation=0) is at bottom of canvas
     const flipY = (obj) => ({ ...obj, y: vph - obj.y - obj.height });
     const flippedChildren = children.map(flipY);
     const flippedDescendants = descendants.map(flipY);
     drawFloorContent(ctx, flippedChildren, flippedDescendants, vpw, vph, scale, PAD, shapePath);
 
-    // Draw floor lines for each level
     ctx.strokeStyle = '#4a4a6a'; ctx.lineWidth = 2; ctx.setLineDash([]);
     ctx.fillStyle = '#606080'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
 
     if (d.floorSection && d.floors) {
-      // Multi-floor: draw a line + label for each floor
       for (const f of d.floors) {
         const floorNode = d.children?.find(c => c.id === f.id);
         const floorY = floorNode?.metadata?.floor_y ?? 0;
@@ -561,7 +728,6 @@ function renderFloorplan() {
         ctx.fillText(f.name + ' (' + floorY + 'm)', PAD + 4, canvasY - 4);
       }
     } else {
-      // Single room: just ground line
       ctx.beginPath(); ctx.moveTo(PAD, PAD + vph * scale); ctx.lineTo(PAD + vpw * scale, PAD + vph * scale); ctx.stroke();
       ctx.textBaseline = 'top';
       ctx.fillText('podlaha', PAD + 4, PAD + vph * scale + 4);
@@ -615,17 +781,22 @@ function renderObjects() {
   if (children.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádné objekty</h2></div>'; return; }
 
   let h = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;overflow:auto">';
-  h += '<table class="children-table"><thead><tr><th>Znak</th><th>ID</th><th>Název</th><th>Pozice</th><th>Rozměry</th><th>Směr</th><th>Tagy</th><th>Metadata</th></tr></thead><tbody>';
+  h += '<table class="children-table"><thead><tr><th>Typ</th><th>ID</th><th>Název</th><th>Pozice</th><th>Rozměry</th><th>Směr</th><th>Tagy</th><th>Metadata</th></tr></thead><tbody>';
   for (const c of children) {
     const childPath = currentPath === '/' ? c.id : `${currentPath}/${c.id}`;
-    const color = cc(c.char);
+    const isFolder = !c.isSpatial;
+    const color = isFolder ? '#8888aa' : cc(c.char);
     const metaKeys = Object.keys(c.metadata || {});
     h += `<tr onclick="navigateTo('${childPath}')">`;
-    h += `<td><span class="obj-char" style="background:${color}22;color:${color}">${esc(c.char)}</span></td>`;
+    if (isFolder) {
+      h += `<td><span class="obj-char" style="background:${color}22;color:${color}">📁</span></td>`;
+    } else {
+      h += `<td><span class="obj-char" style="background:${color}22;color:${color}">${esc(c.char)}</span></td>`;
+    }
     h += `<td><code>${esc(c.id)}</code></td>`;
     h += `<td>${esc(c.name)}${c.description ? `<br><span style="font-size:11px;color:var(--tx2)">${esc(c.description)}</span>` : ''}</td>`;
-    h += `<td>(${c.x}, ${c.y})</td>`;
-    h += `<td>${c.width}×${c.height}m</td>`;
+    h += `<td>${isFolder ? '<span style="color:var(--tx2)">—</span>' : `(${c.x}, ${c.y})`}</td>`;
+    h += `<td>${isFolder ? '<span style="color:var(--tx2)">—</span>' : `${c.width}×${c.height}m`}</td>`;
     const rotArrows = {0:'↑',90:'→',180:'↓',270:'←'};
     h += `<td>${c.rotation ? `${rotArrows[c.rotation]||''} ${c.rotation}°` : ''}</td>`;
     h += `<td>${(c.tags||[]).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</td>`;

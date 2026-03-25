@@ -21,7 +21,6 @@ import { createDetskeHriste } from './detske-hriste.js';
 
 export async function createWorld(scene) {
   createGround(scene);
-  createBunkr(scene, 0, 0);
   createMetroVagon(scene, -25, 0);
   createKavarna(scene, -35, 0);
   createAquapark(scene, 50, 0);

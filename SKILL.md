@@ -5,45 +5,45 @@ This skill describes how to create 3D buildings using the MapCraft MCP server fo
 
 ## Step 0: Start a project & prepare templates
 
-**Always** begin with `create_project` to start fresh. Then create spaces:
-1. **Main space** — the actual building plan
-2. **Templates space** — reusable components (doors, windows, furniture groups)
+**Always** begin with `create_project` to start fresh. Then create folders:
+1. **Floor folders** — one per floor (folder nodes, no spatial data)
+2. **Templates folder** — reusable components (doors, windows, furniture groups)
 
 ```
 create_project("Rodinný dům")
-init_space("Prizemi", 15, 12)      // main plan
-init_space("Sablony", 20, 20)     // templates workspace
+place_object(path="rodinny_dum", id="prizemi", name="Přízemí")           // folder
+place_object(path="rodinny_dum", id="sablony", name="Šablony")          // folder
 ```
 
 ### Design reusable templates first
-Before placing anything in the main plan, design reusable components in the templates space.
-Each template is a container with its clearance zones included:
+Before placing anything in the main plan, design reusable components in the templates folder.
+Each template is a spatial node with children for clearance zones:
 
 ```
 // Door template with clearance zone
-place_object(path="sablony", id="dvere_80", name="Dveře 80cm",
-  x=0, y=0, width=0.8, height=0.2, char="D", is_container=true, tags=["door","template"])
-place_object(path="sablony/dvere_80", id="clr", name="Průchod",
+place_object(path="rodinny_dum/sablony", id="dvere_80", name="Dveře 80cm",
+  x=0, y=0, width=0.8, height=0.2, char="D", tags=["door","template"])
+place_object(path="rodinny_dum/sablony/dvere_80", id="clr", name="Průchod",
   x=0, y=0.2, width=0.8, height=0.8, char="_", tags=["clearance"])
 
 // Window template with furniture-free zone
-place_object(path="sablony", id="okno_150", name="Okno 150cm",
-  x=0, y=0, width=1.5, height=0.1, char="o", is_container=true, tags=["window","template"],
-  metadata='{"sill_height":0.9,"win_height":1.5}')
-place_object(path="sablony/okno_150", id="clr", name="Volný prostor",
+place_object(path="rodinny_dum/sablony", id="okno_150", name="Okno 150cm",
+  x=0, y=0, width=1.5, height=0.1, char="o", tags=["window","template"],
+  metadata={"sill_height":0.9,"win_height":1.5})
+place_object(path="rodinny_dum/sablony/okno_150", id="clr", name="Volný prostor",
   x=0, y=0.1, width=1.5, height=0.6, char="_", tags=["clearance"])
 
 // Furniture: armchair facing a direction
-place_object(path="sablony", id="kreslo", name="Křeslo",
+place_object(path="rodinny_dum/sablony", id="kreslo", name="Křeslo",
   x=0, y=0, width=0.8, height=0.9, char="K", tags=["furniture","template"], rotation=0)
 ```
 
 ### Stamp templates to actual locations
 Use `stamp_object` to copy templates with position and rotation:
 ```
-stamp_object(source="sablony/dvere_80", target="prizemi", id="d_obyvak", x=5, y=3, rotation=0)
-stamp_object(source="sablony/dvere_80", target="prizemi", id="d_loznice", x=8, y=3, rotation=90)
-stamp_object(source="sablony/kreslo", target="prizemi/obyvak", id="kreslo1", x=2, y=3, rotation=180)
+stamp_object(source="rodinny_dum/sablony/dvere_80", target="rodinny_dum/prizemi", id="d_obyvak", x=5, y=3, rotation=0)
+stamp_object(source="rodinny_dum/sablony/dvere_80", target="rodinny_dum/prizemi", id="d_loznice", x=8, y=3, rotation=90)
+stamp_object(source="rodinny_dum/sablony/kreslo", target="rodinny_dum/prizemi/obyvak", id="kreslo1", x=2, y=3, rotation=180)
 ```
 
 ### Rotation
@@ -65,51 +65,61 @@ Plan in layers — don't try to specify everything at once:
 6. **Wall details** (optional) — use wall containers for pictures, shelves, outlets on specific walls
 7. **3D generation** — only now write Three.js code
 
-### Structure hierarchy
+### Hierarchy — unified node model
+Everything is a **node**. Two kinds:
+- **Folder** (no x,y,width,height,char) — purely organizational (floors, template groups)
+- **Spatial** (has position and dimensions) — rooms, doors, furniture, etc.
+
 ```
-root/                    (project)
-  sablony/               (templates space)
-    dvere_80/            (door template with clearance child)
-    okno_150/            (window template)
-    kreslo               (furniture template with rotation)
-  building/              (main plan)
-    prizemi/             (container, same position as patro)
-      rooms, doors (stamped), windows (stamped), furniture
-      room/stena_sever/  (wall container — for detailing wall surfaces)
-    patro/               (container, same position as prizemi)
-      rooms, doors, windows, furniture
-    garaz/               (container, adjacent)
+Projekt (folder)
+  sablony/               (folder — templates)
+    dvere_80/            (spatial — door template with clearance child)
+    okno_150/            (spatial — window template)
+    kreslo               (spatial — furniture template with rotation)
+  prizemi/               (folder — ground floor)
+    obyvak/              (spatial 0,0 10×8 — room with furniture children)
+    kuchyne/             (spatial 10,0 5×8 — room)
+    d_obyvak_kuchyne     (spatial 10,3 0.2×0.8 — door between rooms)
+  patro/                 (folder — upper floor)
+    loznice/             (spatial — bedroom)
+    koupelna/            (spatial — bathroom)
 ```
 
 ### Place rooms first, then doors/windows, then furniture
 ```
-place_objects(path="building/prizemi", objects=[
-  // Rooms
-  { id: "obyvak", name: "Obývák", x: 0, y: 3, width: 10, height: 8, char: "O", is_container: true, tags: ["room"] },
+place_objects(path="rodinny_dum/prizemi", objects=[
+  // Rooms — spatial nodes
+  { id: "obyvak", name: "Obývák", x: 0, y: 3, width: 10, height: 8, char: "O", tags: ["room"] },
   { id: "vstup",  name: "Vstup",  x: 4, y: 0, width: 4,  height: 3, char: "E", tags: ["structural"] },
   // Doors — ON the wall line, can overlap rooms
-  { id: "d_vstup_obyvak", name: "Dveře vstup→obývák", x: 5, y: 3, width: 1.2, height: 0.2, char: "D", tags: ["door"], metadata: "{\"style\":\"open\"}" },
-  // Windows — ON the wall line (y=0 or y=max or x=0 or x=max)
-  { id: "w_jih", name: "Okno jih", x: 3, y: 11, width: 2.5, height: 0.1, char: "o", tags: ["window"], metadata: "{\"sill_height\":0.4,\"win_height\":2.2}" },
+  { id: "d_vstup_obyvak", name: "Dveře vstup→obývák", x: 5, y: 3, width: 1.2, height: 0.2, char: "D", tags: ["door"], metadata: {"style":"open"} },
+  // Windows — ON the wall line
+  { id: "w_jih", name: "Okno jih", x: 3, y: 11, width: 2.5, height: 0.1, char: "o", tags: ["window"], metadata: {"sill_height":0.4,"win_height":2.2} },
   // Furniture — inside rooms
   { id: "pohovka", name: "Pohovka", x: 6, y: 5, width: 2.2, height: 0.8, char: "c", tags: ["furniture"] },
 ])
 ```
 
 ### Verify after placement
-- `check_collision(path="building/prizemi", exclude_tags=["door","window","furniture"])` — rooms must not overlap
-- `get_ascii(path="building/prizemi")` — visual check that furniture doesn't block doors
+- `check_collision(path="rodinny_dum/prizemi", exclude_tags=["door","window","furniture"])` — rooms must not overlap
+- `get_ascii(path="rodinny_dum/prizemi")` — visual check that furniture doesn't block doors
+
+### Additional tools
+- `duplicate_object` — deep copy any node with all children
+- `find_objects` — search by name or tags across the tree
+- `rename_object` — change an object's ID
+- `move_object` — reposition or reparent to different parent
 
 ### Clearance zones — verify walkability
 After placing doors, add clearance objects to reserve space for walking. Then verify furniture doesn't block them.
 
 ```
 // Reserve space in front of door
-place_object(path="building/prizemi/obyvak", id="clr_door1",
+place_object(path="rodinny_dum/prizemi/obyvak", id="clr_door1",
   x=3.2, y=0, width=1.6, height=1.5, char=" ", tags=["clearance"])
 
 // Reserve corridor through room
-place_object(path="building/prizemi/obyvak", id="clr_corridor",
+place_object(path="rodinny_dum/prizemi/obyvak", id="clr_corridor",
   x=3.2, y=1.5, width=1.6, height=3, char=" ", tags=["clearance"])
 ```
 
@@ -128,8 +138,8 @@ wall, y = height from floor.
 ```
 place_object(path="obyvak", id="stena_zapad",
   x=0, y=0, width=0.1, height=6,
-  is_container=true, tags=["wall"],
-  metadata='{"wall_height": 2.8, "description": "West wall with fireplace"}')
+  char=".", tags=["wall"],
+  metadata={"wall_height": 2.8, "description": "West wall with fireplace"})
 
 place_objects(path="obyvak/stena_zapad", objects=[
   { id: "obraz1", x: 1.0, y: 1.4, width: 0.8, height: 0.6, char: "#", tags: ["decor"] },
@@ -342,7 +352,7 @@ Face coordinate systems:
 ## Common mistakes to avoid
 1. **Furniture blocking doors** — always plan furniture in MCP first, verify with get_ascii
 2. **Forgetting wall openings** — every door/window needs a matching opening in wallWithOpenings
-3. **Stairs not connecting floors** — plan entry/exit in MCP with exact positions, use addUTurnStairs or manual addStairFlight with explicit startY/endY matching floor heights
+3. **Stairs not connecting floors** — plan entry/exit in MCP with exact positions, use manual box() loops with explicit startY/endY matching floor heights
 4. **Window not visible from outside** — use wallWithOpenings to create the hole, then addWindow for glass
 5. **Overlapping rooms on same floor** — verify with check_collision after placing rooms
 6. **Skipping verification** — after each batch of rooms, call check_collision. After furniture, call get_ascii(recursive=true). Skipping these leads to overlaps and blocked doors found only in 3D.

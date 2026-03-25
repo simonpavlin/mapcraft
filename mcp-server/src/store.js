@@ -6,50 +6,37 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, '../../data');
 const MAP_FILE = resolve(DATA_DIR, 'map.json');
 
+/**
+ * Normalize a name into a safe ID: lowercase, strip accents, replace non-alphanum with _.
+ */
+export function normalizeId(name) {
+  return name.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '') || 'node';
+}
+
 export class MapStore {
   constructor() {
     mkdirSync(DATA_DIR, { recursive: true });
     this.root = this._load();
   }
 
+  // ── Node creation ──────────────────────────────
+
   createProject(name, description) {
-    // Ensure root exists
     if (!this.root) {
-      this.root = {
-        id: '_root',
-        name: 'Projekty',
-        description: '',
-        x: 0, y: 0,
-        width: 1, height: 1,
-        char: '.',
-        tags: [],
-        metadata: {},
-        children: {},
-      };
+      this.root = this._makeRoot();
     }
-
-    // Generate safe ID from name
-    const id = name.toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_|_$/g, '') || 'project';
-
-    // Add project as child of root
+    const id = normalizeId(name);
     this.root.children[id] = {
       id, name,
-      x: 0, y: 0,
-      width: 1, height: 1,
-      char: '.',
       description: description || '',
       tags: ['project'],
       metadata: { project: true, created: new Date().toISOString() },
       children: {},
     };
-
-    // Update root name
-    const projectCount = Object.values(this.root.children).filter(c => (c.tags || []).includes('project')).length;
-    this.root.name = projectCount === 1 ? name : `${projectCount} projektů`;
-
+    this._updateRootName();
     this.save();
     return id;
   }
@@ -57,73 +44,50 @@ export class MapStore {
   deleteProject(id) {
     if (!this.root || !this.root.children[id]) return false;
     delete this.root.children[id];
-    const projectCount = Object.keys(this.root.children).length;
-    this.root.name = projectCount === 0 ? 'Prázdné' : projectCount === 1 ? Object.values(this.root.children)[0].name : `${projectCount} projektů`;
+    this._updateRootName();
     this.save();
     return true;
   }
 
-  initSpace(name, width, height, description) {
-    // Create root if it doesn't exist
-    if (!this.root) {
-      this.root = {
-        id: '_root',
-        name: 'Root',
-        description: '',
-        x: 0, y: 0,
-        width: 1, height: 1,
-        char: '.',
-        tags: [],
-        metadata: {},
-        children: {},
-      };
-    }
+  /**
+   * Add a node to the tree.
+   * If spatial data (x, y, char) is provided → spatial node.
+   * If no spatial data → folder node.
+   */
+  addNode(parentPath, nodeData) {
+    const parent = this.resolve(parentPath);
+    if (!parent) return { error: `Parent "${parentPath}" not found` };
+    if (!parent.children) return { error: `Parent "${parentPath}" cannot hold children` };
+    if (parent.children[nodeData.id]) return { error: `"${nodeData.id}" already exists` };
 
-    // Generate a safe ID from name
-    const id = name.toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_|_$/g, '') || 'space';
-
-    // Add as child container under root
-    this.root.children[id] = {
-      id, name,
-      x: 0, y: 0,
-      width, height,
-      char: '.',
-      description: description || '',
-      tags: [],
-      metadata: {},
+    const node = {
+      id: nodeData.id,
+      name: nodeData.name,
+      description: nodeData.description || '',
+      tags: nodeData.tags || [],
+      metadata: nodeData.metadata || {},
+      rotation: nodeData.rotation || 0,
       children: {},
     };
 
-    // Expand root to fit all children
-    let maxW = 0, maxH = 0;
-    for (const child of Object.values(this.root.children)) {
-      maxW = Math.max(maxW, child.x + child.width);
-      maxH = Math.max(maxH, child.y + child.height);
+    // Spatial data (optional)
+    if (nodeData.x !== undefined) {
+      node.x = nodeData.x;
+      node.y = nodeData.y ?? 0;
+      node.width = nodeData.width;
+      node.height = nodeData.height;
+      node.char = nodeData.char || '#';
+      if (nodeData.shape) node.shape = nodeData.shape;
+      if (nodeData.elevation !== undefined) node.elevation = nodeData.elevation;
+      if (nodeData.height_3d !== undefined) node.height_3d = nodeData.height_3d;
     }
-    this.root.width = maxW;
-    this.root.height = maxH;
-    this.root.name = Object.keys(this.root.children).length === 1
-      ? name
-      : `${Object.keys(this.root.children).length} spaces`;
 
+    parent.children[nodeData.id] = node;
     this.save();
-    return id;
+    return { id: nodeData.id, name: node.name };
   }
 
-  clearSpace(id) {
-    if (!this.root || !this.root.children[id]) return false;
-    delete this.root.children[id];
-    this.save();
-    return true;
-  }
-
-  clearAll() {
-    this.root = null;
-    this.save();
-  }
+  // ── Tree operations ────────────────────────────
 
   resolve(path) {
     if (!this.root) return null;
@@ -138,11 +102,114 @@ export class MapStore {
   }
 
   /**
-   * Find overlapping objects. Advisory only — not enforced on placement.
+   * Resolve parent and child ID from a full path.
    */
+  resolveParentAndChild(path) {
+    const parts = path.split('/').filter(Boolean);
+    if (parts.length === 0) return null;
+    const childId = parts[parts.length - 1];
+    const parentPath = parts.slice(0, -1).join('/') || '/';
+    const parent = this.resolve(parentPath);
+    if (!parent || !parent.children || !parent.children[childId]) return null;
+    return { parent, childId, child: parent.children[childId] };
+  }
+
+  removeNode(path) {
+    const res = this.resolveParentAndChild(path);
+    if (!res) return false;
+    delete res.parent.children[res.childId];
+    this.save();
+    return true;
+  }
+
+  renameNode(path, newId) {
+    const res = this.resolveParentAndChild(path);
+    if (!res) return { error: 'Not found' };
+    if (res.parent.children[newId]) return { error: `"${newId}" already exists in parent` };
+    const node = res.child;
+    delete res.parent.children[res.childId];
+    node.id = newId;
+    res.parent.children[newId] = node;
+    this.save();
+    return { id: newId, name: node.name };
+  }
+
+  duplicateNode(sourcePath, newId, targetPath) {
+    const source = this.resolve(sourcePath);
+    if (!source) return { error: 'Source not found' };
+    const target = targetPath ? this.resolve(targetPath) : null;
+
+    // If no target, duplicate in same parent
+    let parent;
+    if (target) {
+      parent = target;
+    } else {
+      const res = this.resolveParentAndChild(sourcePath);
+      if (!res) return { error: 'Source parent not found' };
+      parent = res.parent;
+    }
+    if (!parent.children) return { error: 'Target cannot hold children' };
+    if (parent.children[newId]) return { error: `"${newId}" already exists in target` };
+
+    parent.children[newId] = this._deepCopy(source, newId);
+    this.save();
+    return { id: newId, name: source.name };
+  }
+
+  reparentNode(path, newParentPath, newX, newY) {
+    const res = this.resolveParentAndChild(path);
+    if (!res) return { error: 'Not found' };
+    const newParent = this.resolve(newParentPath);
+    if (!newParent) return { error: 'New parent not found' };
+    if (!newParent.children) return { error: 'New parent cannot hold children' };
+    if (newParent.children[res.childId]) return { error: `"${res.childId}" already exists in new parent` };
+
+    const node = res.child;
+    delete res.parent.children[res.childId];
+    if (newX !== undefined) node.x = newX;
+    if (newY !== undefined) node.y = newY;
+    newParent.children[res.childId] = node;
+    this.save();
+    return { id: res.childId, name: node.name };
+  }
+
+  // ── Search ─────────────────────────────────────
+
+  findObjects(rootPath, filters) {
+    const root = this.resolve(rootPath || '/');
+    if (!root) return [];
+    const results = [];
+    const namePattern = filters.name ? filters.name.toLowerCase() : null;
+
+    const walk = (node, path) => {
+      for (const [id, child] of Object.entries(node.children || {})) {
+        const childPath = path ? `${path}/${id}` : id;
+        let match = true;
+        if (namePattern && !child.name.toLowerCase().includes(namePattern)) match = false;
+        if (filters.tags?.length && !filters.tags.every(t => (child.tags || []).includes(t))) match = false;
+        if (filters.metadata_key && !(child.metadata && filters.metadata_key in child.metadata)) match = false;
+        if (match) {
+          results.push({
+            path: childPath,
+            id: child.id,
+            name: child.name,
+            tags: child.tags || [],
+            isSpatial: child.x !== undefined,
+          });
+        }
+        walk(child, childPath);
+      }
+    };
+    walk(root, rootPath === '/' || !rootPath ? '' : rootPath);
+    return results;
+  }
+
+  // ── Collision detection ────────────────────────
+
   findCollisions(parent, x, y, w, h, excludeId) {
     const collisions = [];
     for (const child of Object.values(parent.children || {})) {
+      if (child.x === undefined) continue; // skip folder nodes
       if (excludeId && child.id === excludeId) continue;
       if (rectsOverlap(x, y, w, h, child.x, child.y, child.width, child.height)) {
         collisions.push(child);
@@ -151,9 +218,6 @@ export class MapStore {
     return collisions;
   }
 
-  /**
-   * Find collisions in projected space (front/side view).
-   */
   findCollisionsProjected(parent, x, y, w, h, projection) {
     const collisions = [];
     for (const child of Object.values(parent.children || {})) {
@@ -171,30 +235,29 @@ export class MapStore {
     return collisions;
   }
 
-  /**
-   * Collect all objects to render — optionally recursive.
-   * projection: 'plan' (default) | 'front' | 'side'
-   *   plan:  x → x, y → y (top-down, existing behavior)
-   *   front: x → x, elevation → y (looking from south, see width × height_3d)
-   *   side:  y → x, elevation → y (looking from east, see height × height_3d)
-   * Objects without elevation/height_3d are skipped in front/side projections.
-   */
+  // ── ASCII rendering ────────────────────────────
+
   collectRenderObjects(node, recursive = false, projection = 'plan') {
     const objects = [];
     function collect(parent, offsetX, offsetY) {
       for (const child of Object.values(parent.children || {})) {
+        if (child.x === undefined) {
+          // Folder node — recurse into it if recursive, but don't render
+          if (recursive && child.children) {
+            collect(child, offsetX, offsetY);
+          }
+          continue;
+        }
         const absX = offsetX + child.x;
         const absY = offsetY + child.y;
 
         if (projection === 'plan') {
           objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: absY, width: child.width, height: child.height, shape: child.shape });
         } else if (projection === 'front') {
-          // front: looking from south — x stays, elevation becomes y
           if (child.elevation !== undefined && child.height_3d !== undefined) {
             objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: child.elevation, width: child.width, height: child.height_3d });
           }
         } else if (projection === 'side') {
-          // side: looking from east — plan-y becomes x, elevation becomes y
           if (child.elevation !== undefined && child.height_3d !== undefined) {
             objects.push({ char: child.char, id: child.id, name: child.name, x: absY, y: child.elevation, width: child.height, height: child.height_3d });
           }
@@ -211,29 +274,28 @@ export class MapStore {
 
   renderAscii(node, maxCols = 60, maxRows = 30, recursive = false, projection = 'plan') {
     const objects = this.collectRenderObjects(node, recursive, projection);
+    const bounds = this.getEffectiveBounds(node);
+
     if (objects.length === 0) {
       if (projection !== 'plan') {
         return { ascii: [`(no objects with elevation/height_3d for ${projection} view)`], legend: [], scaleInfo: '' };
       }
-      return { ascii: [`(empty: ${node.width}m × ${node.height}m)`], legend: [], scaleInfo: '' };
+      return { ascii: [`(empty: ${bounds.w}m × ${bounds.h}m)`], legend: [], scaleInfo: '' };
     }
 
-    // Determine viewport size based on projection
     let viewW, viewH, viewLabel;
     if (projection === 'plan') {
-      viewW = node.width;
-      viewH = node.height;
-      viewLabel = `${node.width}m × ${node.height}m`;
+      viewW = bounds.w;
+      viewH = bounds.h;
+      viewLabel = `${bounds.w}m × ${bounds.h}m`;
     } else {
-      // For front/side, compute bounding box from objects (elevation can vary)
       let maxX = 0, maxY = 0;
       for (const o of objects) {
         maxX = Math.max(maxX, o.x + o.width);
         maxY = Math.max(maxY, o.y + o.height);
       }
-      viewW = projection === 'front' ? node.width : node.height;
-      viewH = maxY || 3; // fallback to 3m if no height data
-      // Use room floor_height from metadata if available
+      viewW = projection === 'front' ? bounds.w : bounds.h;
+      viewH = maxY || 3;
       if (node.metadata?.floor_height) viewH = node.metadata.floor_height;
       viewLabel = `${viewW}m × ${viewH}m (${projection} view)`;
     }
@@ -262,7 +324,6 @@ export class MapStore {
       const endRow = Math.ceil((child.y + child.height) / scale);
 
       if (child.shape) {
-        // Polygon fill — absolute shape points
         const absShape = child.shape.map(([px, py]) => [child.x + px, child.y + py]);
         for (let r = startRow; r < endRow && r < rows; r++) {
           for (let c = startCol; c < endCol && c < cols; c++) {
@@ -274,7 +335,6 @@ export class MapStore {
           }
         }
       } else {
-        // Rectangle fill
         for (let r = startRow; r < endRow && r < rows; r++) {
           for (let c = startCol; c < endCol && c < cols; c++) {
             if (r >= 0 && c >= 0) grid[r][c] = child.char;
@@ -283,7 +343,6 @@ export class MapStore {
       }
     }
 
-    // For front/side views, flip Y so floor is at bottom
     const finalGrid = (projection !== 'plan') ? grid.reverse() : grid;
 
     return {
@@ -293,17 +352,8 @@ export class MapStore {
     };
   }
 
-  /**
-   * Deep-copy a template into a target parent at given position/rotation.
-   *
-   * For templates with children (door+clearance, furniture group, etc.):
-   * - Creates a neutral container sized to the full bounding box
-   * - Adds a `_body` child for the template's own visual (char, tags)
-   * - Adds all original children alongside _body
-   * - Rotates ALL parts (body + children) correctly within the bbox
-   *
-   * For leaf objects: simple copy with dimension swap.
-   */
+  // ── Stamping ───────────────────────────────────
+
   stampObject(sourcePath, targetPath, newId, x, y, rotation) {
     const source = this.resolve(sourcePath);
     if (!source) return { error: 'Source not found' };
@@ -313,10 +363,9 @@ export class MapStore {
     if (target.children[newId]) return { error: `"${newId}" already exists in target` };
 
     const rot = rotation || 0;
-    const hasChildren = source.children && Object.keys(source.children).length > 0;
+    const hasChildren = Object.keys(source.children || {}).length > 0;
 
     if (!hasChildren) {
-      // Leaf: simple copy
       const copy = this._deepCopy(source, newId);
       copy.x = x;
       copy.y = y;
@@ -334,7 +383,6 @@ export class MapStore {
     const bbox = this._subtreeBBox(source);
     const parts = [];
 
-    // _body = the visual representation of the source object itself
     parts.push({
       id: '_body',
       name: source.name,
@@ -345,14 +393,13 @@ export class MapStore {
       tags: [...(source.tags || []).filter(t => t !== 'template')],
       metadata: {},
       rotation: 0,
+      children: {},
     });
 
-    // Original children
     for (const child of Object.values(source.children)) {
       parts.push(this._deepCopy(child));
     }
 
-    // Rotate all parts within the full bbox
     if (rot !== 0) {
       for (const part of parts) {
         const cx = part.x, cy = part.y, cw = part.width, ch = part.height;
@@ -369,14 +416,12 @@ export class MapStore {
         if (rot === 90 || rot === 270) {
           const tmp = part.width; part.width = part.height; part.height = tmp;
         }
-        // Recurse for grandchildren
         if (part.children && Object.keys(part.children).length > 0) {
           this._rotateChildren(part, cw, ch, rot);
         }
       }
     }
 
-    // Build neutral container sized to rotated bbox
     const rotW = (rot === 90 || rot === 270) ? bbox.h : bbox.w;
     const rotH = (rot === 90 || rot === 270) ? bbox.w : bbox.h;
 
@@ -403,18 +448,103 @@ export class MapStore {
     return { id: newId, name: source.name };
   }
 
-  /** Compute bounding box of node + all children. */
-  _subtreeBBox(node) {
-    let maxW = node.width, maxH = node.height;
+  // ── Export ──────────────────────────────────────
+
+  exportJSON(path, tag) {
+    const node = this.resolve(path || '/');
+    if (!node) return null;
+    if (!tag) return node;
+    return this._filterByTag(node, tag);
+  }
+
+  // ── Bounds ─────────────────────────────────────
+
+  /**
+   * Get effective bounds of a node.
+   * Spatial nodes: use explicit width/height.
+   * Folder nodes: auto-calculate from children bounding box.
+   */
+  getEffectiveBounds(node) {
+    if (node.x !== undefined && node.width !== undefined) {
+      return { w: node.width, h: node.height };
+    }
+    // Folder — auto-bounds from children
+    let maxW = 0, maxH = 0;
     for (const child of Object.values(node.children || {})) {
-      maxW = Math.max(maxW, child.x + child.width);
-      maxH = Math.max(maxH, child.y + child.height);
+      if (child.x !== undefined) {
+        maxW = Math.max(maxW, child.x + (child.width || 0));
+        maxH = Math.max(maxH, child.y + (child.height || 0));
+      }
+    }
+    return { w: maxW || 1, h: maxH || 1 };
+  }
+
+  // ── Persistence ────────────────────────────────
+
+  clearAll() {
+    this.root = null;
+    this.save();
+  }
+
+  save() {
+    writeFileSync(MAP_FILE, JSON.stringify(this.root, null, 2));
+  }
+
+  // ── Private helpers ────────────────────────────
+
+  _makeRoot() {
+    return {
+      id: '_root',
+      name: 'Projekty',
+      description: '',
+      tags: [],
+      metadata: {},
+      children: {},
+    };
+  }
+
+  _updateRootName() {
+    const projects = Object.values(this.root.children).filter(c => (c.tags || []).includes('project'));
+    this.root.name = projects.length === 0 ? 'Prázdné'
+      : projects.length === 1 ? projects[0].name
+      : `${projects.length} projektů`;
+  }
+
+  _load() {
+    if (!existsSync(MAP_FILE)) return null;
+    try {
+      const data = JSON.parse(readFileSync(MAP_FILE, 'utf-8'));
+      if (data) this._migrate(data);
+      return data;
+    } catch { return null; }
+  }
+
+  /**
+   * Migrate legacy data: ensure children: {} on all nodes, remove is_container.
+   */
+  _migrate(node) {
+    if (!node) return;
+    if (!node.children) node.children = {};
+    delete node.is_container;
+    for (const child of Object.values(node.children)) {
+      this._migrate(child);
+    }
+  }
+
+  _subtreeBBox(node) {
+    let maxW = node.width || 0, maxH = node.height || 0;
+    for (const child of Object.values(node.children || {})) {
+      if (child.x !== undefined) {
+        maxW = Math.max(maxW, child.x + (child.width || 0));
+        maxH = Math.max(maxH, child.y + (child.height || 0));
+      }
     }
     return { w: maxW, h: maxH };
   }
 
   _rotateChildren(node, origW, origH, rotation) {
     for (const child of Object.values(node.children || {})) {
+      if (child.x === undefined) continue;
       const cx = child.x, cy = child.y, cw = child.width, ch = child.height;
       if (rotation === 90) {
         child.x = origH - cy - ch;
@@ -441,31 +571,28 @@ export class MapStore {
     const copy = {
       id: newId || node.id,
       name: node.name,
-      x: node.x, y: node.y,
-      width: node.width, height: node.height,
-      char: node.char,
-      shape: node.shape ? JSON.parse(JSON.stringify(node.shape)) : undefined,
       description: node.description || '',
       tags: [...(node.tags || [])],
       metadata: { ...(node.metadata || {}) },
       rotation: node.rotation || 0,
-      elevation: node.elevation,
-      height_3d: node.height_3d,
+      children: {},
     };
-    if (node.children) {
-      copy.children = {};
-      for (const [id, child] of Object.entries(node.children)) {
-        copy.children[id] = this._deepCopy(child);
-      }
+    // Spatial data
+    if (node.x !== undefined) {
+      copy.x = node.x;
+      copy.y = node.y;
+      copy.width = node.width;
+      copy.height = node.height;
+      copy.char = node.char;
+      if (node.shape) copy.shape = JSON.parse(JSON.stringify(node.shape));
+      if (node.elevation !== undefined) copy.elevation = node.elevation;
+      if (node.height_3d !== undefined) copy.height_3d = node.height_3d;
+    }
+    // Recurse children
+    for (const [id, child] of Object.entries(node.children || {})) {
+      copy.children[id] = this._deepCopy(child);
     }
     return copy;
-  }
-
-  exportJSON(path, tag) {
-    const node = this.resolve(path || '/');
-    if (!node) return null;
-    if (!tag) return node;
-    return this._filterByTag(node, tag);
   }
 
   _filterByTag(node, tag) {
@@ -486,23 +613,12 @@ export class MapStore {
     }
     return filtered;
   }
-
-  save() {
-    writeFileSync(MAP_FILE, JSON.stringify(this.root, null, 2));
-  }
-
-  _load() {
-    if (!existsSync(MAP_FILE)) return null;
-    try { return JSON.parse(readFileSync(MAP_FILE, 'utf-8')); }
-    catch { return null; }
-  }
 }
 
 function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2) {
   return !(x1 + w1 <= x2 || x2 + w2 <= x1 || y1 + h1 <= y2 || y2 + h2 <= y1);
 }
 
-// Ray casting point-in-polygon test
 function pointInPolygon(px, py, polygon) {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
