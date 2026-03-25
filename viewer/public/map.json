@@ -1,6 +1,6 @@
 {
   "id": "_root",
-  "name": "Loft Kavárna Karlín",
+  "name": "3 projektů",
   "description": "",
   "x": 0,
   "y": 0,
@@ -3225,6 +3225,3315 @@
               "rotation": 0,
               "elevation": 0,
               "height_3d": 3.2
+            }
+          }
+        }
+      }
+    },
+    "aquapark": {
+      "id": "aquapark",
+      "name": "Aquapark",
+      "x": 0,
+      "y": 0,
+      "width": 80,
+      "height": 60,
+      "char": ".",
+      "description": "Aquapark s bazény, tobogány, wellness a zázemím",
+      "tags": [
+        "project"
+      ],
+      "metadata": {
+        "project": true,
+        "created": "2026-03-25T08:47:56.994Z"
+      },
+      "children": {
+        "prizemi": {
+          "id": "prizemi",
+          "name": "Přízemí",
+          "x": 0,
+          "y": 0,
+          "width": 80,
+          "height": 60,
+          "char": ".",
+          "description": "Hlavní podlaží aquaparku",
+          "tags": [],
+          "metadata": {},
+          "children": {
+            "vstup": {
+              "id": "vstup",
+              "name": "Vstupní hala",
+              "x": 0,
+              "y": 0,
+              "width": 20,
+              "height": 12,
+              "char": "V",
+              "description": "",
+              "tags": [
+                "room"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "children": {
+                "recepce": {
+                  "id": "recepce",
+                  "name": "Recepce",
+                  "x": 2,
+                  "y": 2,
+                  "width": 8,
+                  "height": 3,
+                  "char": "R",
+                  "description": "Pokladny a turnikety",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "satny_muzi": {
+              "id": "satny_muzi",
+              "name": "Šatny muži",
+              "x": 20,
+              "y": 0,
+              "width": 12,
+              "height": 12,
+              "char": "M",
+              "description": "",
+              "tags": [
+                "room"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "children": {}
+            },
+            "satny_zeny": {
+              "id": "satny_zeny",
+              "name": "Šatny ženy",
+              "x": 32,
+              "y": 0,
+              "width": 12,
+              "height": 12,
+              "char": "Z",
+              "description": "",
+              "tags": [
+                "room"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "children": {}
+            },
+            "sprchy_m": {
+              "id": "sprchy_m",
+              "name": "Sprchy muži",
+              "x": 20,
+              "y": 8,
+              "width": 6,
+              "height": 4,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "room"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "sprchy_z": {
+              "id": "sprchy_z",
+              "name": "Sprchy ženy",
+              "x": 38,
+              "y": 8,
+              "width": 6,
+              "height": 4,
+              "char": "s",
+              "description": "",
+              "tags": [
+                "room"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "hlavni_bazen": {
+              "id": "hlavni_bazen",
+              "name": "Hlavní bazén 25m",
+              "x": 10,
+              "y": 18,
+              "width": 25,
+              "height": 14,
+              "char": "H",
+              "description": "",
+              "tags": [
+                "pool"
+              ],
+              "metadata": {
+                "depth_min": 1.2,
+                "depth_max": 1.8,
+                "lanes": 6
+              },
+              "rotation": 0,
+              "children": {
+                "voda": {
+                  "id": "voda",
+                  "name": "Vodní plocha 25m",
+                  "x": 2,
+                  "y": 2,
+                  "width": 21,
+                  "height": 10,
+                  "char": "~",
+                  "description": "",
+                  "tags": [
+                    "water"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "vlnovy_bazen": {
+              "id": "vlnovy_bazen",
+              "name": "Vlnový bazén",
+              "x": 42,
+              "y": 18,
+              "width": 22,
+              "height": 16,
+              "char": "W",
+              "description": "",
+              "tags": [
+                "pool"
+              ],
+              "metadata": {
+                "depth_min": 0.3,
+                "depth_max": 1.6,
+                "wave_machine": true
+              },
+              "rotation": 0,
+              "children": {
+                "voda": {
+                  "id": "voda",
+                  "name": "Vodní plocha vlny",
+                  "x": 2,
+                  "y": 2,
+                  "width": 18,
+                  "height": 12,
+                  "char": "~",
+                  "description": "",
+                  "tags": [
+                    "water"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "detsky_bazen": {
+              "id": "detsky_bazen",
+              "name": "Dětský bazén",
+              "x": 2,
+              "y": 36,
+              "width": 16,
+              "height": 12,
+              "char": "D",
+              "description": "",
+              "tags": [
+                "pool"
+              ],
+              "metadata": {
+                "depth_min": 0.2,
+                "depth_max": 0.6
+              },
+              "rotation": 0,
+              "children": {
+                "voda": {
+                  "id": "voda",
+                  "name": "Vodní plocha děti",
+                  "x": 2,
+                  "y": 2,
+                  "width": 12,
+                  "height": 8,
+                  "char": "~",
+                  "description": "",
+                  "tags": [
+                    "water"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "tobogan_vez": {
+              "id": "tobogan_vez",
+              "name": "Tobogánová věž",
+              "x": 56,
+              "y": 0,
+              "width": 10,
+              "height": 10,
+              "char": "T",
+              "description": "",
+              "tags": [
+                "attraction"
+              ],
+              "metadata": {
+                "height_3d": 15,
+                "slides": 3
+              },
+              "rotation": 0,
+              "children": {}
+            },
+            "dojezd_1": {
+              "id": "dojezd_1",
+              "name": "Dojezd tobogán 1",
+              "x": 44,
+              "y": 5,
+              "width": 10,
+              "height": 4,
+              "char": "t",
+              "description": "",
+              "tags": [
+                "pool",
+                "attraction"
+              ],
+              "metadata": {
+                "depth": 0.8
+              },
+              "rotation": 0
+            },
+            "dojezd_2": {
+              "id": "dojezd_2",
+              "name": "Dojezd tobogán 2",
+              "x": 66,
+              "y": 5,
+              "width": 10,
+              "height": 6,
+              "char": "t",
+              "description": "",
+              "tags": [
+                "pool",
+                "attraction"
+              ],
+              "metadata": {
+                "depth": 1
+              },
+              "rotation": 0
+            },
+            "wellness": {
+              "id": "wellness",
+              "name": "Wellness zóna",
+              "x": 42,
+              "y": 38,
+              "width": 24,
+              "height": 18,
+              "char": "S",
+              "description": "",
+              "tags": [
+                "room"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "children": {
+                "virivka_1": {
+                  "id": "virivka_1",
+                  "name": "Vířivka 1",
+                  "x": 2,
+                  "y": 2,
+                  "width": 4,
+                  "height": 4,
+                  "char": "o",
+                  "description": "",
+                  "tags": [
+                    "pool"
+                  ],
+                  "metadata": {
+                    "temp": 38,
+                    "capacity": 6
+                  },
+                  "rotation": 0
+                },
+                "virivka_2": {
+                  "id": "virivka_2",
+                  "name": "Vířivka 2",
+                  "x": 8,
+                  "y": 2,
+                  "width": 4,
+                  "height": 4,
+                  "char": "o",
+                  "description": "",
+                  "tags": [
+                    "pool"
+                  ],
+                  "metadata": {
+                    "temp": 36,
+                    "capacity": 8
+                  },
+                  "rotation": 0
+                },
+                "sauna_finska": {
+                  "id": "sauna_finska",
+                  "name": "Finská sauna",
+                  "x": 14,
+                  "y": 2,
+                  "width": 5,
+                  "height": 5,
+                  "char": "F",
+                  "description": "",
+                  "tags": [
+                    "sauna"
+                  ],
+                  "metadata": {
+                    "temp": 90
+                  },
+                  "rotation": 0
+                },
+                "sauna_parna": {
+                  "id": "sauna_parna",
+                  "name": "Parní sauna",
+                  "x": 2,
+                  "y": 8,
+                  "width": 5,
+                  "height": 5,
+                  "char": "P",
+                  "description": "",
+                  "tags": [
+                    "sauna"
+                  ],
+                  "metadata": {
+                    "temp": 50
+                  },
+                  "rotation": 0
+                },
+                "ochlazovaci": {
+                  "id": "ochlazovaci",
+                  "name": "Ochlazovací bazének",
+                  "x": 14,
+                  "y": 8,
+                  "width": 4,
+                  "height": 4,
+                  "char": "!",
+                  "description": "",
+                  "tags": [
+                    "pool"
+                  ],
+                  "metadata": {
+                    "temp": 12
+                  },
+                  "rotation": 0
+                },
+                "odpocinarna": {
+                  "id": "odpocinarna",
+                  "name": "Odpočívárna",
+                  "x": 8,
+                  "y": 12,
+                  "width": 10,
+                  "height": 5,
+                  "char": "r",
+                  "description": "",
+                  "tags": [
+                    "room"
+                  ],
+                  "metadata": {},
+                  "rotation": 0
+                }
+              }
+            },
+            "restaurace": {
+              "id": "restaurace",
+              "name": "Restaurace",
+              "x": 0,
+              "y": 50,
+              "width": 20,
+              "height": 10,
+              "char": "E",
+              "description": "",
+              "tags": [
+                "room"
+              ],
+              "metadata": {},
+              "rotation": 0,
+              "children": {}
+            },
+            "bar": {
+              "id": "bar",
+              "name": "Swim-up bar",
+              "x": 36,
+              "y": 18,
+              "width": 5,
+              "height": 6,
+              "char": "B",
+              "description": "",
+              "tags": [
+                "room",
+                "attraction"
+              ],
+              "metadata": {
+                "description": "Bar u bazénu"
+              },
+              "rotation": 0
+            },
+            "technicka": {
+              "id": "technicka",
+              "name": "Technická místnost",
+              "x": 68,
+              "y": 50,
+              "width": 12,
+              "height": 10,
+              "char": "X",
+              "description": "Filtrace, chemie, vzduchotechnika",
+              "tags": [
+                "room",
+                "technical"
+              ],
+              "metadata": {},
+              "rotation": 0
+            },
+            "divoka_reka": {
+              "id": "divoka_reka",
+              "name": "Divoká řeka",
+              "x": 5,
+              "y": 32,
+              "width": 36,
+              "height": 4,
+              "char": "≈",
+              "shape": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  6,
+                  0
+                ],
+                [
+                  12,
+                  2
+                ],
+                [
+                  18,
+                  0
+                ],
+                [
+                  24,
+                  2
+                ],
+                [
+                  30,
+                  0
+                ],
+                [
+                  36,
+                  1
+                ],
+                [
+                  36,
+                  3
+                ],
+                [
+                  30,
+                  2
+                ],
+                [
+                  24,
+                  4
+                ],
+                [
+                  18,
+                  2
+                ],
+                [
+                  12,
+                  4
+                ],
+                [
+                  6,
+                  2
+                ],
+                [
+                  0,
+                  3
+                ]
+              ],
+              "description": "",
+              "tags": [
+                "pool",
+                "attraction"
+              ],
+              "metadata": {
+                "depth": 1,
+                "current": true
+              },
+              "rotation": 0
+            }
+          }
+        }
+      }
+    },
+    "detske_hriste": {
+      "id": "detske_hriste",
+      "name": "Dětské hřiště",
+      "x": 0,
+      "y": 0,
+      "width": 28,
+      "height": 22,
+      "char": ".",
+      "description": "Malé dětské hřiště s herními prvky, bezpečnostními zónami a zázemím",
+      "tags": [
+        "project"
+      ],
+      "metadata": {
+        "project": true,
+        "created": "2026-03-25T09:12:07.959Z"
+      },
+      "children": {
+        "hriste": {
+          "id": "hriste",
+          "name": "Hřiště",
+          "x": 0,
+          "y": 0,
+          "width": 28,
+          "height": 22,
+          "char": ".",
+          "description": "Hlavní plocha hřiště 28×22m",
+          "tags": [],
+          "metadata": {},
+          "children": {
+            "oploceni": {
+              "id": "oploceni",
+              "name": "Oplocení hřiště",
+              "x": 0,
+              "y": 0,
+              "width": 28,
+              "height": 22,
+              "char": "#",
+              "description": "",
+              "tags": [
+                "structural"
+              ],
+              "metadata": {
+                "fence_height": 1.2,
+                "material": "dřevěné laťky"
+              },
+              "rotation": 0,
+              "children": {
+                "houpacky": {
+                  "id": "houpacky",
+                  "name": "Houpačkový rám 2-sedadla",
+                  "x": 2,
+                  "y": 4,
+                  "width": 4,
+                  "height": 1.5,
+                  "char": "H",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "height_3d": 2.5,
+                    "seats": 2,
+                    "age": "3-12",
+                    "material": "ocel+pryž"
+                  },
+                  "rotation": 0,
+                  "children": {}
+                },
+                "h_sedadlo_1": {
+                  "id": "h_sedadlo_1",
+                  "name": "Sedadlo 1 (předkořka)",
+                  "x": 0.8,
+                  "y": 0.5,
+                  "width": 0.5,
+                  "height": 0.4,
+                  "char": "s",
+                  "description": "",
+                  "tags": [
+                    "part"
+                  ],
+                  "metadata": {
+                    "type": "flat_seat",
+                    "chain_length": 2
+                  },
+                  "rotation": 0
+                },
+                "h_sedadlo_2": {
+                  "id": "h_sedadlo_2",
+                  "name": "Sedadlo 2 (košík)",
+                  "x": 2.6,
+                  "y": 0.5,
+                  "width": 0.5,
+                  "height": 0.4,
+                  "char": "s",
+                  "description": "",
+                  "tags": [
+                    "part"
+                  ],
+                  "metadata": {
+                    "type": "basket_seat",
+                    "chain_length": 2,
+                    "age": "1-5"
+                  },
+                  "rotation": 0
+                },
+                "clr_houp_sever": {
+                  "id": "clr_houp_sever",
+                  "name": "Clearance houpačky sever (výkyv)",
+                  "x": 2,
+                  "y": 1,
+                  "width": 4,
+                  "height": 3,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "bezpečnostní zóna výkyvu, včetně dopádu"
+                  },
+                  "rotation": 0
+                },
+                "clr_houp_jih": {
+                  "id": "clr_houp_jih",
+                  "name": "Clearance houpačky jih (výkyv)",
+                  "x": 2,
+                  "y": 5.5,
+                  "width": 4,
+                  "height": 3,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "bezpečnostní zóna výkyvu, včetně dopádu"
+                  },
+                  "rotation": 0
+                },
+                "clr_houp_vychod": {
+                  "id": "clr_houp_vychod",
+                  "name": "Clearance houpačky východ",
+                  "x": 6,
+                  "y": 2.5,
+                  "width": 1.5,
+                  "height": 4.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "boční bezpečnostní zóna"
+                  },
+                  "rotation": 0
+                },
+                "clr_houp_zapad": {
+                  "id": "clr_houp_zapad",
+                  "name": "Clearance houpačky západ",
+                  "x": 0.5,
+                  "y": 2.5,
+                  "width": 1.5,
+                  "height": 4.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "boční bezpečnostní zóna"
+                  },
+                  "rotation": 0
+                },
+                "prolezacka": {
+                  "id": "prolezacka",
+                  "name": "Prolézací sestava se skluzavkou",
+                  "x": 14,
+                  "y": 3,
+                  "width": 5,
+                  "height": 4,
+                  "char": "P",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "height_3d": 3,
+                    "age": "3-12",
+                    "elements": [
+                      "věžička",
+                      "mostík",
+                      "skluzavka",
+                      "žebřík",
+                      "lano"
+                    ]
+                  },
+                  "rotation": 0,
+                  "children": {}
+                },
+                "p_vezicka": {
+                  "id": "p_vezicka",
+                  "name": "Věžička s plat.",
+                  "x": 0,
+                  "y": 0,
+                  "width": 1.8,
+                  "height": 1.8,
+                  "char": "v",
+                  "description": "",
+                  "tags": [
+                    "part"
+                  ],
+                  "metadata": {
+                    "platform_height": 1.5,
+                    "roof": true
+                  },
+                  "rotation": 0
+                },
+                "p_mostik": {
+                  "id": "p_mostik",
+                  "name": "Lanový mostík",
+                  "x": 1.8,
+                  "y": 0.4,
+                  "width": 1.5,
+                  "height": 1,
+                  "char": "m",
+                  "description": "",
+                  "tags": [
+                    "part"
+                  ],
+                  "metadata": {
+                    "height": 1.5
+                  },
+                  "rotation": 0
+                },
+                "p_vez2": {
+                  "id": "p_vez2",
+                  "name": "Věžička 2",
+                  "x": 3.3,
+                  "y": 0,
+                  "width": 1.7,
+                  "height": 1.8,
+                  "char": "v",
+                  "description": "",
+                  "tags": [
+                    "part"
+                  ],
+                  "metadata": {
+                    "platform_height": 2.2,
+                    "roof": true
+                  },
+                  "rotation": 0
+                },
+                "p_skluzavka": {
+                  "id": "p_skluzavka",
+                  "name": "Skluzavka",
+                  "x": 3.5,
+                  "y": 1.8,
+                  "width": 0.6,
+                  "height": 2.2,
+                  "char": "/",
+                  "description": "",
+                  "tags": [
+                    "part"
+                  ],
+                  "metadata": {
+                    "length": 3,
+                    "height": 2.2,
+                    "material": "nerez"
+                  },
+                  "rotation": 0
+                },
+                "p_zebrik": {
+                  "id": "p_zebrik",
+                  "name": "Žebřík",
+                  "x": 0.3,
+                  "y": 1.8,
+                  "width": 0.6,
+                  "height": 0.8,
+                  "char": "|",
+                  "description": "",
+                  "tags": [
+                    "part"
+                  ],
+                  "metadata": {
+                    "rungs": 6
+                  },
+                  "rotation": 0
+                },
+                "p_lano": {
+                  "id": "p_lano",
+                  "name": "Šplhací lano",
+                  "x": 1.5,
+                  "y": 1.8,
+                  "width": 0.5,
+                  "height": 0.5,
+                  "char": "~",
+                  "description": "",
+                  "tags": [
+                    "part"
+                  ],
+                  "metadata": {
+                    "type": "splétací lano"
+                  },
+                  "rotation": 0
+                },
+                "clr_skluz_dojezd": {
+                  "id": "clr_skluz_dojezd",
+                  "name": "Clearance dojezd skluzavky",
+                  "x": 16.5,
+                  "y": 7,
+                  "width": 2,
+                  "height": 2.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "zóna dopádu ze skluzavky"
+                  },
+                  "rotation": 0
+                },
+                "clr_prolez_obal": {
+                  "id": "clr_prolez_obal",
+                  "name": "Clearance prolézačka obvod",
+                  "x": 12.5,
+                  "y": 1.5,
+                  "width": 8,
+                  "height": 8,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "bezpečnostní zóna pádu 1.5m od kraďďďďu"
+                  },
+                  "rotation": 0
+                },
+                "piskoviste": {
+                  "id": "piskoviste",
+                  "name": "Pískoviště",
+                  "x": 2,
+                  "y": 11,
+                  "width": 4,
+                  "height": 4,
+                  "char": ".",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "depth": 0.4,
+                    "material": "písek praný",
+                    "border": "dřevěný rám"
+                  },
+                  "rotation": 0,
+                  "children": {}
+                },
+                "pi_formicky": {
+                  "id": "pi_formicky",
+                  "name": "Stolek na formičky",
+                  "x": 0.5,
+                  "y": 0.5,
+                  "width": 1,
+                  "height": 0.6,
+                  "char": "f",
+                  "description": "",
+                  "tags": [
+                    "part"
+                  ],
+                  "metadata": {
+                    "height_3d": 0.5
+                  },
+                  "rotation": 0
+                },
+                "pi_bagr": {
+                  "id": "pi_bagr",
+                  "name": "Pískový bagr",
+                  "x": 2.5,
+                  "y": 2.5,
+                  "width": 0.8,
+                  "height": 0.8,
+                  "char": "b",
+                  "description": "",
+                  "tags": [
+                    "part"
+                  ],
+                  "metadata": {
+                    "type": "otočný bagrík",
+                    "height_3d": 0.7
+                  },
+                  "rotation": 0
+                },
+                "clr_piskoviste": {
+                  "id": "clr_piskoviste",
+                  "name": "Clearance pískoviště",
+                  "x": 1.5,
+                  "y": 10.5,
+                  "width": 5,
+                  "height": 5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "volný prostor okolo pískoviště"
+                  },
+                  "rotation": 0
+                },
+                "pruzinove_1": {
+                  "id": "pruzinove_1",
+                  "name": "Pružinové houpadlo - koník",
+                  "x": 9,
+                  "y": 11,
+                  "width": 0.8,
+                  "height": 1,
+                  "char": "k",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "type": "koník",
+                    "age": "2-6",
+                    "height_3d": 0.8
+                  },
+                  "rotation": 0
+                },
+                "pruzinove_2": {
+                  "id": "pruzinove_2",
+                  "name": "Pružinové houpadlo - motorka",
+                  "x": 11,
+                  "y": 11,
+                  "width": 1,
+                  "height": 0.7,
+                  "char": "k",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "type": "motorka",
+                    "age": "2-6",
+                    "height_3d": 0.8
+                  },
+                  "rotation": 0
+                },
+                "pruzinove_3": {
+                  "id": "pruzinove_3",
+                  "name": "Pružinové houpadlo - autíčko",
+                  "x": 9.5,
+                  "y": 13,
+                  "width": 1,
+                  "height": 0.8,
+                  "char": "k",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "type": "autíčko",
+                    "age": "2-6",
+                    "height_3d": 0.8
+                  },
+                  "rotation": 0
+                },
+                "clr_pruz_1": {
+                  "id": "clr_pruz_1",
+                  "name": "Clearance koník",
+                  "x": 7.5,
+                  "y": 9.5,
+                  "width": 3.3,
+                  "height": 3.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "1.5m zóna pádu pružinového houpadla"
+                  },
+                  "rotation": 0
+                },
+                "clr_pruz_2": {
+                  "id": "clr_pruz_2",
+                  "name": "Clearance motorka",
+                  "x": 9.5,
+                  "y": 9.5,
+                  "width": 3.5,
+                  "height": 3.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "1.5m zóna pádu"
+                  },
+                  "rotation": 0
+                },
+                "clr_pruz_3": {
+                  "id": "clr_pruz_3",
+                  "name": "Clearance autíčko",
+                  "x": 8,
+                  "y": 11.5,
+                  "width": 4,
+                  "height": 3.8,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "1.5m zóna pádu"
+                  },
+                  "rotation": 0
+                },
+                "kolotoc": {
+                  "id": "kolotoc",
+                  "name": "Kolotoč (talířový)",
+                  "x": 15,
+                  "y": 16,
+                  "width": 2.5,
+                  "height": 2.5,
+                  "char": "O",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "type": "talířový",
+                    "diameter": 2.5,
+                    "age": "3-12",
+                    "height_3d": 0.6
+                  },
+                  "rotation": 0
+                },
+                "clr_kolotoc": {
+                  "id": "clr_kolotoc",
+                  "name": "Clearance kolotoč",
+                  "x": 13,
+                  "y": 14,
+                  "width": 6.5,
+                  "height": 6.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "2m zóna okolo kolotoče — rotující prvek"
+                  },
+                  "rotation": 0
+                },
+                "vahadlo": {
+                  "id": "vahadlo",
+                  "name": "Houpačka-vahadlo",
+                  "x": 20,
+                  "y": 12,
+                  "width": 3.5,
+                  "height": 0.5,
+                  "char": "V",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "type": "pákové vahadlo",
+                    "seats": 2,
+                    "age": "3-10",
+                    "height_3d": 1.2
+                  },
+                  "rotation": 0
+                },
+                "clr_vahadlo": {
+                  "id": "clr_vahadlo",
+                  "name": "Clearance vahadlo",
+                  "x": 18.5,
+                  "y": 10.5,
+                  "width": 6.5,
+                  "height": 3.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "1.5m zóna dopádu + pohyb vahadla"
+                  },
+                  "rotation": 0
+                },
+                "lavicka_1": {
+                  "id": "lavicka_1",
+                  "name": "Lavička rodiče 1",
+                  "x": 0.5,
+                  "y": 17,
+                  "width": 1.8,
+                  "height": 0.5,
+                  "char": "L",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {
+                    "material": "dřevo+kov",
+                    "seats": 3
+                  },
+                  "rotation": 0
+                },
+                "lavicka_2": {
+                  "id": "lavicka_2",
+                  "name": "Lavička rodiče 2",
+                  "x": 0.5,
+                  "y": 19,
+                  "width": 1.8,
+                  "height": 0.5,
+                  "char": "L",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {
+                    "material": "dřevo+kov",
+                    "seats": 3
+                  },
+                  "rotation": 0
+                },
+                "lavicka_3": {
+                  "id": "lavicka_3",
+                  "name": "Lavička rodiče 3",
+                  "x": 25,
+                  "y": 17,
+                  "width": 1.8,
+                  "height": 0.5,
+                  "char": "L",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {
+                    "material": "dřevo+kov",
+                    "seats": 3
+                  },
+                  "rotation": 0
+                },
+                "lavicka_4": {
+                  "id": "lavicka_4",
+                  "name": "Lavička rodiče 4",
+                  "x": 25,
+                  "y": 19,
+                  "width": 1.8,
+                  "height": 0.5,
+                  "char": "L",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {
+                    "material": "dřevo+kov",
+                    "seats": 3
+                  },
+                  "rotation": 0
+                },
+                "odpadkovy_kos": {
+                  "id": "odpadkovy_kos",
+                  "name": "Odpadkový koš",
+                  "x": 10.5,
+                  "y": 0.5,
+                  "width": 0.4,
+                  "height": 0.4,
+                  "char": "Q",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {
+                    "type": "kovový se stříškou"
+                  },
+                  "rotation": 0
+                },
+                "dopadova_plocha_houp": {
+                  "id": "dopadova_plocha_houp",
+                  "name": "Dopadová plocha houpačky",
+                  "x": 0.5,
+                  "y": 1,
+                  "width": 7,
+                  "height": 8,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "surface"
+                  ],
+                  "metadata": {
+                    "material": "pryžové dlaždice 40mm",
+                    "color": "červená"
+                  },
+                  "rotation": 0
+                },
+                "dopadova_plocha_prolez": {
+                  "id": "dopadova_plocha_prolez",
+                  "name": "Dopadová plocha prolézačka",
+                  "x": 12.5,
+                  "y": 1.5,
+                  "width": 8,
+                  "height": 8,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "surface"
+                  ],
+                  "metadata": {
+                    "material": "pryžové dlaždice 50mm",
+                    "color": "zelená"
+                  },
+                  "rotation": 0
+                },
+                "dopadova_plocha_pruziny": {
+                  "id": "dopadova_plocha_pruziny",
+                  "name": "Dopadová plocha pružiny",
+                  "x": 7.5,
+                  "y": 9.5,
+                  "width": 5.5,
+                  "height": 6,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "surface"
+                  ],
+                  "metadata": {
+                    "material": "pryžové dlaždice 30mm",
+                    "color": "žlutá"
+                  },
+                  "rotation": 0
+                },
+                "dopadova_plocha_kolotoc": {
+                  "id": "dopadova_plocha_kolotoc",
+                  "name": "Dopadová plocha kolotoč",
+                  "x": 13,
+                  "y": 14,
+                  "width": 6.5,
+                  "height": 6.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "surface"
+                  ],
+                  "metadata": {
+                    "material": "pryžové dlaždice 30mm",
+                    "color": "modrá"
+                  },
+                  "rotation": 0
+                },
+                "dopadova_plocha_vahadlo": {
+                  "id": "dopadova_plocha_vahadlo",
+                  "name": "Dopadová plocha vahadlo",
+                  "x": 18.5,
+                  "y": 10.5,
+                  "width": 6.5,
+                  "height": 3.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "surface"
+                  ],
+                  "metadata": {
+                    "material": "pryžové dlaždice 30mm",
+                    "color": "oranžová"
+                  },
+                  "rotation": 0
+                }
+              }
+            },
+            "branka": {
+              "id": "branka",
+              "name": "Vstupní branka",
+              "x": 12,
+              "y": 0,
+              "width": 1.2,
+              "height": 0.2,
+              "char": "=",
+              "description": "",
+              "tags": [
+                "door"
+              ],
+              "metadata": {
+                "type": "samozavírací",
+                "height_3d": 1
+              },
+              "rotation": 0
+            },
+            "chodnik": {
+              "id": "chodnik",
+              "name": "Přístupový chodník",
+              "x": 12,
+              "y": 0.2,
+              "width": 1.2,
+              "height": 3,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "path"
+              ],
+              "metadata": {
+                "material": "zámková dlažba"
+              },
+              "rotation": 0
+            },
+            "tabule": {
+              "id": "tabule",
+              "name": "Informační tabule",
+              "x": 10,
+              "y": 0.5,
+              "width": 1,
+              "height": 0.3,
+              "char": "i",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "content": "Provozní řád, věk 3-12 let"
+              },
+              "rotation": 0
+            }
+          }
+        },
+        "hriste_v2": {
+          "id": "hriste_v2",
+          "name": "Hřiště v2",
+          "x": 0,
+          "y": 0,
+          "width": 28,
+          "height": 22,
+          "char": ".",
+          "description": "Detailní plán hřiště s výškami a elevacemi",
+          "tags": [],
+          "metadata": {},
+          "children": {
+            "oploceni": {
+              "id": "oploceni",
+              "name": "Oplocení",
+              "x": 0,
+              "y": 0,
+              "width": 28,
+              "height": 22,
+              "char": "#",
+              "description": "",
+              "tags": [
+                "structural"
+              ],
+              "metadata": {
+                "fence_height": 1.2,
+                "material": "dřevěné laťky",
+                "post_spacing": 2,
+                "post_dim": "0.08x0.08"
+              },
+              "rotation": 0,
+              "children": {
+                "dp_houp": {
+                  "id": "dp_houp",
+                  "name": "Dopadová plocha houpačky",
+                  "x": 0.5,
+                  "y": 1,
+                  "width": 7,
+                  "height": 8,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "surface"
+                  ],
+                  "metadata": {
+                    "material": "pryžové dlaždice EPDM 40mm",
+                    "color": "červená",
+                    "barva_hex": "#cc4444"
+                  },
+                  "rotation": 0
+                },
+                "dp_prolez": {
+                  "id": "dp_prolez",
+                  "name": "Dopadová plocha prolézačka",
+                  "x": 12.5,
+                  "y": 1.5,
+                  "width": 8,
+                  "height": 8,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "surface"
+                  ],
+                  "metadata": {
+                    "material": "pryžové dlaždice EPDM 50mm",
+                    "color": "zelená",
+                    "barva_hex": "#44aa55"
+                  },
+                  "rotation": 0
+                },
+                "dp_pruziny": {
+                  "id": "dp_pruziny",
+                  "name": "Dopadová plocha pružiny",
+                  "x": 7.5,
+                  "y": 9.5,
+                  "width": 5.5,
+                  "height": 6,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "surface"
+                  ],
+                  "metadata": {
+                    "material": "pryžové dlaždice EPDM 30mm",
+                    "color": "žlutá",
+                    "barva_hex": "#ddcc33"
+                  },
+                  "rotation": 0
+                },
+                "dp_kolotoc": {
+                  "id": "dp_kolotoc",
+                  "name": "Dopadová plocha kolotoč",
+                  "x": 13,
+                  "y": 14,
+                  "width": 6.5,
+                  "height": 6.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "surface"
+                  ],
+                  "metadata": {
+                    "material": "pryžové dlaždice EPDM 30mm",
+                    "color": "modrá",
+                    "barva_hex": "#4488cc"
+                  },
+                  "rotation": 0
+                },
+                "dp_vahadlo": {
+                  "id": "dp_vahadlo",
+                  "name": "Dopadová plocha vahadlo",
+                  "x": 18.5,
+                  "y": 10.5,
+                  "width": 6.5,
+                  "height": 3.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "surface"
+                  ],
+                  "metadata": {
+                    "material": "pryžové dlaždice EPDM 30mm",
+                    "color": "oranžová",
+                    "barva_hex": "#dd8833"
+                  },
+                  "rotation": 0
+                },
+                "houpacky": {
+                  "id": "houpacky",
+                  "name": "Houpačkový rám",
+                  "x": 2,
+                  "y": 4,
+                  "width": 4,
+                  "height": 1.5,
+                  "char": "H",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "material": "ocel práškově lakovaná",
+                    "barva": "cervena",
+                    "A_frame_spread": 1.2
+                  },
+                  "rotation": 0,
+                  "children": {
+                    "noha_LZ": {
+                      "id": "noha_LZ",
+                      "name": "A-rám levý zadní",
+                      "x": 0,
+                      "y": 0,
+                      "width": 0.06,
+                      "height": 0.06,
+                      "char": "/",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 2.7
+                    },
+                    "noha_LP": {
+                      "id": "noha_LP",
+                      "name": "A-rám levý přední",
+                      "x": 0,
+                      "y": 1.44,
+                      "width": 0.06,
+                      "height": 0.06,
+                      "char": "\\",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 2.7
+                    },
+                    "noha_PZ": {
+                      "id": "noha_PZ",
+                      "name": "A-rám pravý zadní",
+                      "x": 3.94,
+                      "y": 0,
+                      "width": 0.06,
+                      "height": 0.06,
+                      "char": "/",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 2.7
+                    },
+                    "noha_PP": {
+                      "id": "noha_PP",
+                      "name": "A-rám pravý přední",
+                      "x": 3.94,
+                      "y": 1.44,
+                      "width": 0.06,
+                      "height": 0.06,
+                      "char": "\\",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 2.7
+                    },
+                    "priecka": {
+                      "id": "priecka",
+                      "name": "Horní příčka",
+                      "x": 0,
+                      "y": 0.72,
+                      "width": 4,
+                      "height": 0.06,
+                      "char": "-",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 2.5,
+                      "height_3d": 0.08
+                    },
+                    "sed1": {
+                      "id": "sed1",
+                      "name": "Sedadlo plošné",
+                      "x": 0.8,
+                      "y": 0.55,
+                      "width": 0.4,
+                      "height": 0.2,
+                      "char": "s",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "typ": "pryžové plošné",
+                        "age": "3-12"
+                      },
+                      "rotation": 0,
+                      "elevation": 0.45,
+                      "height_3d": 0.03
+                    },
+                    "ret1L": {
+                      "id": "ret1L",
+                      "name": "Řetěz sed.1 L",
+                      "x": 0.82,
+                      "y": 0.6,
+                      "width": 0.02,
+                      "height": 0.02,
+                      "char": ":",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.48,
+                      "height_3d": 2.04
+                    },
+                    "ret1P": {
+                      "id": "ret1P",
+                      "name": "Řetěz sed.1 P",
+                      "x": 1.16,
+                      "y": 0.6,
+                      "width": 0.02,
+                      "height": 0.02,
+                      "char": ":",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.48,
+                      "height_3d": 2.04
+                    },
+                    "sed2": {
+                      "id": "sed2",
+                      "name": "Košíkové sedadlo",
+                      "x": 2.55,
+                      "y": 0.45,
+                      "width": 0.5,
+                      "height": 0.4,
+                      "char": "K",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "typ": "plastový košík",
+                        "age": "1-5",
+                        "barva": "žlutá"
+                      },
+                      "rotation": 0,
+                      "elevation": 0.45,
+                      "height_3d": 0.3
+                    },
+                    "ret2LZ": {
+                      "id": "ret2LZ",
+                      "name": "Řetěz koš LZ",
+                      "x": 2.57,
+                      "y": 0.47,
+                      "width": 0.02,
+                      "height": 0.02,
+                      "char": ":",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.48,
+                      "height_3d": 2.04
+                    },
+                    "ret2LP": {
+                      "id": "ret2LP",
+                      "name": "Řetěz koš LP",
+                      "x": 2.57,
+                      "y": 0.83,
+                      "width": 0.02,
+                      "height": 0.02,
+                      "char": ":",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.48,
+                      "height_3d": 2.04
+                    },
+                    "ret2PZ": {
+                      "id": "ret2PZ",
+                      "name": "Řetěz koš PZ",
+                      "x": 3.01,
+                      "y": 0.47,
+                      "width": 0.02,
+                      "height": 0.02,
+                      "char": ":",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.48,
+                      "height_3d": 2.04
+                    },
+                    "ret2PP": {
+                      "id": "ret2PP",
+                      "name": "Řetěz koš PP",
+                      "x": 3.01,
+                      "y": 0.83,
+                      "width": 0.02,
+                      "height": 0.02,
+                      "char": ":",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.48,
+                      "height_3d": 2.04
+                    }
+                  },
+                  "elevation": 0,
+                  "height_3d": 2.5
+                },
+                "clr_houp_S": {
+                  "id": "clr_houp_S",
+                  "name": "CZ houpačky sever",
+                  "x": 2,
+                  "y": 1,
+                  "width": 4,
+                  "height": 3,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "výkyv 3m před"
+                  },
+                  "rotation": 0
+                },
+                "clr_houp_J": {
+                  "id": "clr_houp_J",
+                  "name": "CZ houpačky jih",
+                  "x": 2,
+                  "y": 5.5,
+                  "width": 4,
+                  "height": 3,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "výkyv 3m za"
+                  },
+                  "rotation": 0
+                },
+                "clr_houp_V": {
+                  "id": "clr_houp_V",
+                  "name": "CZ houpačky východ",
+                  "x": 6,
+                  "y": 2.5,
+                  "width": 1.5,
+                  "height": 4.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "boční 1.5m"
+                  },
+                  "rotation": 0
+                },
+                "clr_houp_Z": {
+                  "id": "clr_houp_Z",
+                  "name": "CZ houpačky západ",
+                  "x": 0.5,
+                  "y": 2.5,
+                  "width": 1.5,
+                  "height": 4.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "boční 1.5m"
+                  },
+                  "rotation": 0
+                },
+                "prolezacka": {
+                  "id": "prolezacka",
+                  "name": "Prolézací sestava",
+                  "x": 14,
+                  "y": 3,
+                  "width": 5,
+                  "height": 4,
+                  "char": "P",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "age": "3-12",
+                    "max_pad_vyska": 2.2
+                  },
+                  "rotation": 0,
+                  "children": {
+                    "vez1_sloup_LZ": {
+                      "id": "vez1_sloup_LZ",
+                      "name": "Věž1 sloup LZ",
+                      "x": 0,
+                      "y": 0,
+                      "width": 0.08,
+                      "height": 0.08,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 3
+                    },
+                    "vez1_sloup_PZ": {
+                      "id": "vez1_sloup_PZ",
+                      "name": "Věž1 sloup PZ",
+                      "x": 1.72,
+                      "y": 0,
+                      "width": 0.08,
+                      "height": 0.08,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 3
+                    },
+                    "vez1_sloup_LP": {
+                      "id": "vez1_sloup_LP",
+                      "name": "Věž1 sloup LP",
+                      "x": 0,
+                      "y": 1.72,
+                      "width": 0.08,
+                      "height": 0.08,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 3
+                    },
+                    "vez1_sloup_PP": {
+                      "id": "vez1_sloup_PP",
+                      "name": "Věž1 sloup PP",
+                      "x": 1.72,
+                      "y": 1.72,
+                      "width": 0.08,
+                      "height": 0.08,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 3
+                    },
+                    "vez1_platforma": {
+                      "id": "vez1_platforma",
+                      "name": "Věž1 platforma",
+                      "x": 0,
+                      "y": 0,
+                      "width": 1.8,
+                      "height": 1.8,
+                      "char": "_",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "HPL deska protiskluz"
+                      },
+                      "rotation": 0,
+                      "elevation": 1.5,
+                      "height_3d": 0.06
+                    },
+                    "vez1_strecha": {
+                      "id": "vez1_strecha",
+                      "name": "Věž1 stříška",
+                      "x": 0,
+                      "y": 0,
+                      "width": 2,
+                      "height": 2,
+                      "char": "^",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "HPL deska červená",
+                        "presah": 0.1
+                      },
+                      "rotation": 0,
+                      "elevation": 2.9,
+                      "height_3d": 0.04
+                    },
+                    "vez1_zabradli_Z": {
+                      "id": "vez1_zabradli_Z",
+                      "name": "Věž1 zábradlí sever",
+                      "x": 0,
+                      "y": 0,
+                      "width": 1.8,
+                      "height": 0.04,
+                      "char": "-",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 1.5,
+                      "height_3d": 0.7
+                    },
+                    "vez1_zabradli_V": {
+                      "id": "vez1_zabradli_V",
+                      "name": "Věž1 zábradlí východ",
+                      "x": 1.76,
+                      "y": 0,
+                      "width": 0.04,
+                      "height": 1.8,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 1.5,
+                      "height_3d": 0.7
+                    },
+                    "vez1_zabradli_S": {
+                      "id": "vez1_zabradli_S",
+                      "name": "Věž1 zábradlí západ",
+                      "x": 0,
+                      "y": 0,
+                      "width": 0.04,
+                      "height": 1.8,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 1.5,
+                      "height_3d": 0.7
+                    },
+                    "mostik_podlaha": {
+                      "id": "mostik_podlaha",
+                      "name": "Mostík podlaha",
+                      "x": 1.8,
+                      "y": 0.4,
+                      "width": 1.5,
+                      "height": 1,
+                      "char": "=",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "dřevěné lamely s mezerami"
+                      },
+                      "rotation": 0,
+                      "elevation": 1.5,
+                      "height_3d": 0.04
+                    },
+                    "mostik_lano_L": {
+                      "id": "mostik_lano_L",
+                      "name": "Mostík lano levé",
+                      "x": 1.8,
+                      "y": 0.4,
+                      "width": 1.5,
+                      "height": 0.03,
+                      "char": "~",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "lano pr.18mm"
+                      },
+                      "rotation": 0,
+                      "elevation": 1.5,
+                      "height_3d": 0.5
+                    },
+                    "mostik_lano_P": {
+                      "id": "mostik_lano_P",
+                      "name": "Mostík lano pravé",
+                      "x": 1.8,
+                      "y": 1.37,
+                      "width": 1.5,
+                      "height": 0.03,
+                      "char": "~",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 1.5,
+                      "height_3d": 0.5
+                    },
+                    "vez2_sloup_LZ": {
+                      "id": "vez2_sloup_LZ",
+                      "name": "Věž2 sloup LZ",
+                      "x": 3.3,
+                      "y": 0,
+                      "width": 0.08,
+                      "height": 0.08,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 3.4
+                    },
+                    "vez2_sloup_PZ": {
+                      "id": "vez2_sloup_PZ",
+                      "name": "Věž2 sloup PZ",
+                      "x": 4.92,
+                      "y": 0,
+                      "width": 0.08,
+                      "height": 0.08,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 3.4
+                    },
+                    "vez2_sloup_LP": {
+                      "id": "vez2_sloup_LP",
+                      "name": "Věž2 sloup LP",
+                      "x": 3.3,
+                      "y": 1.72,
+                      "width": 0.08,
+                      "height": 0.08,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 3.4
+                    },
+                    "vez2_sloup_PP": {
+                      "id": "vez2_sloup_PP",
+                      "name": "Věž2 sloup PP",
+                      "x": 4.92,
+                      "y": 1.72,
+                      "width": 0.08,
+                      "height": 0.08,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 3.4
+                    },
+                    "vez2_platforma": {
+                      "id": "vez2_platforma",
+                      "name": "Věž2 platforma",
+                      "x": 3.3,
+                      "y": 0,
+                      "width": 1.7,
+                      "height": 1.8,
+                      "char": "_",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 2.2,
+                      "height_3d": 0.06
+                    },
+                    "vez2_strecha": {
+                      "id": "vez2_strecha",
+                      "name": "Věž2 stříška",
+                      "x": 3.2,
+                      "y": 0,
+                      "width": 1.9,
+                      "height": 2,
+                      "char": "^",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "HPL deska zelená"
+                      },
+                      "rotation": 0,
+                      "elevation": 3.3,
+                      "height_3d": 0.04
+                    },
+                    "vez2_zabradli_Z": {
+                      "id": "vez2_zabradli_Z",
+                      "name": "Věž2 zábradlí sever",
+                      "x": 3.3,
+                      "y": 0,
+                      "width": 1.7,
+                      "height": 0.04,
+                      "char": "-",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 2.2,
+                      "height_3d": 0.7
+                    },
+                    "vez2_zabradli_V": {
+                      "id": "vez2_zabradli_V",
+                      "name": "Věž2 zábradlí východ",
+                      "x": 4.92,
+                      "y": 0,
+                      "width": 0.04,
+                      "height": 1.8,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 2.2,
+                      "height_3d": 0.7
+                    },
+                    "skluzavka": {
+                      "id": "skluzavka",
+                      "name": "Skluzavka nerez",
+                      "x": 3.8,
+                      "y": 1.8,
+                      "width": 0.5,
+                      "height": 2.2,
+                      "char": "/",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "nerez 1.4301",
+                        "sirka_zlabu": 0.45,
+                        "start_elev": 2.2,
+                        "end_elev": 0.15
+                      },
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 2.2
+                    },
+                    "zebrik": {
+                      "id": "zebrik",
+                      "name": "Žebřík",
+                      "x": 0.3,
+                      "y": 1.8,
+                      "width": 0.5,
+                      "height": 0.6,
+                      "char": "H",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "pricky": 6,
+                        "material": "ocel+dřevo",
+                        "sklon": "75deg"
+                      },
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 1.5
+                    },
+                    "lano": {
+                      "id": "lano",
+                      "name": "Šplhací lano s uzly",
+                      "x": 1.3,
+                      "y": 1.8,
+                      "width": 0.1,
+                      "height": 0.1,
+                      "char": "o",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "PP lano pr.18mm",
+                        "uzly": 4,
+                        "rozestup": 0.4
+                      },
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 2
+                    }
+                  },
+                  "elevation": 0,
+                  "height_3d": 3.4
+                },
+                "clr_prolez": {
+                  "id": "clr_prolez",
+                  "name": "CZ prolézačka obvod",
+                  "x": 12.5,
+                  "y": 1.5,
+                  "width": 8,
+                  "height": 8,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "1.5m zóna pádu od okraje"
+                  },
+                  "rotation": 0
+                },
+                "clr_skluz": {
+                  "id": "clr_skluz",
+                  "name": "CZ dojezd skluzavky",
+                  "x": 16.5,
+                  "y": 7,
+                  "width": 2,
+                  "height": 2.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "dojezdová zóna"
+                  },
+                  "rotation": 0
+                },
+                "piskoviste": {
+                  "id": "piskoviste",
+                  "name": "Pískoviště",
+                  "x": 2,
+                  "y": 11,
+                  "width": 4,
+                  "height": 4,
+                  "char": ".",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "depth": 0.4,
+                    "material": "písek praný 0-2mm",
+                    "border": "dřevěný rám z kuľátin,rozměr 4x4m"
+                  },
+                  "rotation": 0,
+                  "children": {
+                    "ram_S": {
+                      "id": "ram_S",
+                      "name": "Rám sever",
+                      "x": 0,
+                      "y": 0,
+                      "width": 4,
+                      "height": 0.12,
+                      "char": "#",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "kuľátina D12cm"
+                      },
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.25
+                    },
+                    "ram_J": {
+                      "id": "ram_J",
+                      "name": "Rám jih",
+                      "x": 0,
+                      "y": 3.88,
+                      "width": 4,
+                      "height": 0.12,
+                      "char": "#",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.25
+                    },
+                    "ram_Z": {
+                      "id": "ram_Z",
+                      "name": "Rám západ",
+                      "x": 0,
+                      "y": 0,
+                      "width": 0.12,
+                      "height": 4,
+                      "char": "#",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.25
+                    },
+                    "ram_V": {
+                      "id": "ram_V",
+                      "name": "Rám východ",
+                      "x": 3.88,
+                      "y": 0,
+                      "width": 0.12,
+                      "height": 4,
+                      "char": "#",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.25
+                    },
+                    "rohovy_sloupek_1": {
+                      "id": "rohovy_sloupek_1",
+                      "name": "Rohový sl. SZ",
+                      "x": 0,
+                      "y": 0,
+                      "width": 0.15,
+                      "height": 0.15,
+                      "char": "+",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.35
+                    },
+                    "rohovy_sloupek_2": {
+                      "id": "rohovy_sloupek_2",
+                      "name": "Rohový sl. SV",
+                      "x": 3.85,
+                      "y": 0,
+                      "width": 0.15,
+                      "height": 0.15,
+                      "char": "+",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.35
+                    },
+                    "rohovy_sloupek_3": {
+                      "id": "rohovy_sloupek_3",
+                      "name": "Rohový sl. JZ",
+                      "x": 0,
+                      "y": 3.85,
+                      "width": 0.15,
+                      "height": 0.15,
+                      "char": "+",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.35
+                    },
+                    "rohovy_sloupek_4": {
+                      "id": "rohovy_sloupek_4",
+                      "name": "Rohový sl. JV",
+                      "x": 3.85,
+                      "y": 3.85,
+                      "width": 0.15,
+                      "height": 0.15,
+                      "char": "+",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.35
+                    },
+                    "pisek": {
+                      "id": "pisek",
+                      "name": "Písková plocha",
+                      "x": 0.15,
+                      "y": 0.15,
+                      "width": 3.7,
+                      "height": 3.7,
+                      "char": ",",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "písek praný 0-2mm",
+                        "hloubka": "0.4m"
+                      },
+                      "rotation": 0
+                    },
+                    "stolek": {
+                      "id": "stolek",
+                      "name": "Vodní/pískový stolek",
+                      "x": 0.5,
+                      "y": 0.5,
+                      "width": 1,
+                      "height": 0.6,
+                      "char": "f",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "dřevo robinie",
+                        "deska": "1.0x0.6m",
+                        "nohy": 4
+                      },
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.5
+                    },
+                    "bagrik": {
+                      "id": "bagrik",
+                      "name": "Otočný bagrík",
+                      "x": 2.5,
+                      "y": 2.5,
+                      "width": 0.8,
+                      "height": 0.8,
+                      "char": "b",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "ocel pozink",
+                        "otočný": true,
+                        "rameno_delka": 0.6
+                      },
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.7
+                    }
+                  },
+                  "elevation": 0,
+                  "height_3d": 0.25
+                },
+                "clr_pisk": {
+                  "id": "clr_pisk",
+                  "name": "CZ pískoviště",
+                  "x": 1.5,
+                  "y": 10.5,
+                  "width": 5,
+                  "height": 5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "0.5m volný prostor okolo"
+                  },
+                  "rotation": 0
+                },
+                "pruz_konik": {
+                  "id": "pruz_konik",
+                  "name": "Pruž. houpadlo koník",
+                  "x": 9,
+                  "y": 11,
+                  "width": 0.8,
+                  "height": 1,
+                  "char": "k",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "age": "2-6",
+                    "typ": "koník"
+                  },
+                  "rotation": 0,
+                  "children": {
+                    "zaklad": {
+                      "id": "zaklad",
+                      "name": "Základová deska",
+                      "x": 0.15,
+                      "y": 0.25,
+                      "width": 0.5,
+                      "height": 0.5,
+                      "char": "_",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "beton s kotv. šrouby"
+                      },
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.04
+                    },
+                    "pruzina": {
+                      "id": "pruzina",
+                      "name": "Pružina",
+                      "x": 0.25,
+                      "y": 0.35,
+                      "width": 0.3,
+                      "height": 0.3,
+                      "char": "S",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "ocel pr.12mm",
+                        "závity": 5
+                      },
+                      "rotation": 0,
+                      "elevation": 0.04,
+                      "height_3d": 0.35
+                    },
+                    "telo": {
+                      "id": "telo",
+                      "name": "Tělo koník",
+                      "x": 0.05,
+                      "y": 0.1,
+                      "width": 0.7,
+                      "height": 0.8,
+                      "char": "k",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "HPL deska 18mm",
+                        "barva": "modrá"
+                      },
+                      "rotation": 0,
+                      "elevation": 0.39,
+                      "height_3d": 0.35
+                    },
+                    "madla": {
+                      "id": "madla",
+                      "name": "Madla",
+                      "x": 0.15,
+                      "y": 0.1,
+                      "width": 0.5,
+                      "height": 0.05,
+                      "char": "-",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "ocel práškově"
+                      },
+                      "rotation": 0,
+                      "elevation": 0.65,
+                      "height_3d": 0.12
+                    }
+                  },
+                  "elevation": 0,
+                  "height_3d": 0.85
+                },
+                "pruz_motorka": {
+                  "id": "pruz_motorka",
+                  "name": "Pruž. houpadlo motorka",
+                  "x": 11,
+                  "y": 11,
+                  "width": 1,
+                  "height": 0.7,
+                  "char": "k",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "age": "2-6",
+                    "typ": "motorka"
+                  },
+                  "rotation": 0,
+                  "children": {
+                    "zaklad": {
+                      "id": "zaklad",
+                      "name": "Základová deska",
+                      "x": 0.25,
+                      "y": 0.1,
+                      "width": 0.5,
+                      "height": 0.5,
+                      "char": "_",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.04
+                    },
+                    "pruzina": {
+                      "id": "pruzina",
+                      "name": "Pružina",
+                      "x": 0.35,
+                      "y": 0.2,
+                      "width": 0.3,
+                      "height": 0.3,
+                      "char": "S",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.04,
+                      "height_3d": 0.35
+                    },
+                    "telo": {
+                      "id": "telo",
+                      "name": "Tělo motorka",
+                      "x": 0.1,
+                      "y": 0.05,
+                      "width": 0.8,
+                      "height": 0.6,
+                      "char": "k",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "HPL deska",
+                        "barva": "červená"
+                      },
+                      "rotation": 0,
+                      "elevation": 0.39,
+                      "height_3d": 0.35
+                    },
+                    "madla": {
+                      "id": "madla",
+                      "name": "Řídtka",
+                      "x": 0.15,
+                      "y": 0.05,
+                      "width": 0.15,
+                      "height": 0.1,
+                      "char": "o",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.6,
+                      "height_3d": 0.18
+                    }
+                  },
+                  "elevation": 0,
+                  "height_3d": 0.85
+                },
+                "pruz_auto": {
+                  "id": "pruz_auto",
+                  "name": "Pruž. houpadlo autíčko",
+                  "x": 9.5,
+                  "y": 13,
+                  "width": 1,
+                  "height": 0.8,
+                  "char": "k",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "age": "2-6",
+                    "typ": "autíčko"
+                  },
+                  "rotation": 0,
+                  "children": {
+                    "zaklad": {
+                      "id": "zaklad",
+                      "name": "Základová deska",
+                      "x": 0.25,
+                      "y": 0.15,
+                      "width": 0.5,
+                      "height": 0.5,
+                      "char": "_",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.04
+                    },
+                    "pruzina": {
+                      "id": "pruzina",
+                      "name": "Pružina",
+                      "x": 0.35,
+                      "y": 0.25,
+                      "width": 0.3,
+                      "height": 0.3,
+                      "char": "S",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.04,
+                      "height_3d": 0.35
+                    },
+                    "telo": {
+                      "id": "telo",
+                      "name": "Tělo autíčko",
+                      "x": 0.1,
+                      "y": 0.05,
+                      "width": 0.8,
+                      "height": 0.7,
+                      "char": "k",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "HPL deska",
+                        "barva": "žlutá"
+                      },
+                      "rotation": 0,
+                      "elevation": 0.39,
+                      "height_3d": 0.35
+                    },
+                    "volant": {
+                      "id": "volant",
+                      "name": "Volant",
+                      "x": 0.35,
+                      "y": 0.05,
+                      "width": 0.2,
+                      "height": 0.1,
+                      "char": "o",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.55,
+                      "height_3d": 0.2
+                    }
+                  },
+                  "elevation": 0,
+                  "height_3d": 0.85
+                },
+                "clr_konik": {
+                  "id": "clr_konik",
+                  "name": "CZ koník",
+                  "x": 7.5,
+                  "y": 9.5,
+                  "width": 3.3,
+                  "height": 3.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "1.5m zóna pádu"
+                  },
+                  "rotation": 0
+                },
+                "clr_motorka": {
+                  "id": "clr_motorka",
+                  "name": "CZ motorka",
+                  "x": 9.5,
+                  "y": 9.5,
+                  "width": 3.5,
+                  "height": 3.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "1.5m zóna pádu"
+                  },
+                  "rotation": 0
+                },
+                "clr_auto": {
+                  "id": "clr_auto",
+                  "name": "CZ autíčko",
+                  "x": 8,
+                  "y": 11.5,
+                  "width": 4,
+                  "height": 3.8,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "1.5m zóna pádu"
+                  },
+                  "rotation": 0
+                },
+                "kolotoc": {
+                  "id": "kolotoc",
+                  "name": "Kolotoč talířový",
+                  "x": 15,
+                  "y": 16,
+                  "width": 2.5,
+                  "height": 2.5,
+                  "char": "O",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "diameter": 2.5,
+                    "age": "3-12",
+                    "material": "ocel+HPL"
+                  },
+                  "rotation": 0,
+                  "children": {
+                    "stred_sloup": {
+                      "id": "stred_sloup",
+                      "name": "Středový sloup",
+                      "x": 1.15,
+                      "y": 1.15,
+                      "width": 0.2,
+                      "height": 0.2,
+                      "char": "+",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "ocel pozink"
+                      },
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.6
+                    },
+                    "disk": {
+                      "id": "disk",
+                      "name": "Otočný disk",
+                      "x": 0,
+                      "y": 0,
+                      "width": 2.5,
+                      "height": 2.5,
+                      "char": "O",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "ocel+HPL modrá",
+                        "diameter": 2.5
+                      },
+                      "rotation": 0,
+                      "elevation": 0.5,
+                      "height_3d": 0.06
+                    },
+                    "madlo_1": {
+                      "id": "madlo_1",
+                      "name": "Madlo 1",
+                      "x": 0.95,
+                      "y": 0.1,
+                      "width": 0.1,
+                      "height": 0.1,
+                      "char": ".",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.56,
+                      "height_3d": 0.4
+                    },
+                    "madlo_2": {
+                      "id": "madlo_2",
+                      "name": "Madlo 2",
+                      "x": 2.3,
+                      "y": 0.95,
+                      "width": 0.1,
+                      "height": 0.1,
+                      "char": ".",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.56,
+                      "height_3d": 0.4
+                    },
+                    "madlo_3": {
+                      "id": "madlo_3",
+                      "name": "Madlo 3",
+                      "x": 0.95,
+                      "y": 2.3,
+                      "width": 0.1,
+                      "height": 0.1,
+                      "char": ".",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.56,
+                      "height_3d": 0.4
+                    },
+                    "madlo_4": {
+                      "id": "madlo_4",
+                      "name": "Madlo 4",
+                      "x": 0.1,
+                      "y": 0.95,
+                      "width": 0.1,
+                      "height": 0.1,
+                      "char": ".",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.56,
+                      "height_3d": 0.4
+                    }
+                  },
+                  "elevation": 0,
+                  "height_3d": 0.6
+                },
+                "clr_kolotoc": {
+                  "id": "clr_kolotoc",
+                  "name": "CZ kolotoč",
+                  "x": 13,
+                  "y": 14,
+                  "width": 6.5,
+                  "height": 6.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "2m zóna — rotující prvek"
+                  },
+                  "rotation": 0
+                },
+                "vahadlo": {
+                  "id": "vahadlo",
+                  "name": "Houpačka-vahadlo",
+                  "x": 20,
+                  "y": 12,
+                  "width": 3.5,
+                  "height": 0.5,
+                  "char": "V",
+                  "description": "",
+                  "tags": [
+                    "attraction"
+                  ],
+                  "metadata": {
+                    "typ": "pákové",
+                    "seats": 2,
+                    "age": "3-10"
+                  },
+                  "rotation": 0,
+                  "children": {
+                    "stojan": {
+                      "id": "stojan",
+                      "name": "Centrální stojan",
+                      "x": 1.55,
+                      "y": 0.1,
+                      "width": 0.3,
+                      "height": 0.3,
+                      "char": "A",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "ocel",
+                        "profil": "A-tvar"
+                      },
+                      "rotation": 0,
+                      "elevation": 0,
+                      "height_3d": 0.5
+                    },
+                    "rameno": {
+                      "id": "rameno",
+                      "name": "Rameno",
+                      "x": 0,
+                      "y": 0.15,
+                      "width": 3.5,
+                      "height": 0.2,
+                      "char": "-",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "dřevo robinie 100x80mm"
+                      },
+                      "rotation": 0,
+                      "elevation": 0.45,
+                      "height_3d": 0.08
+                    },
+                    "sedadlo_L": {
+                      "id": "sedadlo_L",
+                      "name": "Sedadlo levé",
+                      "x": 0,
+                      "y": 0.1,
+                      "width": 0.35,
+                      "height": 0.3,
+                      "char": "s",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "material": "pryž",
+                        "barva": "modrá"
+                      },
+                      "rotation": 0,
+                      "elevation": 0.4,
+                      "height_3d": 0.06
+                    },
+                    "sedadlo_P": {
+                      "id": "sedadlo_P",
+                      "name": "Sedadlo pravé",
+                      "x": 3.15,
+                      "y": 0.1,
+                      "width": 0.35,
+                      "height": 0.3,
+                      "char": "s",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {
+                        "barva": "červená"
+                      },
+                      "rotation": 0,
+                      "elevation": 0.4,
+                      "height_3d": 0.06
+                    },
+                    "madlo_L": {
+                      "id": "madlo_L",
+                      "name": "Madlo levé",
+                      "x": 0.15,
+                      "y": 0.15,
+                      "width": 0.05,
+                      "height": 0.2,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.5,
+                      "height_3d": 0.35
+                    },
+                    "madlo_P": {
+                      "id": "madlo_P",
+                      "name": "Madlo pravé",
+                      "x": 3.3,
+                      "y": 0.15,
+                      "width": 0.05,
+                      "height": 0.2,
+                      "char": "|",
+                      "description": "",
+                      "tags": [
+                        "part"
+                      ],
+                      "metadata": {},
+                      "rotation": 0,
+                      "elevation": 0.5,
+                      "height_3d": 0.35
+                    }
+                  },
+                  "elevation": 0,
+                  "height_3d": 1.2
+                },
+                "clr_vahadlo": {
+                  "id": "clr_vahadlo",
+                  "name": "CZ vahadlo",
+                  "x": 18.5,
+                  "y": 10.5,
+                  "width": 6.5,
+                  "height": 3.5,
+                  "char": " ",
+                  "description": "",
+                  "tags": [
+                    "clearance"
+                  ],
+                  "metadata": {
+                    "reason": "1.5m zóna dopádu + pohyb"
+                  },
+                  "rotation": 0
+                },
+                "lavicka_1": {
+                  "id": "lavicka_1",
+                  "name": "Lavička JZ-1",
+                  "x": 0.5,
+                  "y": 17,
+                  "width": 1.8,
+                  "height": 0.5,
+                  "char": "L",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {
+                    "material": "dřevo+ocel",
+                    "míst": 3
+                  },
+                  "rotation": 0,
+                  "elevation": 0,
+                  "height_3d": 0.85
+                },
+                "lavicka_2": {
+                  "id": "lavicka_2",
+                  "name": "Lavička JZ-2",
+                  "x": 0.5,
+                  "y": 19,
+                  "width": 1.8,
+                  "height": 0.5,
+                  "char": "L",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0,
+                  "elevation": 0,
+                  "height_3d": 0.85
+                },
+                "lavicka_3": {
+                  "id": "lavicka_3",
+                  "name": "Lavička JV-1",
+                  "x": 25,
+                  "y": 17,
+                  "width": 1.8,
+                  "height": 0.5,
+                  "char": "L",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0,
+                  "elevation": 0,
+                  "height_3d": 0.85
+                },
+                "lavicka_4": {
+                  "id": "lavicka_4",
+                  "name": "Lavička JV-2",
+                  "x": 25,
+                  "y": 19,
+                  "width": 1.8,
+                  "height": 0.5,
+                  "char": "L",
+                  "description": "",
+                  "tags": [
+                    "furniture"
+                  ],
+                  "metadata": {},
+                  "rotation": 0,
+                  "elevation": 0,
+                  "height_3d": 0.85
+                }
+              }
+            },
+            "branka": {
+              "id": "branka",
+              "name": "Vstupní branka",
+              "x": 12,
+              "y": 0,
+              "width": 1.2,
+              "height": 0.2,
+              "char": "=",
+              "description": "",
+              "tags": [
+                "door"
+              ],
+              "metadata": {
+                "type": "samozavírací",
+                "material": "ocel+zelený nátěr"
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 1
+            },
+            "chodnik": {
+              "id": "chodnik",
+              "name": "Přístupový chodník",
+              "x": 12,
+              "y": 0.2,
+              "width": 1.2,
+              "height": 3.5,
+              "char": ".",
+              "description": "",
+              "tags": [
+                "path"
+              ],
+              "metadata": {
+                "material": "zámková dlažba šedá",
+                "thickness": 0.06
+              },
+              "rotation": 0
+            },
+            "tabule": {
+              "id": "tabule",
+              "name": "Informační tabule",
+              "x": 10,
+              "y": 0.5,
+              "width": 1,
+              "height": 0.1,
+              "char": "i",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "post_height": 1.5,
+                "content": "Provozní řád, věk 3-12"
+              },
+              "rotation": 0,
+              "elevation": 0.8,
+              "height_3d": 0.7
+            },
+            "kos": {
+              "id": "kos",
+              "name": "Odpadkový koš",
+              "x": 10.5,
+              "y": 0.5,
+              "width": 0.35,
+              "height": 0.35,
+              "char": "Q",
+              "description": "",
+              "tags": [
+                "furniture"
+              ],
+              "metadata": {
+                "type": "kovový válec se stříškou",
+                "diameter": 0.35
+              },
+              "rotation": 0,
+              "elevation": 0,
+              "height_3d": 0.75
             }
           }
         }

@@ -15,6 +15,8 @@ import { createBunkr } from './bunkr.js';
 import { buildFromMCP } from './mcp-renderer.js';
 import { createMetroVagon } from './metro-vagon.js';
 import { createKavarna } from './kavarna.js';
+import { createAquapark } from './aquapark.js';
+import { createDetskeHriste } from './detske-hriste.js';
 // import { createHogwarts } from './hogwarts.js';
 
 export async function createWorld(scene) {
@@ -22,6 +24,8 @@ export async function createWorld(scene) {
   createBunkr(scene, 0, 0);
   createMetroVagon(scene, -25, 0);
   createKavarna(scene, -35, 0);
+  createAquapark(scene, 50, 0);
+  createDetskeHriste(scene, 50, -35);
   // Data-driven from MCP map.json
   await buildFromMCP(scene, 'budova', 20, 0);
   // createLoft(scene, -20, -15);

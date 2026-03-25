@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createControls } from './controls.js';
 import { updateDoors, setCamera } from './mcp-renderer.js';
+import { updatePlayground, setPlaygroundCamera } from './playground-anim.js';
 
 // Scene setup
 const scene = new THREE.Scene();
@@ -38,6 +39,7 @@ scene.add(sunLight);
 // Controls
 const controls = createControls(camera, renderer.domElement);
 setCamera(camera);
+setPlaygroundCamera(camera);
 
 // Resize handler
 window.addEventListener('resize', () => {
@@ -54,6 +56,7 @@ function animate() {
   const delta = clock.getDelta();
   controls.update(delta);
   updateDoors(delta);
+  updatePlayground(delta);
   renderer.render(scene, camera);
 }
 
