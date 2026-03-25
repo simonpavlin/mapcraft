@@ -31,7 +31,13 @@
       "Bash(pip3 install:*)",
       "Bash(python3 -c \"import pip\")",
       "Bash(python3 -m pip install pillow numpy opencv-python-headless)",
-      "Bash(npm list:*)"
+      "Bash(npm list:*)",
+      "Bash(echo \"EXIT CODE: $?\")",
+      "mcp__mapcraft__get_guide",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(ls -la /mnt/c/Users/simip/Workspaces/projects/mapcraft/mcp-server/*.log)",
+      "Bash(find ~/.claude -name *.jsonl -newer ~/.claude/settings.local.json)",
+      "Bash(grep -E \"\\\\.\\(js|ts|json\\)$\")"
     ]
   },
   "enableAllProjectMcpServers": true,
