@@ -291,6 +291,80 @@ export class MapStore {
     return { groups, count: groups.length };
   }
 
+  // ── Validation ─────────────────────────────────
+
+  validate(node, rules) {
+    const violations = [];
+    // Collect all spatial objects recursively with absolute coords
+    const allObjects = [];
+    const collectAll = (parent, offsetX, offsetY, parentId) => {
+      for (const child of Object.values(this.getChildren(parent))) {
+        if (child.x === undefined) {
+          collectAll(child, offsetX, offsetY, parentId);
+          continue;
+        }
+        const absX = offsetX + child.x, absY = offsetY + child.y;
+        allObjects.push({
+          id: child.id, name: child.name, tags: child.tags || [],
+          x: absX, y: absY, w: child.width, h: child.height,
+          parentId,
+        });
+        collectAll(child, absX, absY, child.id);
+      }
+    };
+    collectAll(node, 0, 0, node.id);
+
+    const hasTag = (obj, tag) => obj.tags.includes(tag);
+    const overlap = (a, b) => rectsOverlap(a.x, a.y, a.w, a.h, b.x, b.y, b.w, b.h);
+    const touch = (a, b) => {
+      // Touch = overlap OR share edge (but not gap)
+      const sepX = a.x + a.w < b.x || b.x + b.w < a.x;
+      const sepY = a.y + a.h < b.y || b.y + b.h < a.y;
+      return !sepX && !sepY;
+    };
+
+    for (const rule of rules) {
+      if (rule.type === 'no_collide') {
+        // Symmetric: no object with tag A may overlap object with tag B
+        for (const objA of allObjects) {
+          if (!hasTag(objA, rule.a)) continue;
+          for (const objB of allObjects) {
+            if (objA.id === objB.id) continue;
+            if (!hasTag(objB, rule.b)) continue;
+            if (overlap(objA, objB)) {
+              violations.push(`[${rule.a}] "${objA.name}" collides with [${rule.b}] "${objB.name}" at (${objA.x},${objA.y})`);
+            }
+          }
+        }
+      }
+
+      if (rule.type === 'must_collide') {
+        // Every A must overlap at least one B
+        for (const objA of allObjects) {
+          if (!hasTag(objA, rule.a)) continue;
+          const found = allObjects.some(objB => objB.id !== objA.id && hasTag(objB, rule.b) && overlap(objA, objB));
+          if (!found) {
+            violations.push(`[${rule.a}] "${objA.name}" does not collide with any [${rule.b}]`);
+          }
+        }
+      }
+
+      if (rule.type === 'must_touch') {
+        // Every A must touch at least one B
+        for (const objA of allObjects) {
+          if (!hasTag(objA, rule.a)) continue;
+          const found = allObjects.some(objB => objB.id !== objA.id && hasTag(objB, rule.b) && touch(objA, objB));
+          if (!found) {
+            violations.push(`[${rule.a}] "${objA.name}" does not touch any [${rule.b}]`);
+          }
+        }
+      }
+    }
+
+    // Deduplicate symmetric violations (no_collide A↔B)
+    return [...new Set(violations)];
+  }
+
   // ── ASCII rendering ────────────────────────────
 
   collectRenderObjects(node, recursive = false, projection = 'plan') {

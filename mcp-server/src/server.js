@@ -105,6 +105,8 @@ Every object can carry arbitrary key-value metadata for 3D generation:
 - update_object — modify properties
 - check_collision — advisory overlap check
 - check_connectivity — verify all parts of a composite object are physically connected in 3D
+- define_rules — set validation rules (no_collide, must_collide, must_touch)
+- validate — check space against defined rules
 - get_ascii — ASCII visualization
 - get_info — detailed object info
 - export_json — export as JSON
@@ -586,6 +588,69 @@ server.tool(
       msg += `  Group ${i + 1}: ${names}\n`;
     }
     return ok(msg.trim());
+  }
+);
+
+// ──────────────────────────────────────────────
+// TOOL: define_rules
+// ──────────────────────────────────────────────
+
+server.tool(
+  'define_rules',
+  `Define validation rules for a project/space. Rules are stored in metadata and checked by validate tool.
+Rule types:
+- no_collide(a, b) — objects with tag A must not overlap objects with tag B (symmetric)
+- must_collide(a, b) — every object with tag A must overlap at least one object with tag B (directional: A must be in B, not B must have A)
+- must_touch(a, b) — every object with tag A must touch (share edge/overlap) at least one object with tag B (directional)`,
+  {
+    path: z.string().describe('Project or space path'),
+    rules: z.array(z.object({
+      type: z.enum(['no_collide', 'must_collide', 'must_touch']),
+      a: z.string().describe('Subject tag — "every object with this tag..."'),
+      b: z.string().describe('Target tag — "...must/must not [verb] an object with this tag"'),
+    })).describe('Array of rules'),
+  },
+  async ({ path, rules }) => {
+    const node = store.resolve(path);
+    if (!node) return err('Not found');
+    if (!node.metadata) node.metadata = {};
+    node.metadata._rules = rules;
+    store.save();
+    return ok(`Defined ${rules.length} rules on "${node.name}":\n${rules.map(r => `  ${r.a} ${r.type} ${r.b}`).join('\n')}`);
+  }
+);
+
+// ──────────────────────────────────────────────
+// TOOL: validate
+// ──────────────────────────────────────────────
+
+server.tool(
+  'validate',
+  'Validate a space against defined rules. Checks all children recursively against rules defined on ancestor nodes.',
+  {
+    path: z.string().describe('Path to validate'),
+  },
+  async ({ path }) => {
+    const node = store.resolve(path);
+    if (!node) return err('Not found');
+
+    // Collect rules from this node and ancestors
+    const rules = [];
+    const parts = path.split('/').filter(Boolean);
+    let p = '/';
+    const root = store.resolve('/');
+    if (root?.metadata?._rules) rules.push(...root.metadata._rules);
+    for (const part of parts) {
+      p = p === '/' ? part : `${p}/${part}`;
+      const n = store.resolve(p);
+      if (n?.metadata?._rules) rules.push(...n.metadata._rules);
+    }
+
+    if (rules.length === 0) return ok('No rules defined. Use define_rules first.');
+
+    const violations = store.validate(node, rules);
+    if (violations.length === 0) return ok(`All ${rules.length} rules passed ✓`);
+    return ok(`${violations.length} violations found:\n${violations.map(v => `  ✗ ${v}`).join('\n')}`);
   }
 );
 

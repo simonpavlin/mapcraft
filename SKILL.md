@@ -62,13 +62,35 @@ stamp_object(source="rodinny_dum/sablony/kreslo", target="rodinny_dum/prizemi/ob
 Use MCP tools to plan the building layout. All coordinates in **meters**.
 Plan in layers — don't try to specify everything at once:
 
-1. **Templates** — design reusable doors, windows, furniture with clearance zones
-2. **Rooms** — place rooms, verify with check_collision
-3. **Doors & windows** — stamp templates or place directly on wall boundaries
-4. **Clearance zones** — included in templates, or add manually with tag `clearance`
-5. **Furniture** — stamp templates or place directly, check_collision against clearance zones
-6. **Wall details** (optional) — use wall containers for pictures, shelves, outlets on specific walls
-7. **3D generation** — only now write Three.js code
+1. **Rules** — define validation rules for the project FIRST
+2. **Templates** — design reusable doors, windows, furniture with clearance zones
+3. **Rooms** — place rooms, verify with check_collision
+4. **Doors & windows** — stamp templates or place directly on wall boundaries
+5. **Clearance zones** — included in templates, or add manually with tag `clearance`
+6. **Furniture** — stamp templates or place directly, check_collision against clearance zones
+7. **Validate** — run validate to check all rules pass
+8. **Wall details** (optional) — use wall containers for pictures, shelves, outlets on specific walls
+9. **3D generation** — only now write Three.js code
+
+### Define rules first
+Before placing any objects, define validation rules on the project. This prevents layout mistakes early:
+
+```
+define_rules(path="rodinny_dum", rules=[
+  { type: "no_collide", a: "furniture", b: "furniture" },
+  { type: "no_collide", a: "wall", b: "furniture" },
+  { type: "must_collide", a: "door", b: "wall" },
+  { type: "must_collide", a: "window", b: "wall" },
+  { type: "must_touch", a: "bookcase", b: "wall" },
+])
+```
+
+Rule types:
+- **no_collide(a, b)** — tag A must not overlap tag B (symmetric)
+- **must_collide(a, b)** — every A must overlap at least one B (directional: doors must be IN walls)
+- **must_touch(a, b)** — every A must touch at least one B (directional: bookcase must touch wall)
+
+After placing objects, run `validate(path="rodinny_dum/prizemi")` to check all rules pass.
 
 ### Hierarchy — unified node model
 Everything is a **node**. Two kinds:
