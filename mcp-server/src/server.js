@@ -103,6 +103,7 @@ Every object can carry arbitrary key-value metadata for 3D generation:
 - move_object — reposition or reparent
 - update_object — modify properties
 - check_collision — advisory overlap check
+- check_connectivity — verify all parts of a composite object are physically connected in 3D
 - get_ascii — ASCII visualization
 - get_info — detailed object info
 - export_json — export as JSON
@@ -552,6 +553,38 @@ server.tool(
       ? c => `[${c.char}] "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m`
       : c => `[${c.char}] "${c.name}" (${c.px},${c.py}) ${c.pw}×${c.ph}m`;
     return ok(`Overlaps with: ${collisions.map(fmt).join(', ')}`);
+  }
+);
+
+// ──────────────────────────────────────────────
+// TOOL: check_connectivity
+// ──────────────────────────────────────────────
+
+server.tool(
+  'check_connectivity',
+  'Check if all spatial children of a node form one connected object in 3D space (touching/overlapping). Uses x,y,width,height + elevation,height_3d for 3D adjacency.',
+  {
+    path: z.string().describe('Path to parent node'),
+    exclude_tags: z.array(z.string()).optional().describe('Ignore objects with these tags'),
+  },
+  async ({ path, exclude_tags }) => {
+    const node = store.resolve(path || '/');
+    if (!node) return err('Not found');
+
+    const { groups, count } = store.findConnectedGroups(node, exclude_tags);
+    if (count === 0) return ok('No spatial children to check.');
+    if (count === 1) {
+      const names = groups[0].map(b => `[${b.char||'?'}] ${b.name}`).join(', ');
+      return ok(`All connected (${groups[0].length} objects): ${names}`);
+    }
+
+    let msg = `DISCONNECTED — ${count} separate groups:\n`;
+    for (let i = 0; i < groups.length; i++) {
+      const g = groups[i];
+      const names = g.map(b => `[${b.char||'?'}] ${b.name} (${b.x},${b.y} ${b.w}×${b.h}m, elev=${b.ez} h3d=${b.eh})`).join(', ');
+      msg += `  Group ${i + 1}: ${names}\n`;
+    }
+    return ok(msg.trim());
   }
 );
 

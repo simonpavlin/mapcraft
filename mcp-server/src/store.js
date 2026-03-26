@@ -239,6 +239,45 @@ export class MapStore {
     return collisions;
   }
 
+  // ── Connectivity check ─────────────────────────
+
+  findConnectedGroups(parent, excludeTags) {
+    const children = Object.values(parent.children || {});
+    let spatial = children.filter(c => c.x !== undefined);
+    if (excludeTags?.length) {
+      spatial = spatial.filter(c => !(c.tags || []).some(t => excludeTags.includes(t)));
+    }
+    if (spatial.length === 0) return { groups: [], count: 0 };
+
+    // Build 3D boxes
+    const boxes = spatial.map(c => ({
+      id: c.id, name: c.name, char: c.char, tags: c.tags || [],
+      x: c.x, y: c.y, w: c.width, h: c.height,
+      ez: c.elevation ?? 0, eh: c.height_3d ?? c.height,
+    }));
+
+    // Union-Find
+    const parent_uf = boxes.map((_, i) => i);
+    function find(i) { while (parent_uf[i] !== i) { parent_uf[i] = parent_uf[parent_uf[i]]; i = parent_uf[i]; } return i; }
+    function union(a, b) { const ra = find(a), rb = find(b); if (ra !== rb) parent_uf[ra] = rb; }
+
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        if (boxesTouch3D(boxes[i], boxes[j])) union(i, j);
+      }
+    }
+
+    // Collect groups
+    const groupMap = {};
+    for (let i = 0; i < boxes.length; i++) {
+      const root = find(i);
+      if (!groupMap[root]) groupMap[root] = [];
+      groupMap[root].push(boxes[i]);
+    }
+    const groups = Object.values(groupMap);
+    return { groups, count: groups.length };
+  }
+
   // ── ASCII rendering ────────────────────────────
 
   collectRenderObjects(node, recursive = false, projection = 'plan') {
@@ -624,6 +663,16 @@ export class MapStore {
 
 function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2) {
   return !(x1 + w1 <= x2 || x2 + w2 <= x1 || y1 + h1 <= y2 || y2 + h2 <= y1);
+}
+
+// Two 3D boxes touch if they overlap or share a face/edge in all 3 axes
+// "Touch" = overlap OR share boundary (<=, not <)
+function boxesTouch3D(a, b) {
+  // a, b = { x, y, w, h, ez, eh } where ez=elevation(z-axis), eh=height_3d
+  const sepX = a.x + a.w < b.x || b.x + b.w < a.x;
+  const sepY = a.y + a.h < b.y || b.y + b.h < a.y;
+  const sepZ = a.ez + a.eh < b.ez || b.ez + b.eh < a.ez;
+  return !sepX && !sepY && !sepZ;
 }
 
 function pointInPolygon(px, py, polygon) {

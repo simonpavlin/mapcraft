@@ -17,23 +17,28 @@ place_object(path="rodinny_dum", id="sablony", name="Šablony")          // fold
 
 ### Design reusable templates first
 Before placing anything in the main plan, design reusable components in the templates folder.
-Each template is a spatial node with children for clearance zones:
+Composite templates (door, window) use a parent WITHOUT char as bounding-box container,
+with children for each part. Simple templates (furniture) use char directly.
 
 ```
-// Door template with clearance zone
+// Door template — composite: parent = bounding box, children = parts
 place_object(path="rodinny_dum/sablony", id="dvere_80", name="Dveře 80cm",
-  x=0, y=0, width=0.8, height=0.2, char="D", tags=["door","template"])
+  x=0, y=0, width=0.8, height=1, tags=["door","template"])          // NO char — container
+place_object(path="rodinny_dum/sablony/dvere_80", id="body", name="Dveře 80cm",
+  x=0, y=0, width=0.8, height=0.2, char="D", tags=["door"])        // visible panel
 place_object(path="rodinny_dum/sablony/dvere_80", id="clr", name="Průchod",
-  x=0, y=0.2, width=0.8, height=0.8, char="_", tags=["clearance"])
+  x=0, y=0.2, width=0.8, height=0.8, char="_", tags=["clearance"]) // clearance zone
 
-// Window template with furniture-free zone
+// Window template — composite
 place_object(path="rodinny_dum/sablony", id="okno_150", name="Okno 150cm",
-  x=0, y=0, width=1.5, height=0.1, char="o", tags=["window","template"],
-  metadata={"sill_height":0.9,"win_height":1.5})
+  x=0, y=0, width=1.5, height=0.7, tags=["window","template"],
+  metadata={"sill_height":0.9,"win_height":1.5})                    // NO char — container
+place_object(path="rodinny_dum/sablony/okno_150", id="body", name="Okno 150cm",
+  x=0, y=0, width=1.5, height=0.1, char="o", tags=["window"])      // visible glass
 place_object(path="rodinny_dum/sablony/okno_150", id="clr", name="Volný prostor",
-  x=0, y=0.1, width=1.5, height=0.6, char="_", tags=["clearance"])
+  x=0, y=0.1, width=1.5, height=0.6, char="_", tags=["clearance"]) // furniture-free zone
 
-// Furniture: armchair facing a direction
+// Furniture: armchair — simple, char directly on object
 place_object(path="rodinny_dum/sablony", id="kreslo", name="Křeslo",
   x=0, y=0, width=0.8, height=0.9, char="K", tags=["furniture","template"], rotation=0)
 ```
@@ -70,16 +75,45 @@ Everything is a **node**. Two kinds:
 - **Folder** (no x,y,width,height,char) — purely organizational (floors, template groups)
 - **Spatial** (has position and dimensions) — rooms, doors, furniture, etc.
 
+#### Best practice: simple vs. composite objects
+
+**Simple object** — single shape (table, chair, wall segment). Use spatial node directly:
+```
+stul (spatial 1.2×0.8m, char="S", tags=["furniture"])
+```
+
+**Composite object** — multiple parts that form one unit (door + clearance, swing + safety zone).
+Create a spatial parent WITHOUT char as a bounding-box container, put parts as children WITH char:
+```
+dvere_80 (spatial 0.8×1m, NO char, tags=["door","template"])   ← container, defines bounds
+  ├── body (spatial 0.8×0.2m, char="D")                        ← visible door panel
+  └── clr (spatial 0.8×0.8m, tags=["clearance"])               ← clearance zone
+```
+This way all parts fit within parent bounds, and the parent serves as a transform group — like an empty GameObject in Unity.
+
+**Room / space** — a spatial area that contains other objects. Parent HAS char and defines the space:
+```
+obyvak (spatial 10×8m, char="O", tags=["room"])   ← IS the rectangle + container
+  ├── stul (spatial 1.2×0.8m, char="S")
+  └── pohovka (spatial 2.2×0.8m, char="c")
+```
+Room bounds define where children (furniture) can be placed. Children must fit within parent bounds.
+
+#### When to use which pattern
+- **Room, building, floor area** → spatial WITH char (the parent IS the shape)
+- **Door, window, swing, bench** → spatial WITHOUT char (parent = bounding box, children = parts)
+- **Table, chair, rug** → spatial WITH char, no children needed
+
 ```
 Projekt (folder)
   sablony/               (folder — templates)
-    dvere_80/            (spatial — door template with clearance child)
-    okno_150/            (spatial — window template)
-    kreslo               (spatial — furniture template with rotation)
+    dvere_80/            (spatial NO char — composite: body + clearance as children)
+    okno_150/            (spatial NO char — composite: glass + clearance as children)
+    kreslo               (spatial WITH char — simple object)
   prizemi/               (folder — ground floor)
-    obyvak/              (spatial 0,0 10×8 — room with furniture children)
-    kuchyne/             (spatial 10,0 5×8 — room)
-    d_obyvak_kuchyne     (spatial 10,3 0.2×0.8 — door between rooms)
+    obyvak/              (spatial WITH char — room, children = furniture)
+    kuchyne/             (spatial WITH char — room)
+    d_obyvak_kuchyne     (stamped from template)
   patro/                 (folder — upper floor)
     loznice/             (spatial — bedroom)
     koupelna/            (spatial — bathroom)
