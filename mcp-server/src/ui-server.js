@@ -13,8 +13,54 @@ const PORT = 3001;
 
 function loadMap() {
   if (!existsSync(MAP_FILE)) return null;
-  try { return JSON.parse(readFileSync(MAP_FILE, 'utf-8')); }
-  catch { return null; }
+  try {
+    const root = JSON.parse(readFileSync(MAP_FILE, 'utf-8'));
+    if (root) resolveStamps(root, root);
+    return root;
+  } catch { return null; }
+}
+
+// Resolve stamp references — expand template children
+function resolveStamps(root, node) {
+  if (!node || !node.children) return;
+  for (const [id, child] of Object.entries(node.children)) {
+    if ((child.tags || []).includes('stamp') && child.metadata?._template && Object.keys(child.children || {}).length === 0) {
+      const source = resolveNode(root, child.metadata._template);
+      if (!source) continue;
+      const rot = child.rotation || 0;
+      const bbox = subtreeBBox(source);
+      const parts = [];
+      if (source.x !== undefined && source.char) {
+        parts.push({ id: '_body', name: source.name, x: 0, y: 0, width: source.width, height: source.height, char: source.char, description: '', tags: [...(source.tags || []).filter(t => t !== 'template')], metadata: {}, rotation: 0, children: {} });
+      }
+      for (const sc of Object.values(source.children || {})) {
+        parts.push(JSON.parse(JSON.stringify(sc)));
+      }
+      if (rot !== 0) {
+        for (const part of parts) {
+          const cx = part.x, cy = part.y, cw = part.width, ch = part.height;
+          if (rot === 90) { part.x = bbox.h - cy - ch; part.y = cx; }
+          else if (rot === 180) { part.x = bbox.w - cx - cw; part.y = bbox.h - cy - ch; }
+          else if (rot === 270) { part.x = cy; part.y = bbox.w - cx - cw; }
+          if (rot === 90 || rot === 270) { const tmp = part.width; part.width = part.height; part.height = tmp; }
+        }
+      }
+      child.children = {};
+      for (const part of parts) child.children[part.id] = part;
+    }
+    resolveStamps(root, child);
+  }
+}
+
+function subtreeBBox(node) {
+  let w = node.width || 0, h = node.height || 0;
+  for (const child of Object.values(node.children || {})) {
+    if (child.x !== undefined) {
+      w = Math.max(w, child.x + child.width);
+      h = Math.max(h, child.y + child.height);
+    }
+  }
+  return { w, h };
 }
 
 function resolveNode(root, path) {

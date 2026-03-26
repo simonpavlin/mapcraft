@@ -64,8 +64,9 @@ All objects support rotation (0°, 90°, 180°, 270°).
 ## Templates & Stamps — reusable objects
 1. Create a "templates" folder: place_object(path="projekt", id="sablony", name="Šablony")
 2. Design reusable objects there (with clearance zones, sub-objects, etc.)
-3. Use stamp_object to copy a template to the actual location
+3. Use stamp_object to place a reference to a template at the actual location
 4. One template → many instances at different positions/rotations
+5. Stamps are references, not copies — changing the template updates all instances
 
 Example:
   place_object(path="projekt", id="sablony", name="Šablony")
@@ -684,7 +685,15 @@ server.tool(
     if (!result) return err('Path not found');
 
     // Compact format: strip empty fields, short keys
+    // Stamps export as references: { ref: "template/path", x, y, r }
     const compact = (node) => {
+      // Stamp → compact reference
+      if ((node.tags || []).includes('stamp') && node.metadata?._template) {
+        const o = { ref: node.metadata._template };
+        if (node.x !== undefined) { o.x = node.x; o.y = node.y ?? 0; }
+        if (node.rotation) o.r = node.rotation;
+        return o;
+      }
       const o = {};
       if (node.name) o.n = node.name;
       if (node.x !== undefined) { o.x = node.x; o.y = node.y ?? 0; o.w = node.width; o.h = node.height; }
@@ -708,7 +717,7 @@ server.tool(
     writeFileSync(abs, json, 'utf-8');
     const countNodes = (n) => 1 + Object.values(n.children || {}).reduce((s, c) => s + countNodes(c), 0);
     const nodes = countNodes(result);
-    return ok(`Exported to ${abs} (${nodes} nodes, ${json.length} bytes).\nKey map: n=name, x/y/w/h=position+size, r=rotation, el=elevation, h3=height_3d, t=tags, m=metadata, sh=shape, c=children`);
+    return ok(`Exported to ${abs} (${nodes} nodes, ${json.length} bytes).\nKey map: n=name, x/y/w/h=position+size, r=rotation, el=elevation, h3=height_3d, t=tags, m=metadata, sh=shape, c=children, ref=stamp template reference`);
   }
 );
 

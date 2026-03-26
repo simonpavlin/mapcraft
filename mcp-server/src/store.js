@@ -105,6 +105,19 @@ export class MapStore {
     return node;
   }
 
+  // Get children with stamps resolved (expanded from template)
+  getChildren(node) {
+    const children = {};
+    for (const [id, child] of Object.entries(node.children || {})) {
+      if ((child.tags || []).includes('stamp') && child.metadata?._template) {
+        children[id] = this.resolveStamp(child);
+      } else {
+        children[id] = child;
+      }
+    }
+    return children;
+  }
+
   /**
    * Resolve parent and child ID from a full path.
    */
@@ -212,7 +225,7 @@ export class MapStore {
 
   findCollisions(parent, x, y, w, h, excludeId) {
     const collisions = [];
-    for (const child of Object.values(parent.children || {})) {
+    for (const child of Object.values(this.getChildren(parent))) {
       if (child.x === undefined) continue; // skip folder nodes
       if (excludeId && child.id === excludeId) continue;
       if (rectsOverlap(x, y, w, h, child.x, child.y, child.width, child.height)) {
@@ -224,7 +237,7 @@ export class MapStore {
 
   findCollisionsProjected(parent, x, y, w, h, projection) {
     const collisions = [];
-    for (const child of Object.values(parent.children || {})) {
+    for (const child of Object.values(this.getChildren(parent))) {
       if (child.elevation === undefined || child.height_3d === undefined) continue;
       let px, py, pw, ph;
       if (projection === 'front') {
@@ -242,7 +255,7 @@ export class MapStore {
   // ── Connectivity check ─────────────────────────
 
   findConnectedGroups(parent, excludeTags) {
-    const children = Object.values(parent.children || {});
+    const children = Object.values(this.getChildren(parent));
     let spatial = children.filter(c => c.x !== undefined);
     if (excludeTags?.length) {
       spatial = spatial.filter(c => !(c.tags || []).some(t => excludeTags.includes(t)));
@@ -282,8 +295,9 @@ export class MapStore {
 
   collectRenderObjects(node, recursive = false, projection = 'plan') {
     const objects = [];
+    const self = this;
     function collect(parent, offsetX, offsetY) {
-      for (const child of Object.values(parent.children || {})) {
+      for (const child of Object.values(self.getChildren(parent))) {
         if (child.x === undefined) {
           // Folder node — recurse into it if recursive, but don't render
           if (recursive && child.children) {
@@ -406,56 +420,61 @@ export class MapStore {
     if (target.children[newId]) return { error: `"${newId}" already exists in target` };
 
     const rot = rotation || 0;
-    const hasChildren = Object.keys(source.children || {}).length > 0;
-
-    if (!hasChildren) {
-      const copy = this._deepCopy(source, newId);
-      copy.x = x;
-      copy.y = y;
-      copy.rotation = rot;
-      if (rot === 90 || rot === 270) {
-        const tmp = copy.width; copy.width = copy.height; copy.height = tmp;
-      }
-      copy.metadata = { ...(copy.metadata || {}), _template: sourcePath };
-      target.children[newId] = copy;
-      this.save();
-      return { id: newId, name: copy.name };
-    }
-
-    // Container template: collect body + children as flat parts list
     const bbox = this._subtreeBBox(source);
-    const parts = [];
+    const rotW = (rot === 90 || rot === 270) ? bbox.h : bbox.w;
+    const rotH = (rot === 90 || rot === 270) ? bbox.w : bbox.h;
 
-    parts.push({
-      id: '_body',
+    // Store as reference — no deep copy of children
+    const stamp = {
+      id: newId,
       name: source.name,
-      x: 0, y: 0,
-      width: source.width, height: source.height,
-      char: source.char,
-      description: '',
-      tags: [...(source.tags || []).filter(t => t !== 'template')],
-      metadata: {},
-      rotation: 0,
+      x, y,
+      width: rotW,
+      height: rotH,
+      description: source.description || '',
+      tags: ['stamp'],
+      metadata: { _template: sourcePath },
+      rotation: rot,
       children: {},
-    });
+    };
 
-    for (const child of Object.values(source.children)) {
+    target.children[newId] = stamp;
+    this.save();
+    return { id: newId, name: source.name };
+  }
+
+  // Resolve stamp → expand template children with rotation + offset
+  resolveStamp(stamp) {
+    const tmplPath = stamp.metadata?._template;
+    if (!tmplPath) return stamp;
+    const source = this.resolve(tmplPath);
+    if (!source) return stamp; // template deleted, return as-is
+
+    const rot = stamp.rotation || 0;
+    const bbox = this._subtreeBBox(source);
+
+    // Collect parts: source itself (if spatial) + its children
+    const parts = [];
+    if (source.x !== undefined && source.char) {
+      parts.push({
+        id: '_body', name: source.name,
+        x: 0, y: 0, width: source.width, height: source.height,
+        char: source.char, description: '',
+        tags: [...(source.tags || []).filter(t => t !== 'template')],
+        metadata: {}, rotation: 0, children: {},
+      });
+    }
+    for (const child of Object.values(source.children || {})) {
       parts.push(this._deepCopy(child));
     }
 
+    // Apply rotation
     if (rot !== 0) {
       for (const part of parts) {
         const cx = part.x, cy = part.y, cw = part.width, ch = part.height;
-        if (rot === 90) {
-          part.x = bbox.h - cy - ch;
-          part.y = cx;
-        } else if (rot === 180) {
-          part.x = bbox.w - cx - cw;
-          part.y = bbox.h - cy - ch;
-        } else if (rot === 270) {
-          part.x = cy;
-          part.y = bbox.w - cx - cw;
-        }
+        if (rot === 90) { part.x = bbox.h - cy - ch; part.y = cx; }
+        else if (rot === 180) { part.x = bbox.w - cx - cw; part.y = bbox.h - cy - ch; }
+        else if (rot === 270) { part.x = cy; part.y = bbox.w - cx - cw; }
         if (rot === 90 || rot === 270) {
           const tmp = part.width; part.width = part.height; part.height = tmp;
         }
@@ -465,30 +484,10 @@ export class MapStore {
       }
     }
 
-    const rotW = (rot === 90 || rot === 270) ? bbox.h : bbox.w;
-    const rotH = (rot === 90 || rot === 270) ? bbox.w : bbox.h;
-
-    const stamp = {
-      id: newId,
-      name: source.name,
-      x, y,
-      width: rotW,
-      height: rotH,
-      char: '.',
-      description: source.description || '',
-      tags: ['stamp'],
-      metadata: { ...(source.metadata || {}), _template: sourcePath },
-      rotation: rot,
-      children: {},
-    };
-
-    for (const part of parts) {
-      stamp.children[part.id] = part;
-    }
-
-    target.children[newId] = stamp;
-    this.save();
-    return { id: newId, name: source.name };
+    // Return expanded stamp
+    const expanded = { ...stamp, children: {} };
+    for (const part of parts) expanded.children[part.id] = part;
+    return expanded;
   }
 
   // ── Export ──────────────────────────────────────
