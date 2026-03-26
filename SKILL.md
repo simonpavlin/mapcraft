@@ -157,7 +157,7 @@ place_objects(path="rodinny_dum/prizemi", objects=[
 ```
 
 ### Verify after placement
-- `check_collision(path="rodinny_dum/prizemi", exclude_tags=["door","window","furniture"])` — rooms must not overlap
+- `check_collision(path="rodinny_dum/prizemi", tags=["room"])` — rooms must not overlap
 - `get_ascii(path="rodinny_dum/prizemi")` — visual check that furniture doesn't block doors
 
 ### Additional tools
@@ -181,9 +181,8 @@ place_object(path="rodinny_dum/prizemi/obyvak", id="clr_corridor",
 
 After placing furniture, check that clearance zones are free:
 ```
-check_collision(path="obyvak", x=3.2, y=0, width=1.6, height=4.5,
-  exclude_tags=["door","window","clearance"])
-→ should return only flat objects (rugs) — anything else is blocking the path
+check_collision(path="obyvak", tags=["furniture","clearance"])
+→ shows furniture-clearance collisions — any pair means blocked path
 ```
 
 ### Wall containers — detail wall surfaces

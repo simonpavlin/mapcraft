@@ -38,7 +38,10 @@
       "Bash(ls -la /mnt/c/Users/simip/Workspaces/projects/mapcraft/mcp-server/*.log)",
       "Bash(find ~/.claude -name *.jsonl -newer ~/.claude/settings.local.json)",
       "Bash(grep -E \"\\\\.\\(js|ts|json\\)$\")",
-      "mcp__mapcraft__rename_object"
+      "mcp__mapcraft__rename_object",
+      "mcp__mapcraft__define_rules",
+      "mcp__mapcraft__validate",
+      "mcp__mapcraft__find_objects"
     ]
   },
   "enableAllProjectMcpServers": true,

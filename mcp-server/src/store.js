@@ -223,16 +223,25 @@ export class MapStore {
 
   // ── Collision detection ────────────────────────
 
-  findCollisions(parent, x, y, w, h, excludeId) {
-    const collisions = [];
-    for (const child of Object.values(this.getChildren(parent))) {
-      if (child.x === undefined) continue; // skip folder nodes
-      if (excludeId && child.id === excludeId) continue;
-      if (rectsOverlap(x, y, w, h, child.x, child.y, child.width, child.height)) {
-        collisions.push(child);
+  findCollisions(parent, tags) {
+    const children = Object.values(this.getChildren(parent))
+      .filter(c => c.x !== undefined); // skip folder nodes
+
+    // If tags provided, only check objects that have at least one of the tags
+    const filtered = tags?.length
+      ? children.filter(c => (c.tags || []).some(t => tags.includes(t)))
+      : children;
+
+    const pairs = [];
+    for (let i = 0; i < filtered.length; i++) {
+      for (let j = i + 1; j < filtered.length; j++) {
+        const a = filtered[i], b = filtered[j];
+        if (rectsOverlap(a.x, a.y, a.width, a.height, b.x, b.y, b.width, b.height)) {
+          pairs.push([a, b]);
+        }
       }
     }
-    return collisions;
+    return pairs;
   }
 
   findCollisionsProjected(parent, x, y, w, h, projection) {

@@ -78,7 +78,7 @@ Example:
 x = left→right, y = top→bottom on plan. Maps to 3D: plan-x → 3D x, plan-y → 3D z.
 
 ## Projection views
-get_ascii and check_collision support projection parameter:
+get_ascii supports projection parameter:
 - plan (default) — top-down view (x × y)
 - front — from south (x × elevation) — objects need elevation + height_3d
 - side — from east (y × elevation)
@@ -103,7 +103,7 @@ Every object can carry arbitrary key-value metadata for 3D generation:
 - rename_object — change an object's ID
 - move_object — reposition or reparent
 - update_object — modify properties
-- check_collision — advisory overlap check
+- check_collision — find collisions between children of a node (pairwise). Use tags to filter.
 - check_connectivity — verify all parts of a composite object are physically connected in 3D
 - define_rules — set validation rules (no_collide, must_collide, must_touch)
 - validate — check space against defined rules
@@ -523,39 +523,22 @@ server.tool(
 
 server.tool(
   'check_collision',
-  'Advisory check: does a rectangle overlap with existing objects?',
+  'Check all children of a node for collisions between each other. Returns pairs of overlapping objects. Use tags to limit which objects to check (e.g. ["house"] checks only houses against each other, ["house","road"] checks houses vs roads and houses vs houses etc.).',
   {
     path: z.string().optional(),
-    x: z.number().min(0),
-    y: z.number().min(0),
-    width: z.number().min(0.01),
-    height: z.number().min(0.01),
-    exclude_tags: z.array(z.string()).optional().describe('Ignore objects with these tags'),
-    exclude_id: z.string().optional().describe('Ignore object with this ID (useful when checking moved object)'),
-    projection: z.enum(['plan', 'front', 'side']).optional().describe('plan (default), front (x × elevation), side (y × elevation)'),
+    tags: z.array(z.string()).optional().describe('Only check objects that have at least one of these tags. Omit to check all spatial children.'),
   },
-  async ({ path, x, y, width, height, exclude_tags, exclude_id, projection }) => {
+  async ({ path, tags }) => {
     const parent = store.resolve(path || '/');
     if (!parent) return err('Not found');
     if (parent.x === undefined) return err('Cannot check collision on a folder node — use a spatial parent (room, space)');
 
-    const proj = projection || 'plan';
-    let collisions;
+    const pairs = store.findCollisions(parent, tags);
 
-    if (proj === 'plan') {
-      collisions = store.findCollisions(parent, x, y, width, height, exclude_id);
-    } else {
-      collisions = store.findCollisionsProjected(parent, x, y, width, height, proj);
-    }
-
-    if (exclude_tags?.length) {
-      collisions = collisions.filter(c => !(c.tags || []).some(t => exclude_tags.includes(t)));
-    }
-    if (collisions.length === 0) return ok(`Area (${x},${y}) ${width}×${height}m is FREE (${proj})`);
-    const fmt = proj === 'plan'
-      ? c => `[${c.char}] "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m`
-      : c => `[${c.char}] "${c.name}" (${c.px},${c.py}) ${c.pw}×${c.ph}m`;
-    return ok(`Overlaps with: ${collisions.map(fmt).join(', ')}`);
+    if (pairs.length === 0) return ok('No collisions found.');
+    const fmt = c => `[${c.char||'?'}] "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m`;
+    const lines = pairs.map(([a, b]) => `${fmt(a)}  ↔  ${fmt(b)}`);
+    return ok(`${pairs.length} collision(s):\n${lines.join('\n')}`);
   }
 );
 
