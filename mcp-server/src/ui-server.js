@@ -186,7 +186,7 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  if (url.pathname === '/' || url.pathname === '/index.html') {
+  if (!url.pathname.startsWith('/api/') && !url.pathname.includes('.')) {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(readFileSync(UI_FILE, 'utf-8'));
     return;

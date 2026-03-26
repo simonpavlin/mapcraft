@@ -20,6 +20,10 @@ export class MapStore {
   constructor() {
     mkdirSync(DATA_DIR, { recursive: true });
     this.root = this._load();
+    if (this.root) {
+      this._updateRootName();
+      this.save();
+    }
   }
 
   // ── Node creation ──────────────────────────────
@@ -495,7 +499,7 @@ export class MapStore {
   _makeRoot() {
     return {
       id: '_root',
-      name: 'Projekty',
+      name: 'Projects',
       description: '',
       tags: [],
       metadata: {},
@@ -504,10 +508,13 @@ export class MapStore {
   }
 
   _updateRootName() {
-    const projects = Object.values(this.root.children).filter(c => (c.tags || []).includes('project'));
-    this.root.name = projects.length === 0 ? 'Prázdné'
-      : projects.length === 1 ? projects[0].name
-      : `${projects.length} projektů`;
+    this.root.name = 'Projects';
+    // Ensure root is always a folder (no spatial props)
+    delete this.root.x;
+    delete this.root.y;
+    delete this.root.width;
+    delete this.root.height;
+    delete this.root.char;
   }
 
   _load() {

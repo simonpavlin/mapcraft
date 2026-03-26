@@ -23,9 +23,6 @@
   .tree-tag { font-size:9px; padding:1px 4px; border-radius:3px; background:var(--ac2); color:var(--tx); margin-left:2px; }
   .tree-children { margin-left:16px; }
   .tree-children.collapsed { display:none; }
-  .tree-del { font-size:11px; color:var(--tx2); cursor:pointer; margin-left:4px; padding:2px 4px; border-radius:3px; opacity:0; transition:opacity .15s; }
-  .tree-row:hover .tree-del { opacity:1; }
-  .tree-del:hover { background:var(--ac); color:#fff; }
   #main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
   #breadcrumb { padding:10px 20px; background:var(--sf); border-bottom:1px solid var(--bd); display:flex; align-items:center; gap:6px; font-size:13px; flex-wrap:wrap; }
   .crumb { color:var(--tx2); cursor:pointer; } .crumb:hover { color:var(--ac); } .crumb.current { color:var(--tx); font-weight:600; }
@@ -79,6 +76,14 @@
   #hover-info .hi-meta-row b { color:var(--tx); }
   #ascii-grid span.achar { cursor:crosshair; }
   #ascii-grid span.achar:hover { outline:1px solid var(--ac); outline-offset:-1px; border-radius:1px; }
+  .folder-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+  .folder-tile { background:var(--sf); border:1px solid var(--bd); border-radius:8px; cursor:pointer; overflow:hidden; transition:border-color .15s; }
+  .folder-tile:hover { border-color:var(--ac); }
+  .folder-tile-header { padding:8px 12px; font-size:12px; font-weight:600; border-bottom:1px solid var(--bd); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .folder-tile-canvas-wrap { position:relative; width:100%; padding-bottom:100%; background:#1a1a2e; }
+  .folder-tile-canvas-wrap canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
+  .folder-tile-empty { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--tx2); font-size:13px; gap:8px; }
+  .folder-tile-empty .folder-icon { font-size:48px; opacity:.5; }
 </style>
 </head>
 <body>
@@ -171,7 +176,7 @@ function buildCharLookup() {
   return map;
 }
 
-let currentPath = '/', currentTab = 'overview', treeData = null, nodeData = null;
+let currentPath = '/', currentTab = 'floorplan', treeData = null, nodeData = null;
 let expandedPaths = new Set(['/']), selectedFloor = null, selectedFloorData = null;
 let currentProjection = 'plan';
 
@@ -193,10 +198,11 @@ async function fetchNode(path) {
 let navHistory = [];
 function navigateTo(path) {
   if (currentPath !== path) navHistory.push(currentPath);
-  currentPath = path; selectedFloor = null; selectedFloorData = null; currentProjection = 'plan';
+  currentPath = path; selectedFloor = null; selectedFloorData = null; currentProjection = 'plan'; currentTab = 'floorplan';
+  // Expand parent paths but not the node itself (so toggle can close it)
   const parts = path.split('/').filter(Boolean);
   let p = ''; expandedPaths.add('/');
-  for (const part of parts) { p = p ? `${p}/${part}` : part; expandedPaths.add(p); }
+  for (let i = 0; i < parts.length - 1; i++) { p = p ? `${p}/${parts[i]}` : parts[i]; expandedPaths.add(p); }
   fetchNode(path); renderTree();
 }
 function navigateBack() {
@@ -215,8 +221,17 @@ window.addEventListener('mouseup', (e) => { if (e.button === 3) { e.preventDefau
 window.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !['INPUT','TEXTAREA'].includes(e.target.tagName)) { e.preventDefault(); navigateBack(); } });
 function treeClick(e, path, hasChildren) {
   e.stopPropagation();
-  if (hasChildren) { expandedPaths.has(path) ? expandedPaths.delete(path) : expandedPaths.add(path); }
-  currentPath = path; fetchNode(path); renderTree();
+  if (hasChildren && path !== '/') {
+    if (expandedPaths.has(path)) expandedPaths.delete(path);
+    else expandedPaths.add(path);
+  }
+  currentPath = path; selectedFloor = null; selectedFloorData = null; currentProjection = 'plan'; currentTab = 'floorplan';
+  // Sync URL
+  const urlPath = '/' + path.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  if (decodeURIComponent(location.pathname) !== decodeURIComponent(urlPath)) {
+    history.pushState(null, '', urlPath);
+  }
+  fetchNode(path); renderTree();
 }
 function renderTree() {
   if (!treeData || treeData.error) { document.getElementById('tree').innerHTML = `<p style="padding:16px;color:var(--tx2)">${treeData?.error||'Žádná data'}</p>`; return; }
@@ -227,12 +242,16 @@ function renderTreeNode(n) {
   const isProject = n.tags?.includes('project');
   const isFolder = !n.isSpatial;
   let h = `<div class="tree-node"><div class="tree-row ${act?'active':''}" onclick="treeClick(event,'${escAttr(n.path)}',${has})">`;
-  h += `<span class="tree-toggle">${has?(exp?'▼':'▶'):(isFolder?'📁':'·')}</span>`;
+  h += `<span class="tree-toggle">${has?(exp?'▼':'▶'):''}</span>`;
+  if (isFolder) {
+    h += `<span class="tree-icon" style="color:#8888aa">📁</span>`;
+  } else {
+    h += `<span class="tree-icon">📦</span>`;
+  }
   h += `<span class="tree-name">${esc(n.name)}</span>`;
   if (n.childCount > 0) h += `<span class="tree-badge">${n.childCount}</span>`;
   if (isProject) h += `<span class="tree-tag" style="background:var(--ac)">projekt</span>`;
   else if (isFolder && n.path !== '/') h += `<span class="tree-tag" style="background:var(--sf2)">folder</span>`;
-  if (n.path !== '/') h += `<span class="tree-del" onclick="deleteNode(event,'${escAttr(n.path)}','${escAttr(n.name)}')" title="Smazat">✕</span>`;
   if (n.tags?.includes('floor')) h += `<span class="tree-tag">floor</span>`;
   h += '</div>';
   if (has) { h += `<div class="tree-children ${exp?'':'collapsed'}">`; for (const c of n.children) h += renderTreeNode(c); h += '</div>'; }
@@ -262,14 +281,20 @@ async function selectFloor(id) {
   renderContent();
 }
 // Helper: draw a single floor plan on a canvas context
-function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, PAD, shapePath) {
-  // Parent outline
-  ctx.strokeStyle = '#3a3a5a'; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
-  ctx.strokeRect(PAD, PAD, pw*scale, ph*scale); ctx.setLineDash([]);
+function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, PAD, shapePath, offsetX, offsetY, parentColor, parentW, parentH) {
+  const ox = offsetX || 0, oy = offsetY || 0;
+  const pc = parentColor || '#3a3a5a';
+  const prw = parentW || pw, prh = parentH || ph;
+  // Parent — filled + solid outline (same style as tile cards)
+  const prx = PAD - ox*scale, pry = PAD - oy*scale;
+  ctx.fillStyle = pc + '25';
+  ctx.fillRect(prx, pry, prw*scale, prh*scale);
+  ctx.strokeStyle = pc; ctx.lineWidth = 2;
+  ctx.strokeRect(prx, pry, prw*scale, prh*scale);
 
   const sorted = [...floorChildren].sort((a,b) => (b.width*b.height) - (a.width*a.height));
   for (const c of sorted) {
-    const rx = PAD + c.x*scale, ry = PAD + c.y*scale, rw = c.width*scale, rh = c.height*scale;
+    const rx = PAD + (c.x-ox)*scale, ry = PAD + (c.y-oy)*scale, rw = c.width*scale, rh = c.height*scale;
     const color = cc(c.char);
     const isDoor = c.tags?.includes('door');
     const isWindow = c.tags?.includes('window');
@@ -318,7 +343,7 @@ function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, P
       return (b.width*b.height) - (a.width*a.height);
     });
     for (const dc of descSorted) {
-      const rx = PAD + dc.x*scale, ry = PAD + dc.y*scale, rw = dc.width*scale, rh = dc.height*scale;
+      const rx = PAD + (dc.x-ox)*scale, ry = PAD + (dc.y-oy)*scale, rw = dc.width*scale, rh = dc.height*scale;
       const color = cc(dc.char);
       const isDoor = dc.tags?.includes('door');
       const isWindow = dc.tags?.includes('window');
@@ -332,7 +357,7 @@ function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, P
       }
       if (isWindow) { ctx.fillStyle = '#88ccee' + Math.round(opacity).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh); continue; }
       if (isClearance) {
-        ctx.strokeStyle = '#ffffff10'; ctx.lineWidth = 0.5; ctx.setLineDash([2,3]);
+        ctx.strokeStyle = '#ffffff40'; ctx.lineWidth = 0.5; ctx.setLineDash([2,3]);
         ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]);
         continue;
       }
@@ -363,6 +388,11 @@ function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, P
 
 function renderContent() {
   if (!nodeData || nodeData.error) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2></div>'; return; }
+  // Sync URL with displayed path
+  const urlPath = '/' + currentPath.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  if (decodeURIComponent(location.pathname) !== decodeURIComponent(urlPath)) {
+    history.pushState(null, '', urlPath);
+  }
   // If folder and on a spatial-only tab, switch to overview
   const isFolder = !nodeData.isSpatial;
   if (isFolder && (currentTab === 'ascii' || currentTab === 'floorplan')) currentTab = 'overview';
@@ -406,6 +436,10 @@ function renderToolbar() {
       const charLabel = f.char ? `[${esc(f.char)}] ` : '';
       h += `<div class="floor-btn ${selectedFloor===f.id?'active':''}" onclick="selectFloor('${f.id}')">${charLabel}${esc(f.name)}</div>`;
     }
+  }
+  // Delete button — not on root
+  if (currentPath !== '/') {
+    h += `<span style="flex:1"></span><button onclick="deleteNode(event,'${escAttr(currentPath)}','${escAttr(d.name)}')" style="margin-left:auto;padding:4px 12px;font-size:12px;cursor:pointer;border:1px solid var(--bd);border-radius:4px;background:transparent;color:var(--tx2);transition:all .15s" onmouseover="this.style.background='var(--ac)';this.style.color='#fff';this.style.borderColor='var(--ac)'" onmouseout="this.style.background='transparent';this.style.color='var(--tx2)';this.style.borderColor='var(--bd)'">Smazat</button>`;
   }
   document.getElementById('toolbar').innerHTML = h;
 }
@@ -481,114 +515,115 @@ function renderFolderTiles() {
   const tiles = [...spatialKids, ...folderKids];
   if (tiles.length === 0) return;
 
-  const cols = Math.min(tiles.length, Math.max(2, Math.ceil(Math.sqrt(tiles.length))));
-  const rows = Math.ceil(tiles.length / cols);
-  const TILE_PAD = 12, TILE_LABEL_H = 28, TILE_MAX_W = 380, TILE_MAX_H = 300;
+  wrap.innerHTML = '<div class="folder-grid"></div>';
+  const grid = wrap.querySelector('.folder-grid');
 
-  const tileInfos = tiles.map(tile => {
+  for (const tile of tiles) {
     const tw = tile.width || 1, th = tile.height || 1;
-    const tileScale = Math.min((TILE_MAX_W - 20) / tw, (TILE_MAX_H - TILE_LABEL_H - 20) / th, 40);
-    const pw = Math.ceil(tw * tileScale), ph = Math.ceil(th * tileScale);
-    return { tile, tw, th, tileScale, pw, ph };
-  });
+    const isFolder = tile.isSpatial === false;
+    const color = isFolder ? '#8888aa' : cc(tile.char);
+    const label = isFolder ? `📁 ${tile.name}` : `${tile.name} (${tw}×${th}m)`;
 
-  const colWidths = [], rowHeights = [];
-  for (let i = 0; i < tileInfos.length; i++) {
-    const col = i % cols, row = Math.floor(i / cols);
-    const ti = tileInfos[i];
-    colWidths[col] = Math.max(colWidths[col] || 0, ti.pw + 20);
-    rowHeights[row] = Math.max(rowHeights[row] || 0, ti.ph + TILE_LABEL_H + 20);
+    const el = document.createElement('div');
+    el.className = 'folder-tile';
+    el.onclick = () => navigateTo(currentPath === '/' ? tile.id : `${currentPath}/${tile.id}`);
+    grid.appendChild(el);
+
+    if (isFolder) {
+      const childCount = tile.childCount || 0;
+      el.innerHTML = `<div class="folder-tile-header" style="color:${color}">${esc(label)}</div><div class="folder-tile-canvas-wrap"><div class="folder-tile-empty"><div class="folder-icon">📁</div><span>${childCount}</span></div></div>`;
+    } else {
+      el.innerHTML = `<div class="folder-tile-header" style="color:${color}">${esc(label)}</div><div class="folder-tile-canvas-wrap"><canvas></canvas></div>`;
+
+      requestAnimationFrame(() => {
+        const canvasWrap = el.querySelector('.folder-tile-canvas-wrap');
+        const canvas = el.querySelector('canvas');
+        const size = canvasWrap.clientWidth;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, size, size);
+
+        const PAD = 16;
+        const drawArea = size - PAD * 2;
+
+        // Compute bounding box including all descendants
+        const tileDesc = allDescendants.filter(dc => dc._rootParentId === tile.id && dc.isSpatial !== false);
+        let bbMinX = 0, bbMinY = 0, bbMaxX = tw, bbMaxY = th;
+        for (const dc of tileDesc) {
+          bbMinX = Math.min(bbMinX, dc.x);
+          bbMinY = Math.min(bbMinY, dc.y);
+          bbMaxX = Math.max(bbMaxX, dc.x + dc.width);
+          bbMaxY = Math.max(bbMaxY, dc.y + dc.height);
+        }
+        const bbW = bbMaxX - bbMinX, bbH = bbMaxY - bbMinY;
+        const s = Math.min(drawArea / bbW, drawArea / bbH);
+        const totalPw = bbW * s, totalPh = bbH * s;
+        const ox = PAD + (drawArea - totalPw) / 2 - bbMinX * s;
+        const oy = PAD + (drawArea - totalPh) / 2 - bbMinY * s;
+        const pw = tw * s, ph = th * s;
+
+        // Parent object — same style as objects in floorplan
+        ctx.fillStyle = color + '25';
+        ctx.fillRect(ox, oy, pw, ph);
+        ctx.strokeStyle = color; ctx.lineWidth = 2;
+        ctx.strokeRect(ox, oy, pw, ph);
+        // Background grid — 1m intervals
+        const gridStep = s; // 1m in pixels
+        ctx.strokeStyle = '#ffffff20'; ctx.lineWidth = 0.5;
+        for (let gx = ox % gridStep; gx < size; gx += gridStep) {
+          ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, size); ctx.stroke();
+        }
+        for (let gy = oy % gridStep; gy < size; gy += gridStep) {
+          ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(size, gy); ctx.stroke();
+        }
+        // Label one grid square
+        if (gridStep > 12) {
+          ctx.fillStyle = '#ffffff40'; ctx.font = '8px "Segoe UI",sans-serif';
+          ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+          ctx.fillText('1m', 3, size - 3);
+        }
+
+        const tileChildren = tileDesc.filter(dc => dc._depth === 1);
+        const tileDeep = tileDesc.filter(dc => dc._depth > 1);
+
+        ctx.save();
+        ctx.translate(ox, oy);
+        for (const c of tileChildren) {
+          const rx = c.x * s, ry = c.y * s, rw = c.width * s, rh = c.height * s;
+          const cl = cc(c.char);
+          if (c.tags?.includes('door')) { ctx.fillStyle = cl + '80'; ctx.fillRect(rx, ry, rw, rh); continue; }
+          if (c.tags?.includes('window')) { ctx.fillStyle = '#88ccee44'; ctx.fillRect(rx, ry, rw, rh); continue; }
+          if (c.tags?.includes('clearance')) { ctx.strokeStyle = '#ffffff55'; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]); continue; }
+          ctx.fillStyle = cl + '25'; ctx.fillRect(rx, ry, rw, rh);
+          ctx.strokeStyle = cl; ctx.lineWidth = 1.5; ctx.strokeRect(rx, ry, rw, rh);
+          const nm = c.name;
+          const maxF = Math.min(rw / (nm.length * 0.55), rh / 3, 14);
+          const fs = Math.max(6, Math.floor(maxF));
+          if (fs >= 6 && rw > 14 && rh > 10) {
+            ctx.fillStyle = cl; ctx.font = `bold ${fs}px 'Segoe UI',sans-serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(nm, rx + rw / 2, ry + rh / 2, rw - 4);
+          }
+        }
+        for (const dc of tileDeep) {
+          const rx = dc.x * s, ry = dc.y * s, rw = dc.width * s, rh = dc.height * s;
+          const cl = cc(dc.char);
+          const op = Math.max(15, 35 - dc._depth * 8);
+          if (dc.tags?.includes('door') || dc.tags?.includes('window')) continue;
+          if (dc.tags?.includes('clearance')) { ctx.strokeStyle = '#ffffff40'; ctx.lineWidth = 0.5; ctx.setLineDash([2,3]); ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]); continue; }
+          ctx.fillStyle = cl + Math.round(op * 0.6).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh);
+          ctx.strokeStyle = cl + Math.round(op * 2).toString(16).padStart(2,'0');
+          ctx.lineWidth = 0.5; ctx.setLineDash([2,2]); ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]);
+        }
+        ctx.restore();
+      });
+    }
   }
-
-  const totalW = colWidths.reduce((a, b) => a + b, 0) + TILE_PAD * (cols + 1);
-  const totalH = rowHeights.reduce((a, b) => a + b, 0) + TILE_PAD * (rows + 1);
-
-  wrap.innerHTML = `<canvas id="folder-canvas" width="${totalW}" height="${totalH}" style="border:1px solid var(--bd);border-radius:4px;cursor:pointer"></canvas>`;
-
-  const canvas = document.getElementById('folder-canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#1a1a2e';
-  ctx.fillRect(0, 0, totalW, totalH);
-
-  const tileRects = [];
-
-  for (let i = 0; i < tileInfos.length; i++) {
-    const col = i % cols, row = Math.floor(i / cols);
-    const ti = tileInfos[i];
-    const tile = ti.tile;
-
-    let tileX = TILE_PAD;
-    for (let c = 0; c < col; c++) tileX += colWidths[c] + TILE_PAD;
-    let tileY = TILE_PAD;
-    for (let r = 0; r < row; r++) tileY += rowHeights[r] + TILE_PAD;
-    const tileW = colWidths[col], tileH = rowHeights[row];
-
-    ctx.fillStyle = '#16213e';
-    ctx.strokeStyle = '#2a2a4a';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(tileX, tileY, tileW, tileH, 6); ctx.fill(); ctx.stroke();
-
-    const color = tile.isSpatial !== false ? cc(tile.char) : '#8888aa';
-    ctx.fillStyle = color;
-    ctx.font = 'bold 12px "Segoe UI",sans-serif';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    const label = tile.isSpatial !== false ? `${tile.name} (${ti.tw}×${ti.th}m)` : `📁 ${tile.name}`;
-    ctx.fillText(label, tileX + 10, tileY + 6);
-
-    const contentX = tileX + 10, contentY = tileY + TILE_LABEL_H;
-    const s = ti.tileScale;
-
-    ctx.strokeStyle = '#3a3a5a'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
-    ctx.strokeRect(contentX, contentY, ti.pw, ti.ph);
-    ctx.setLineDash([]);
-
-    const tileDesc = allDescendants.filter(dc => dc._rootParentId === tile.id && dc.isSpatial !== false);
-    const tileChildren = tileDesc.filter(dc => dc._depth === 1);
-    const tileDeep = tileDesc.filter(dc => dc._depth > 1);
-
-    const origTransform = ctx.getTransform();
-    ctx.translate(contentX, contentY);
-    for (const c of tileChildren) {
-      const rx = c.x * s, ry = c.y * s, rw = c.width * s, rh = c.height * s;
-      const cl = cc(c.char);
-      if (c.tags?.includes('door')) { ctx.fillStyle = cl + '80'; ctx.fillRect(rx, ry, rw, rh); continue; }
-      if (c.tags?.includes('window')) { ctx.fillStyle = '#88ccee44'; ctx.fillRect(rx, ry, rw, rh); continue; }
-      if (c.tags?.includes('clearance')) { ctx.strokeStyle = '#ffffff18'; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]); continue; }
-      ctx.fillStyle = cl + '25'; ctx.fillRect(rx, ry, rw, rh);
-      ctx.strokeStyle = cl; ctx.lineWidth = 1.5; ctx.strokeRect(rx, ry, rw, rh);
-      const nm = c.name;
-      const maxF = Math.min(rw / (nm.length * 0.55), rh / 3, 12);
-      const fs = Math.max(6, Math.floor(maxF));
-      if (fs >= 6 && rw > 14 && rh > 10) {
-        ctx.fillStyle = cl; ctx.font = `bold ${fs}px 'Segoe UI',sans-serif`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(nm, rx + rw / 2, ry + rh / 2, rw - 4);
-      }
-    }
-    for (const dc of tileDeep) {
-      const rx = dc.x * s, ry = dc.y * s, rw = dc.width * s, rh = dc.height * s;
-      const cl = cc(dc.char);
-      const op = Math.max(15, 35 - dc._depth * 8);
-      if (dc.tags?.includes('door') || dc.tags?.includes('window') || dc.tags?.includes('clearance')) continue;
-      ctx.fillStyle = cl + Math.round(op * 0.6).toString(16).padStart(2,'0'); ctx.fillRect(rx, ry, rw, rh);
-      ctx.strokeStyle = cl + Math.round(op * 2).toString(16).padStart(2,'0');
-      ctx.lineWidth = 0.5; ctx.setLineDash([2,2]); ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]);
-    }
-    ctx.setTransform(origTransform);
-
-    tileRects.push({ tile, contentX, contentY, pw: ti.pw, ph: ti.ph });
-  }
-
-  canvas.onclick = (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    for (const tr of tileRects) {
-      if (mx >= tr.contentX - 10 && mx <= tr.contentX + tr.pw + 10 && my >= tr.contentY - TILE_LABEL_H && my <= tr.contentY + tr.ph + 10) {
-        navigateTo(currentPath === '/' ? tr.tile.id : `${currentPath}/${tr.tile.id}`);
-        return;
-      }
-    }
-  };
 }
 
 function renderAscii() {
@@ -686,8 +721,18 @@ function renderFloorplan() {
 
   if (children.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Prázdný prostor</h2></div>'; return; }
 
+  // Expand view to include descendants that overflow parent bounds
+  let bbMinX = 0, bbMinY = 0, bbMaxX = viewWidth, bbMaxY = viewHeight;
+  for (const c of [...children, ...descendants]) {
+    bbMinX = Math.min(bbMinX, c.x);
+    bbMinY = Math.min(bbMinY, c.y);
+    bbMaxX = Math.max(bbMaxX, c.x + c.width);
+    bbMaxY = Math.max(bbMaxY, c.y + c.height);
+  }
+  const vpw = bbMaxX - bbMinX, vph = bbMaxY - bbMinY;
+  const vpOffsetX = bbMinX, vpOffsetY = bbMinY;
+
   const PAD = 40, maxW = 900, maxH = 600;
-  const vpw = viewWidth, vph = viewHeight;
   const scale = Math.min((maxW - PAD*2) / vpw, (maxH - PAD*2) / vph);
   const cw = Math.ceil(vpw * scale + PAD*2), ch = Math.ceil(vph * scale + PAD*2);
 
@@ -714,7 +759,7 @@ function renderFloorplan() {
     const flipY = (obj) => ({ ...obj, y: vph - obj.y - obj.height });
     const flippedChildren = children.map(flipY);
     const flippedDescendants = descendants.map(flipY);
-    drawFloorContent(ctx, flippedChildren, flippedDescendants, vpw, vph, scale, PAD, shapePath);
+    drawFloorContent(ctx, flippedChildren, flippedDescendants, vpw, vph, scale, PAD, shapePath, vpOffsetX, vpOffsetY, d.char ? cc(d.char) : null, viewWidth, viewHeight);
 
     ctx.strokeStyle = '#4a4a6a'; ctx.lineWidth = 2; ctx.setLineDash([]);
     ctx.fillStyle = '#606080'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
@@ -733,13 +778,13 @@ function renderFloorplan() {
       ctx.fillText('podlaha', PAD + 4, PAD + vph * scale + 4);
     }
   } else {
-    drawFloorContent(ctx, children, descendants, vpw, vph, scale, PAD, shapePath);
+    drawFloorContent(ctx, children, descendants, vpw, vph, scale, PAD, shapePath, vpOffsetX, vpOffsetY, d.char ? cc(d.char) : null, viewWidth, viewHeight);
   }
 
-  // Dimension labels
+  // Dimension labels (show parent dimensions, not BB)
   ctx.fillStyle = '#606080'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  ctx.fillText(`${vpw}m`, PAD+vpw*scale/2, PAD+vph*scale+6);
-  ctx.save(); ctx.translate(PAD-8, PAD+vph*scale/2); ctx.rotate(-Math.PI/2); ctx.textBaseline = 'bottom'; ctx.fillText(`${vph}m`, 0, 0); ctx.restore();
+  ctx.fillText(`${viewWidth}m`, PAD+(-vpOffsetX)*scale+viewWidth*scale/2, PAD+(-vpOffsetY)*scale+viewHeight*scale+6);
+  ctx.save(); ctx.translate(PAD+(-vpOffsetX)*scale-8, PAD+(-vpOffsetY)*scale+viewHeight*scale/2); ctx.rotate(-Math.PI/2); ctx.textBaseline = 'bottom'; ctx.fillText(`${viewHeight}m`, 0, 0); ctx.restore();
 
   // For elevation views, use flipped coords for hit detection
   const hitChildren = currentProjection !== 'plan' ? children.map(c => ({ ...c, y: vph - c.y - c.height })) : children;
@@ -747,7 +792,7 @@ function renderFloorplan() {
 
   canvas.onclick = (e) => {
     const rect = canvas.getBoundingClientRect();
-    const wx = (e.clientX-rect.left-PAD)/scale, wy = (e.clientY-rect.top-PAD)/scale;
+    const wx = (e.clientX-rect.left-PAD)/scale + vpOffsetX, wy = (e.clientY-rect.top-PAD)/scale + vpOffsetY;
     let best = null, bestArea = Infinity;
     for (const c of hitChildren) {
       if (wx >= c.x && wx <= c.x+c.width && wy >= c.y && wy <= c.y+c.height) {
@@ -761,7 +806,7 @@ function renderFloorplan() {
   // Info panel on hover
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
-    const wx = (e.clientX - rect.left - PAD) / scale, wy = (e.clientY - rect.top - PAD) / scale;
+    const wx = (e.clientX - rect.left - PAD) / scale + vpOffsetX, wy = (e.clientY - rect.top - PAD) / scale + vpOffsetY;
     let best = null, bestArea = Infinity;
     for (const c of hitAll) {
       if (wx >= c.x && wx <= c.x + c.width && wy >= c.y && wy <= c.y + c.height) {
@@ -845,6 +890,24 @@ setInterval(async () => {
     lastUiHash = hash;
   } catch {}
 }, 1500);
+// Restore path from URL pathname
+{
+  const urlPath = decodeURIComponent(location.pathname).replace(/^\/+/, '').replace(/\/+$/, '');
+  if (urlPath) {
+    currentPath = urlPath;
+    const parts = urlPath.split('/').filter(Boolean);
+    let p = ''; expandedPaths.add('/');
+    for (const part of parts) { p = p ? `${p}/${part}` : part; expandedPaths.add(p); }
+  }
+}
+window.addEventListener('popstate', () => {
+  const urlPath = decodeURIComponent(location.pathname).replace(/^\/+/, '').replace(/\/+$/, '') || '/';
+  currentPath = urlPath; selectedFloor = null; selectedFloorData = null; currentProjection = 'plan'; currentTab = 'floorplan';
+  const parts = urlPath.split('/').filter(Boolean);
+  let p = ''; expandedPaths.add('/');
+  for (const part of parts) { p = p ? `${p}/${part}` : part; expandedPaths.add(p); }
+  fetchNode(urlPath); renderTree();
+});
 refresh();
 </script>
 </body>
