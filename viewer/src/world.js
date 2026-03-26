@@ -18,15 +18,17 @@ import { createKavarna } from './kavarna.js';
 import { createAquapark } from './aquapark.js';
 import { createDetskeHriste } from './detske-hriste.js';
 // import { createHogwarts } from './hogwarts.js';
+import { createWarzone } from './warzone.js';
 
 export async function createWorld(scene) {
   createGround(scene);
-  createMetroVagon(scene, -25, 0);
-  createKavarna(scene, -35, 0);
-  createAquapark(scene, 50, 0);
-  createDetskeHriste(scene, 50, -35);
+  createWarzone(scene, 0, 0);
+  // createMetroVagon(scene, -25, 0);
+  // createKavarna(scene, -35, 0);
+  // createAquapark(scene, 50, 0);
+  // createDetskeHriste(scene, 50, -35);
   // Data-driven from MCP map.json
-  await buildFromMCP(scene, 'budova', 20, 0);
+  // await buildFromMCP(scene, 'budova', 20, 0);
   // createLoft(scene, -20, -15);
   // createKostel(scene, -40, -40);
   // createLodArtemis(scene, 20, -10);
@@ -43,7 +45,7 @@ export async function createWorld(scene) {
 }
 
 function createGround(scene) {
-  const geometry = new THREE.PlaneGeometry(200, 200);
+  const geometry = new THREE.PlaneGeometry(300, 300);
   const material = new THREE.MeshLambertMaterial({ color: 0x4a7c2e });
   const ground = new THREE.Mesh(geometry, material);
   ground.rotation.x = -Math.PI / 2;

@@ -1,6 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { writeFileSync } from 'fs';
+import { resolve as pathResolve } from 'path';
 import { MapStore, normalizeId } from './store.js';
 
 const store = new MapStore();
@@ -638,15 +640,42 @@ server.tool(
 
 server.tool(
   'export_json',
-  'Export map as JSON. Optionally filter by path and/or tag.',
+  'Export map as compact JSON to a file. Strips empty fields, uses short keys. Returns file path + summary. Read the file to process.',
   {
     path: z.string().optional().describe('Path to export from (default: root)'),
     tag: z.string().optional().describe('Only include objects with this tag (recursive filter)'),
+    file: z.string().describe('File path to write JSON to'),
   },
-  async ({ path, tag }) => {
+  async ({ path, tag, file }) => {
     const result = store.exportJSON(path, tag);
     if (!result) return err('Path not found');
-    return ok(JSON.stringify(result, null, 2));
+
+    // Compact format: strip empty fields, short keys
+    const compact = (node) => {
+      const o = {};
+      if (node.name) o.n = node.name;
+      if (node.x !== undefined) { o.x = node.x; o.y = node.y ?? 0; o.w = node.width; o.h = node.height; }
+      if (node.rotation) o.r = node.rotation;
+      if (node.elevation !== undefined) o.el = node.elevation;
+      if (node.height_3d !== undefined) o.h3 = node.height_3d;
+      if (node.tags?.length) o.t = node.tags;
+      if (node.metadata && Object.keys(node.metadata).length) o.m = node.metadata;
+      if (node.shape) o.sh = node.shape;
+      const kids = Object.entries(node.children || {});
+      if (kids.length) {
+        o.c = {};
+        for (const [k, v] of kids) o.c[k] = compact(v);
+      }
+      return o;
+    };
+
+    const data = compact(result);
+    const json = JSON.stringify(data);
+    const abs = pathResolve(file);
+    writeFileSync(abs, json, 'utf-8');
+    const countNodes = (n) => 1 + Object.values(n.children || {}).reduce((s, c) => s + countNodes(c), 0);
+    const nodes = countNodes(result);
+    return ok(`Exported to ${abs} (${nodes} nodes, ${json.length} bytes).\nKey map: n=name, x/y/w/h=position+size, r=rotation, el=elevation, h3=height_3d, t=tags, m=metadata, sh=shape, c=children`);
   }
 );
 
