@@ -233,7 +233,7 @@ export class MapStore {
 
   findCollisions(parent, tags) {
     const children = Object.values(this.getChildren(parent))
-      .filter(c => c.x !== undefined); // skip folder nodes
+      .filter(c => c.x !== undefined && c.width !== undefined); // skip folder nodes and auto-bounds containers
 
     // If tags provided, only check objects that have at least one of the tags
     const filtered = tags?.length
@@ -250,6 +250,17 @@ export class MapStore {
       }
     }
     return pairs;
+  }
+
+  findGapsInParent(parent, tags) {
+    if (parent.x === undefined || parent.width === undefined) return null; // folder node
+    const children = Object.values(this.getChildren(parent))
+      .filter(c => c.x !== undefined && c.width !== undefined);
+    const filtered = tags?.length
+      ? children.filter(c => (c.tags || []).some(t => tags.includes(t)))
+      : children;
+    const objects = filtered.map(c => ({ x: c.x, y: c.y, w: c.width, h: c.height, name: c.name, id: c.id }));
+    return findGaps(parent, objects, parent.width, parent.height);
   }
 
   findCollisionsProjected(parent, x, y, w, h, projection) {
@@ -380,6 +391,21 @@ export class MapStore {
           }
         }
       }
+
+      if (rule.type === 'no_touch') {
+        // Symmetric: no object with tag A may touch (edge or overlap) object with tag B
+        for (const objA of allObjects) {
+          if (!hasTag(objA, rule.a)) continue;
+          for (const objB of allObjects) {
+            if (objA.id === objB.id) continue;
+            if (isRelated(objA, objB)) continue;
+            if (!hasTag(objB, rule.b)) continue;
+            if (touch(objA, objB)) {
+              violations.push(`[${rule.a}] "${objA.name}" touches [${rule.b}] "${objB.name}" at (${objA.x},${objA.y})`);
+            }
+          }
+        }
+      }
     }
 
     // Deduplicate symmetric violations (no_collide A↔B)
@@ -402,6 +428,14 @@ export class MapStore {
         }
         const absX = offsetX + child.x;
         const absY = offsetY + child.y;
+
+        // Skip auto-bounds containers (no own dimensions/char) — only their children render
+        if (child.width === undefined) {
+          if (recursive && child.children) {
+            collect(child, absX, absY, depth + 1);
+          }
+          continue;
+        }
 
         if (projection === 'plan') {
           objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: absY, width: child.width, height: child.height, shape: child.shape });
@@ -609,10 +643,10 @@ export class MapStore {
    * Folder nodes: auto-calculate from children bounding box.
    */
   getEffectiveBounds(node) {
-    if (node.x !== undefined && node.width !== undefined) {
+    if (node.width !== undefined && node.height !== undefined) {
       return { w: node.width, h: node.height };
     }
-    // Folder — auto-bounds from children
+    // Folder or spatial without dimensions — auto-bounds from children
     const bbox = this._subtreeBBox(node);
     return { w: bbox.w || 1, h: bbox.h || 1 };
   }
@@ -744,6 +778,97 @@ export class MapStore {
     return filtered;
   }
 }
+
+/**
+ * Find uncovered rectangular gaps inside a spatial parent.
+ * Uses a grid-sweep approach: collect all unique X and Y edges from matching objects,
+ * then check each grid cell to see if it's covered by any object.
+ * Returns array of { x, y, w, h, neighbors[] } for each gap.
+ */
+function findGaps(parent, allObjects, parentW, parentH) {
+  if (allObjects.length === 0) return [{ x: 0, y: 0, w: parentW, h: parentH, neighbors: [] }];
+
+  // Collect unique X and Y coordinates (edges of all objects + parent bounds)
+  const xs = new Set([0, parentW]);
+  const ys = new Set([0, parentH]);
+  for (const o of allObjects) {
+    xs.add(Math.max(0, o.x));
+    xs.add(Math.min(parentW, o.x + o.w));
+    ys.add(Math.max(0, o.y));
+    ys.add(Math.min(parentH, o.y + o.h));
+  }
+  const sortedX = [...xs].sort((a, b) => a - b);
+  const sortedY = [...ys].sort((a, b) => a - b);
+
+  // For each grid cell, check if it's fully covered by any object
+  const gapCells = [];
+  for (let yi = 0; yi < sortedY.length - 1; yi++) {
+    for (let xi = 0; xi < sortedX.length - 1; xi++) {
+      const cx = sortedX[xi], cy = sortedY[yi];
+      const cw = sortedX[xi + 1] - cx, ch = sortedY[yi + 1] - cy;
+      if (cw <= 0 || ch <= 0) continue;
+      // Cell center for point-in-rect test
+      const covered = allObjects.some(o =>
+        o.x <= cx && o.x + o.w >= cx + cw && o.y <= cy && o.y + o.h >= cy + ch
+      );
+      if (!covered) {
+        gapCells.push({ x: cx, y: cy, w: cw, h: ch, xi, yi });
+      }
+    }
+  }
+
+  if (gapCells.length === 0) return [];
+
+  // Merge adjacent gap cells into larger rectangles (greedy row-merge)
+  const merged = [];
+  const used = new Set();
+  for (const cell of gapCells) {
+    const key = `${cell.xi},${cell.yi}`;
+    if (used.has(key)) continue;
+    // Expand right
+    let maxXi = cell.xi;
+    while (maxXi + 1 < sortedX.length - 1) {
+      const nk = `${maxXi + 1},${cell.yi}`;
+      if (gapCells.some(c => c.xi === maxXi + 1 && c.yi === cell.yi) && !used.has(nk)) {
+        maxXi++;
+      } else break;
+    }
+    // Expand down — all columns in range must be gap
+    let maxYi = cell.yi;
+    outer: while (maxYi + 1 < sortedY.length - 1) {
+      for (let xi = cell.xi; xi <= maxXi; xi++) {
+        const nk = `${xi},${maxYi + 1}`;
+        if (!gapCells.some(c => c.xi === xi && c.yi === maxYi + 1) || used.has(nk)) break outer;
+      }
+      maxYi++;
+    }
+    // Mark used
+    for (let yi = cell.yi; yi <= maxYi; yi++) {
+      for (let xi = cell.xi; xi <= maxXi; xi++) {
+        used.add(`${xi},${yi}`);
+      }
+    }
+    const gx = sortedX[cell.xi], gy = sortedY[cell.yi];
+    const gw = sortedX[maxXi + 1] - gx, gh = sortedY[maxYi + 1] - gy;
+
+    // Find neighboring objects (touching the gap)
+    const neighbors = [];
+    for (const o of allObjects) {
+      if (rectsTouch2D(gx, gy, gw, gh, o.x, o.y, o.w, o.h)) {
+        let side = '';
+        if (o.x + o.w <= gx + 0.01) side = 'west';
+        else if (o.x >= gx + gw - 0.01) side = 'east';
+        else if (o.y + o.h <= gy + 0.01) side = 'north';
+        else if (o.y >= gy + gh - 0.01) side = 'south';
+        neighbors.push({ name: o.name, id: o.id, side });
+      }
+    }
+    merged.push({ x: round2(gx), y: round2(gy), w: round2(gw), h: round2(gh), neighbors });
+  }
+  return merged;
+}
+
+function round2(v) { return Math.round(v * 100) / 100; }
 
 function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2) {
   return !(x1 + w1 <= x2 || x2 + w2 <= x1 || y1 + h1 <= y2 || y2 + h2 <= y1);

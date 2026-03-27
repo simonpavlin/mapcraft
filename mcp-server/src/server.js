@@ -411,7 +411,9 @@ server.tool(
     if (clear_height_3d) node.height_3d = undefined;
 
     store.save();
-    const pos = node.x !== undefined ? `(${node.x},${node.y}) ${node.width}×${node.height}m` : '(folder)';
+    const pos = node.x !== undefined
+      ? (node.width !== undefined ? `(${node.x},${node.y}) ${node.width}×${node.height}m` : `(${node.x},${node.y}) auto-bounds`)
+      : '(folder)';
     return ok(`Updated "${node.name}" → ${pos}`);
   }
 );
@@ -446,7 +448,8 @@ server.tool(
         const tags = c.tags?.length ? ` [${c.tags.join(',')}]` : '';
 
         if (isSpatial) {
-          items.push(`${indent}[${c.char}] ${prefix}${c.id} "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m${container}${tags}`);
+          const dims = c.width !== undefined ? `${c.width}×${c.height}m` : 'auto';
+          items.push(`${indent}[${c.char || '?'}] ${prefix}${c.id} "${c.name}" (${c.x},${c.y}) ${dims}${container}${tags}`);
         } else {
           items.push(`${indent}📁 ${prefix}${c.id} "${c.name}"${container}${tags}`);
         }
@@ -531,11 +534,12 @@ server.tool(
 Rule types:
 - no_collide(a, b) — objects with tag A must not overlap objects with tag B (symmetric)
 - must_collide(a, b) — every object with tag A must overlap at least one object with tag B (directional: A must be in B, not B must have A)
-- must_touch(a, b) — every object with tag A must touch (share edge/overlap) at least one object with tag B (directional)`,
+- must_touch(a, b) — every object with tag A must touch (share edge/overlap) at least one object with tag B (directional)
+- no_touch(a, b) — objects with tag A must not touch objects with tag B — no shared edges, no overlap (symmetric)`,
   {
     path: z.string().describe('Project or space path'),
     rules: z.array(z.object({
-      type: z.enum(['no_collide', 'must_collide', 'must_touch']),
+      type: z.enum(['no_collide', 'must_collide', 'must_touch', 'no_touch']),
       a: z.string().describe('Subject tag — "every object with this tag..."'),
       b: z.string().describe('Target tag — "...must/must not [verb] an object with this tag"'),
     })).describe('Array of rules'),
@@ -653,9 +657,9 @@ server.tool(
     ];
     if (isSpatial) {
       lines.push(`Position: (${node.x}, ${node.y})`);
-      lines.push(`Size: ${node.width}m × ${node.height}m`);
+      lines.push(`Size: ${node.width !== undefined ? `${node.width}m × ${node.height}m` : 'auto (from children)'}`);
       lines.push(`Rotation: ${rot}° ${arrows[rot] || ''}`);
-      lines.push(`Char: [${node.char}]`);
+      if (node.char) lines.push(`Char: [${node.char}]`);
       if (node.z !== undefined) lines.push(`Z: ${node.z}m`);
       if (node.height_3d !== undefined) lines.push(`Height 3D: ${node.height_3d}m`);
     }
@@ -783,6 +787,33 @@ server.tool(
 );
 
 // ──────────────────────────────────────────────
+// TOOL: find_gaps
+// ──────────────────────────────────────────────
+
+server.tool(
+  'find_gaps',
+  `Find uncovered rectangular areas (gaps) inside a spatial parent. Sweeps a grid of all object edges and returns rectangles not covered by any matching object. Each gap includes neighboring objects and their side (north/south/east/west).`,
+  {
+    path: z.string().describe('Path to spatial parent'),
+    tags: z.array(z.string()).optional().describe('Only consider objects with these tags as "coverage". Gaps are areas not covered by any object with a matching tag.'),
+  },
+  async ({ path, tags }) => {
+    const node = store.resolve(path);
+    if (!node) return err('Not found');
+    if (node.x === undefined || node.width === undefined) return err('Cannot find gaps in a folder node — use a spatial parent');
+    const gaps = store.findGapsInParent(node, tags);
+    if (gaps.length === 0) return ok('No gaps found — full coverage ✓');
+    const lines = gaps.map(g => {
+      const nbrs = g.neighbors.length > 0
+        ? g.neighbors.map(n => `"${n.name}" (${n.side})`).join(', ')
+        : 'none';
+      return `  (${g.x}, ${g.y}) ${g.w}×${g.h}m — neighbors: ${nbrs}`;
+    });
+    return ok(`${gaps.length} gap(s) found:\n${lines.join('\n')}`);
+  }
+);
+
+// ──────────────────────────────────────────────
 
 function ok(text) { return { content: [{ type: 'text', text }] }; }
 function err(text) { return { content: [{ type: 'text', text: `ERROR: ${text}` }], isError: true }; }
@@ -805,12 +836,13 @@ function buildNode(o) {
       w = w || bbox.w;
       h = h || bbox.h;
     }
-    if (!w || !h) return { error: 'width and height required (or provide shape)' };
+    // width/height optional — auto-calculated from children via getEffectiveBounds
     return {
       node: {
         id: o.id, name: o.name,
-        x: o.x, y: o.y ?? 0, width: w, height: h,
-        char: o.char || '#',
+        x: o.x, y: o.y ?? 0,
+        width: w || undefined, height: h || undefined,
+        char: o.char || (w ? '#' : undefined),
         shape: parsedShape || undefined,
         description: o.description || '',
         tags: o.tags || [],

@@ -100,9 +100,10 @@ function resolveNode(root, path) {
  * Folder nodes: auto-calculate from children bounding box.
  */
 function getEffectiveBounds(node) {
-  if (node.x !== undefined && node.width !== undefined) {
+  if (node.width !== undefined && node.height !== undefined) {
     return { w: node.width, h: node.height };
   }
+  // Folder or spatial without dimensions — auto-bounds from children
   let maxW = 0, maxH = 0;
   for (const child of Object.values(node.children || {})) {
     if (child.x !== undefined) {
@@ -116,7 +117,7 @@ function getEffectiveBounds(node) {
 function renderAscii(node, maxCols = 60, maxRows = 30, filterChildren = null, projection = 'plan') {
   const allChildren = filterChildren || Object.values(node.children || {});
   // Skip folder nodes (no spatial data) in rendering
-  const spatialChildren = allChildren.filter(c => c.x !== undefined);
+  const spatialChildren = allChildren.filter(c => c.x !== undefined && c.width !== undefined);
 
   let children;
   if (projection === 'plan') {
