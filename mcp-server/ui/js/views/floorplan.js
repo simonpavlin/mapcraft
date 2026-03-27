@@ -7,9 +7,12 @@ export function renderFloorplan() {
   const d = state.nodeData;
   const allChildren = d.children || [];
   const allDescendants = d.descendants || [];
-  if (allChildren.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Prázdný prostor</h2></div>'; return; }
+  const isLeaf = allChildren.length === 0 && d.width > 0 && d.height > 0;
+  if (allChildren.length === 0 && !isLeaf) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Prázdný prostor</h2></div>'; return; }
 
-  let children = allChildren.filter(c => c.isSpatial !== false);
+  let children = isLeaf
+    ? [{ id: d.name, name: d.name, char: d.char, x: 0, y: 0, width: d.width, height: d.height, tags: d.tags, shape: d.shape, rotation: d.rotation, metadata: d.metadata }]
+    : allChildren.filter(c => c.isSpatial !== false);
   let descendants = allDescendants.filter(c => c.isSpatial !== false);
   let viewWidth = d.width, viewHeight = d.height;
 

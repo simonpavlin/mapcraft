@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import { esc, infoCard, renderRules } from '../utils.js';
-import { cc, drawFloorContent } from '../canvas-utils.js';
+import { cc, shapePath, drawFloorContent } from '../canvas-utils.js';
 import { navigateTo } from '../navigation.js';
 import { colorizeAscii, renderLegend } from './ascii.js';
 
@@ -46,6 +46,10 @@ export function renderOverview() {
     h += `<div id="ascii-grid">${colorizeAscii(d.ascii)}</div>`;
     h += renderLegend(d.legend);
     h += '</div>';
+  } else if (!isFolder && d.width > 0 && d.height > 0 && !(d.ascii?.length > 0)) {
+    // Leaf spatial node — show canvas preview of the object itself
+    h += '<h3 style="margin-bottom:8px;font-size:14px;color:var(--tx2)">Náhled</h3>';
+    h += '<div id="leaf-preview-wrap"></div>';
   }
 
   // Folder tile preview
@@ -62,6 +66,7 @@ export function renderOverview() {
   document.getElementById('content').innerHTML = h;
 
   if (isFolder) renderFolderTiles();
+  if (!isFolder && document.getElementById('leaf-preview-wrap')) renderLeafPreview();
 }
 
 function renderFolderTiles() {
@@ -182,4 +187,57 @@ function renderFolderTiles() {
       });
     }
   }
+}
+
+function renderLeafPreview() {
+  const d = state.nodeData;
+  const wrap = document.getElementById('leaf-preview-wrap');
+  if (!wrap || !d) return;
+
+  const tw = d.width, th = d.height;
+  const color = cc(d.char);
+  const size = 250;
+  const PAD = 24;
+  const drawArea = size - PAD * 2;
+  const s = Math.min(drawArea / tw, drawArea / th);
+  const pw = tw * s, ph = th * s;
+  const cw = Math.ceil(pw + PAD * 2), ch = Math.ceil(ph + PAD * 2);
+
+  wrap.innerHTML = `<canvas width="${cw}" height="${ch}" style="border:1px solid var(--bd);border-radius:4px"></canvas>`;
+  const canvas = wrap.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, cw, ch);
+
+  // Grid
+  ctx.strokeStyle = '#ffffff20'; ctx.lineWidth = 0.5;
+  for (let gx = PAD % s; gx < cw; gx += s) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, ch); ctx.stroke(); }
+  for (let gy = PAD % s; gy < ch; gy += s) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(cw, gy); ctx.stroke(); }
+
+  // Object
+  const ox = PAD, oy = PAD;
+  const fakeObj = { width: tw, height: th, shape: d.shape };
+  ctx.fillStyle = color + '30';
+  shapePath(ctx, fakeObj, ox, oy, s); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 2;
+  shapePath(ctx, fakeObj, ox, oy, s); ctx.stroke();
+
+  // Label
+  const label = d.name;
+  const maxFont = Math.min(pw / (label.length * 0.55), ph / 3, 16);
+  const fs = Math.max(8, Math.floor(maxFont));
+  if (fs >= 8 && pw > 20 && ph > 16) {
+    ctx.fillStyle = color; ctx.font = `bold ${fs}px 'Segoe UI',sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, ox + pw / 2, oy + ph / 2 - fs * 0.35, pw - 4);
+    ctx.font = `${Math.max(7, fs - 3)}px 'Segoe UI',sans-serif`; ctx.fillStyle = color + 'aa';
+    ctx.fillText(`${tw}×${th}m`, ox + pw / 2, oy + ph / 2 + fs * 0.45, pw - 4);
+  }
+
+  // Dimension labels
+  ctx.fillStyle = '#606080'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(`${tw}m`, ox + pw / 2, oy + ph + 6);
+  ctx.save(); ctx.translate(ox - 8, oy + ph / 2); ctx.rotate(-Math.PI / 2);
+  ctx.textBaseline = 'bottom'; ctx.fillText(`${th}m`, 0, 0); ctx.restore();
 }
