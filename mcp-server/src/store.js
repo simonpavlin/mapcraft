@@ -306,22 +306,28 @@ export class MapStore {
     const violations = [];
     // Collect all spatial objects recursively with absolute coords
     const allObjects = [];
-    const collectAll = (parent, offsetX, offsetY, parentId) => {
+    const collectAll = (parent, offsetX, offsetY, ancestors, insideStamp) => {
       for (const child of Object.values(this.getChildren(parent))) {
         if (child.x === undefined) {
-          collectAll(child, offsetX, offsetY, parentId);
+          collectAll(child, offsetX, offsetY, ancestors, insideStamp);
           continue;
         }
         const absX = offsetX + child.x, absY = offsetY + child.y;
-        allObjects.push({
-          id: child.id, name: child.name, tags: child.tags || [],
-          x: absX, y: absY, w: child.width, h: child.height,
-          parentId,
-        });
-        collectAll(child, absX, absY, child.id);
+        const childAncestors = new Set(ancestors);
+        childAncestors.add(child.id);
+        const isStamp = (child.tags || []).includes('stamp');
+        // Skip expanded template children — stamp parent represents the placed object
+        if (!insideStamp) {
+          allObjects.push({
+            id: child.id, name: child.name, tags: child.tags || [],
+            x: absX, y: absY, w: child.width, h: child.height,
+            ancestors: childAncestors,
+          });
+        }
+        collectAll(child, absX, absY, childAncestors, insideStamp || isStamp);
       }
     };
-    collectAll(node, 0, 0, node.id);
+    collectAll(node, 0, 0, new Set([node.id]), false);
 
     const hasTag = (obj, tag) => obj.tags.includes(tag);
     const overlap = (a, b) => rectsOverlap(a.x, a.y, a.w, a.h, b.x, b.y, b.w, b.h);
@@ -331,6 +337,8 @@ export class MapStore {
       const sepY = a.y + a.h < b.y || b.y + b.h < a.y;
       return !sepX && !sepY;
     };
+    // Skip pairs where one is an ancestor of the other (parent-child never collide)
+    const isRelated = (a, b) => a.ancestors.has(b.id) || b.ancestors.has(a.id);
 
     for (const rule of rules) {
       if (rule.type === 'no_collide') {
@@ -339,6 +347,7 @@ export class MapStore {
           if (!hasTag(objA, rule.a)) continue;
           for (const objB of allObjects) {
             if (objA.id === objB.id) continue;
+            if (isRelated(objA, objB)) continue;
             if (!hasTag(objB, rule.b)) continue;
             if (overlap(objA, objB)) {
               violations.push(`[${rule.a}] "${objA.name}" collides with [${rule.b}] "${objB.name}" at (${objA.x},${objA.y})`);
@@ -348,10 +357,10 @@ export class MapStore {
       }
 
       if (rule.type === 'must_collide') {
-        // Every A must overlap at least one B
+        // Every A must overlap at least one B (excluding ancestors/descendants)
         for (const objA of allObjects) {
           if (!hasTag(objA, rule.a)) continue;
-          const found = allObjects.some(objB => objB.id !== objA.id && hasTag(objB, rule.b) && overlap(objA, objB));
+          const found = allObjects.some(objB => objB.id !== objA.id && !isRelated(objA, objB) && hasTag(objB, rule.b) && overlap(objA, objB));
           if (!found) {
             violations.push(`[${rule.a}] "${objA.name}" does not collide with any [${rule.b}]`);
           }
@@ -359,10 +368,10 @@ export class MapStore {
       }
 
       if (rule.type === 'must_touch') {
-        // Every A must touch at least one B
+        // Every A must touch at least one B (excluding ancestors/descendants)
         for (const objA of allObjects) {
           if (!hasTag(objA, rule.a)) continue;
-          const found = allObjects.some(objB => objB.id !== objA.id && hasTag(objB, rule.b) && touch(objA, objB));
+          const found = allObjects.some(objB => objB.id !== objA.id && !isRelated(objA, objB) && hasTag(objB, rule.b) && touch(objA, objB));
           if (!found) {
             violations.push(`[${rule.a}] "${objA.name}" does not touch any [${rule.b}]`);
           }

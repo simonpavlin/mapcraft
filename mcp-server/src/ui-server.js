@@ -1,15 +1,35 @@
 import http from 'http';
-import { readFileSync, writeFileSync, existsSync, statSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'fs';
+import { resolve, dirname, extname, join } from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, '../../data');
 const MAP_FILE = resolve(DATA_DIR, 'map.json');
-const UI_FILE = resolve(__dirname, '../ui/index.html');
+const UI_DIR = resolve(__dirname, '../ui');
+const UI_FILE = resolve(UI_DIR, 'index.html');
 
 const PORT = 3001;
+
+const MIME_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+};
+
+function collectFiles(dir) {
+  let files = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) files = files.concat(collectFiles(full));
+    else files.push(full);
+  }
+  return files;
+}
 
 function loadMap() {
   if (!existsSync(MAP_FILE)) return null;
@@ -232,7 +252,22 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  if (!url.pathname.startsWith('/api/') && !url.pathname.includes('.')) {
+  // Static files (css, js, etc.)
+  if (!url.pathname.startsWith('/api/') && url.pathname.includes('.')) {
+    const filePath = join(UI_DIR, decodeURIComponent(url.pathname));
+    const normalized = resolve(filePath);
+    if (!normalized.startsWith(UI_DIR)) { res.writeHead(403); res.end('Forbidden'); return; }
+    if (existsSync(normalized) && statSync(normalized).isFile()) {
+      const ext = extname(normalized);
+      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(readFileSync(normalized));
+      return;
+    }
+  }
+
+  // SPA fallback — serve index.html for all non-API, non-file routes
+  if (!url.pathname.startsWith('/api/')) {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(readFileSync(UI_FILE, 'utf-8'));
     return;
@@ -347,9 +382,11 @@ const server = http.createServer((req, res) => {
   }
 
   if (url.pathname === '/api/ui-hash') {
-    const content = readFileSync(UI_FILE, 'utf-8');
-    const hash = crypto.createHash('md5').update(content).digest('hex');
-    return json(res, { hash });
+    const hasher = crypto.createHash('md5');
+    for (const f of collectFiles(UI_DIR)) {
+      hasher.update(f + ':' + statSync(f).mtimeMs);
+    }
+    return json(res, { hash: hasher.digest('hex') });
   }
 
   if (url.pathname === '/api/raw') {
