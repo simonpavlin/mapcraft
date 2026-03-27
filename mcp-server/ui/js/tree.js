@@ -25,7 +25,6 @@ function renderTreeNode(n) {
   if (n.childCount > 0) h += `<span class="tree-badge">${n.childCount}</span>`;
   if (isProject) h += `<span class="tree-tag" style="background:var(--ac)">projekt</span>`;
   else if (isFolder && n.path !== '/') h += `<span class="tree-tag" style="background:var(--sf2)">folder</span>`;
-  if (n.tags?.includes('floor')) h += `<span class="tree-tag">floor</span>`;
   h += '</div>';
   if (has) { h += `<div class="tree-children ${exp ? '' : 'collapsed'}">`; for (const c of n.children) h += renderTreeNode(c); h += '</div>'; }
   return h + '</div>';
@@ -38,8 +37,6 @@ export function treeClick(e, path, hasChildren) {
     else state.expandedPaths.add(path);
   }
   state.currentPath = path;
-  state.selectedFloor = null;
-  state.selectedFloorData = null;
   state.currentProjection = 'plan';
   state.currentTab = 'floorplan';
   const urlPath = '/' + path.split('/').filter(Boolean).map(encodeURIComponent).join('/');

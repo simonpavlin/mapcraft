@@ -82,7 +82,7 @@ export class MapStore {
       node.height = nodeData.height;
       node.char = nodeData.char || '#';
       if (nodeData.shape) node.shape = nodeData.shape;
-      if (nodeData.elevation !== undefined) node.elevation = nodeData.elevation;
+      if (nodeData.z !== undefined) node.z = nodeData.z;
       if (nodeData.height_3d !== undefined) node.height_3d = nodeData.height_3d;
     }
 
@@ -101,6 +101,14 @@ export class MapStore {
     for (const p of parts) {
       if (!node.children || !node.children[p]) return null;
       node = node.children[p];
+    }
+    return node;
+  }
+
+  // Resolve a node — if it's a stamp, expand it from template
+  resolveNode(node) {
+    if ((node.tags || []).includes('stamp') && node.metadata?._template) {
+      return this.resolveStamp(node);
     }
     return node;
   }
@@ -247,12 +255,12 @@ export class MapStore {
   findCollisionsProjected(parent, x, y, w, h, projection) {
     const collisions = [];
     for (const child of Object.values(this.getChildren(parent))) {
-      if (child.elevation === undefined || child.height_3d === undefined) continue;
+      if (child.z === undefined || child.height_3d === undefined) continue;
       let px, py, pw, ph;
       if (projection === 'front') {
-        px = child.x; py = child.elevation; pw = child.width; ph = child.height_3d;
+        px = child.x; py = child.z; pw = child.width; ph = child.height_3d;
       } else { // side
-        px = child.y; py = child.elevation; pw = child.height; ph = child.height_3d;
+        px = child.y; py = child.z; pw = child.height; ph = child.height_3d;
       }
       if (rectsOverlap(x, y, w, h, px, py, pw, ph)) {
         collisions.push({ ...child, px, py, pw, ph });
@@ -275,7 +283,7 @@ export class MapStore {
     const boxes = spatial.map(c => ({
       id: c.id, name: c.name, char: c.char, tags: c.tags || [],
       x: c.x, y: c.y, w: c.width, h: c.height,
-      ez: c.elevation ?? 0, eh: c.height_3d ?? c.height,
+      ez: c.z ?? 0, eh: c.height_3d ?? c.height,
     }));
 
     // Union-Find
@@ -331,12 +339,7 @@ export class MapStore {
 
     const hasTag = (obj, tag) => obj.tags.includes(tag);
     const overlap = (a, b) => rectsOverlap(a.x, a.y, a.w, a.h, b.x, b.y, b.w, b.h);
-    const touch = (a, b) => {
-      // Touch = overlap OR share edge (but not gap)
-      const sepX = a.x + a.w < b.x || b.x + b.w < a.x;
-      const sepY = a.y + a.h < b.y || b.y + b.h < a.y;
-      return !sepX && !sepY;
-    };
+    const touch = (a, b) => rectsTouch2D(a.x, a.y, a.w, a.h, b.x, b.y, b.w, b.h);
     // Skip pairs where one is an ancestor of the other (parent-child never collide)
     const isRelated = (a, b) => a.ancestors.has(b.id) || b.ancestors.has(a.id);
 
@@ -388,12 +391,12 @@ export class MapStore {
   collectRenderObjects(node, recursive = false, projection = 'plan') {
     const objects = [];
     const self = this;
-    function collect(parent, offsetX, offsetY) {
+    function collect(parent, offsetX, offsetY, depth) {
       for (const child of Object.values(self.getChildren(parent))) {
         if (child.x === undefined) {
           // Folder node — recurse into it if recursive, but don't render
           if (recursive && child.children) {
-            collect(child, offsetX, offsetY);
+            collect(child, offsetX, offsetY, depth + 1);
           }
           continue;
         }
@@ -403,21 +406,22 @@ export class MapStore {
         if (projection === 'plan') {
           objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: absY, width: child.width, height: child.height, shape: child.shape });
         } else if (projection === 'front') {
-          if (child.elevation !== undefined && child.height_3d !== undefined) {
-            objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: child.elevation, width: child.width, height: child.height_3d });
+          if (child.z !== undefined && child.height_3d !== undefined) {
+            objects.push({ char: child.char, id: child.id, name: child.name, x: absX, y: child.z, width: child.width, height: child.height_3d });
           }
         } else if (projection === 'side') {
-          if (child.elevation !== undefined && child.height_3d !== undefined) {
-            objects.push({ char: child.char, id: child.id, name: child.name, x: absY, y: child.elevation, width: child.height, height: child.height_3d });
+          if (child.z !== undefined && child.height_3d !== undefined) {
+            objects.push({ char: child.char, id: child.id, name: child.name, x: absY, y: child.z, width: child.height, height: child.height_3d });
           }
         }
 
+        // Only recurse into spatial children when recursive=true
         if (recursive && child.children) {
-          collect(child, absX, absY);
+          collect(child, absX, absY, depth + 1);
         }
       }
     }
-    collect(node, 0, 0);
+    collect(node, 0, 0, 0);
     return objects;
   }
 
@@ -427,7 +431,7 @@ export class MapStore {
 
     if (objects.length === 0) {
       if (projection !== 'plan') {
-        return { ascii: [`(no objects with elevation/height_3d for ${projection} view)`], legend: [], scaleInfo: '' };
+        return { ascii: [`(no objects with z/height_3d for ${projection} view)`], legend: [], scaleInfo: '' };
       }
       return { ascii: [`(empty: ${bounds.w}m × ${bounds.h}m)`], legend: [], scaleInfo: '' };
     }
@@ -445,7 +449,7 @@ export class MapStore {
       }
       viewW = projection === 'front' ? bounds.w : bounds.h;
       viewH = maxY || 3;
-      if (node.metadata?.floor_height) viewH = node.metadata.floor_height;
+      if (node.height_3d) viewH = node.height_3d;
       viewLabel = `${viewW}m × ${viewH}m (${projection} view)`;
     }
 
@@ -494,8 +498,21 @@ export class MapStore {
 
     const finalGrid = (projection !== 'plan') ? grid.reverse() : grid;
 
+    // Trim trailing empty rows (all dots)
+    while (finalGrid.length > 1 && finalGrid[finalGrid.length - 1].every(c => c === '.')) {
+      finalGrid.pop();
+    }
+    // Trim trailing empty columns (all dots)
+    let maxUsedCol = 0;
+    for (const row of finalGrid) {
+      for (let c = row.length - 1; c >= 0; c--) {
+        if (row[c] !== '.') { maxUsedCol = Math.max(maxUsedCol, c); break; }
+      }
+    }
+    const trimmedGrid = finalGrid.map(r => r.slice(0, maxUsedCol + 2));
+
     return {
-      ascii: finalGrid.map(r => r.join('')),
+      ascii: trimmedGrid.map(r => r.join('')),
       legend,
       scaleInfo: `1 cell = ${scale.toFixed(2)}m | ${cols}×${rows} cells | ${viewLabel}`,
     };
@@ -563,21 +580,14 @@ export class MapStore {
     // Apply rotation
     if (rot !== 0) {
       for (const part of parts) {
-        const cx = part.x, cy = part.y, cw = part.width, ch = part.height;
-        if (rot === 90) { part.x = bbox.h - cy - ch; part.y = cx; }
-        else if (rot === 180) { part.x = bbox.w - cx - cw; part.y = bbox.h - cy - ch; }
-        else if (rot === 270) { part.x = cy; part.y = bbox.w - cx - cw; }
-        if (rot === 90 || rot === 270) {
-          const tmp = part.width; part.width = part.height; part.height = tmp;
-        }
-        if (part.children && Object.keys(part.children).length > 0) {
-          this._rotateChildren(part, cw, ch, rot);
-        }
+        this._rotateNode(part, bbox.w, bbox.h, rot);
       }
     }
 
-    // Return expanded stamp
-    const expanded = { ...stamp, children: {} };
+    // Return expanded stamp with dimensions from current template
+    const rotW = (rot === 90 || rot === 270) ? bbox.h : bbox.w;
+    const rotH = (rot === 90 || rot === 270) ? bbox.w : bbox.h;
+    const expanded = { ...stamp, width: rotW, height: rotH, name: source.name, children: {} };
     for (const part of parts) expanded.children[part.id] = part;
     return expanded;
   }
@@ -603,14 +613,8 @@ export class MapStore {
       return { w: node.width, h: node.height };
     }
     // Folder — auto-bounds from children
-    let maxW = 0, maxH = 0;
-    for (const child of Object.values(node.children || {})) {
-      if (child.x !== undefined) {
-        maxW = Math.max(maxW, child.x + (child.width || 0));
-        maxH = Math.max(maxH, child.y + (child.height || 0));
-      }
-    }
-    return { w: maxW || 1, h: maxH || 1 };
+    const bbox = this._subtreeBBox(node);
+    return { w: bbox.w || 1, h: bbox.h || 1 };
   }
 
   // ── Persistence ────────────────────────────────
@@ -679,28 +683,17 @@ export class MapStore {
     return { w: maxW, h: maxH };
   }
 
-  _rotateChildren(node, origW, origH, rotation) {
+  _rotateNode(node, parentW, parentH, rotation) {
+    const cx = node.x, cy = node.y, cw = node.width, ch = node.height;
+    if (rotation === 90) { node.x = parentH - cy - ch; node.y = cx; }
+    else if (rotation === 180) { node.x = parentW - cx - cw; node.y = parentH - cy - ch; }
+    else if (rotation === 270) { node.x = cy; node.y = parentW - cx - cw; }
+    if (rotation === 90 || rotation === 270) {
+      const tmp = node.width; node.width = node.height; node.height = tmp;
+    }
     for (const child of Object.values(node.children || {})) {
       if (child.x === undefined) continue;
-      const cx = child.x, cy = child.y, cw = child.width, ch = child.height;
-      if (rotation === 90) {
-        child.x = origH - cy - ch;
-        child.y = cx;
-      } else if (rotation === 180) {
-        child.x = origW - cx - cw;
-        child.y = origH - cy - ch;
-      } else if (rotation === 270) {
-        child.x = cy;
-        child.y = origW - cx - cw;
-      }
-      if (rotation === 90 || rotation === 270) {
-        const tmp = child.width;
-        child.width = child.height;
-        child.height = tmp;
-      }
-      if (child.children && Object.keys(child.children).length > 0) {
-        this._rotateChildren(child, cw, ch, rotation);
-      }
+      this._rotateNode(child, cw, ch, rotation);
     }
   }
 
@@ -722,7 +715,7 @@ export class MapStore {
       copy.height = node.height;
       copy.char = node.char;
       if (node.shape) copy.shape = JSON.parse(JSON.stringify(node.shape));
-      if (node.elevation !== undefined) copy.elevation = node.elevation;
+      if (node.z !== undefined) copy.z = node.z;
       if (node.height_3d !== undefined) copy.height_3d = node.height_3d;
     }
     // Recurse children
@@ -756,14 +749,17 @@ function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2) {
   return !(x1 + w1 <= x2 || x2 + w2 <= x1 || y1 + h1 <= y2 || y2 + h2 <= y1);
 }
 
-// Two 3D boxes touch if they overlap or share a face/edge in all 3 axes
-// "Touch" = overlap OR share boundary (<=, not <)
+// Touch = overlap OR share edge (but not gap). Uses <= not <.
+function rectsTouch2D(x1, y1, w1, h1, x2, y2, w2, h2) {
+  const sepX = x1 + w1 < x2 || x2 + w2 < x1;
+  const sepY = y1 + h1 < y2 || y2 + h2 < y1;
+  return !sepX && !sepY;
+}
+
+// Two 3D boxes touch if they touch in all 3 axes
 function boxesTouch3D(a, b) {
-  // a, b = { x, y, w, h, ez, eh } where ez=elevation(z-axis), eh=height_3d
-  const sepX = a.x + a.w < b.x || b.x + b.w < a.x;
-  const sepY = a.y + a.h < b.y || b.y + b.h < a.y;
-  const sepZ = a.ez + a.eh < b.ez || b.ez + b.eh < a.ez;
-  return !sepX && !sepY && !sepZ;
+  return rectsTouch2D(a.x, a.y, a.w, a.h, b.x, b.y, b.w, b.h)
+    && !(a.ez + a.eh < b.ez || b.ez + b.eh < a.ez);
 }
 
 function pointInPolygon(px, py, polygon) {

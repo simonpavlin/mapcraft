@@ -123,11 +123,11 @@ function renderAscii(node, maxCols = 60, maxRows = 30, filterChildren = null, pr
     children = spatialChildren;
   } else {
     children = spatialChildren
-      .filter(c => c.elevation !== undefined && c.height_3d !== undefined)
+      .filter(c => c.z !== undefined && c.height_3d !== undefined)
       .map(c => ({
         ...c,
         x: projection === 'front' ? c.x : c.y,
-        y: c.elevation,
+        y: c.z,
         width: projection === 'front' ? c.width : c.height,
         height: c.height_3d,
       }));
@@ -137,7 +137,7 @@ function renderAscii(node, maxCols = 60, maxRows = 30, filterChildren = null, pr
 
   if (children.length === 0) {
     if (projection !== 'plan') {
-      return { ascii: [], legend: [], scaleInfo: `No objects with elevation data for ${projection} view` };
+      return { ascii: [], legend: [], scaleInfo: `No objects with z data for ${projection} view` };
     }
     return { ascii: [], legend: [], scaleInfo: `${bounds.w}m × ${bounds.h}m — empty` };
   }
@@ -149,7 +149,7 @@ function renderAscii(node, maxCols = 60, maxRows = 30, filterChildren = null, pr
     viewLabel = `${bounds.w}m × ${bounds.h}m`;
   } else {
     viewW = projection === 'front' ? bounds.w : bounds.h;
-    viewH = node.metadata?.floor_height || Math.max(...children.map(c => c.y + c.height), 3);
+    viewH = node.height_3d || Math.max(...children.map(c => c.y + c.height), 3);
     viewLabel = `${viewW}m × ${viewH}m (${projection})`;
   }
 
@@ -181,31 +181,6 @@ function renderAscii(node, maxCols = 60, maxRows = 30, filterChildren = null, pr
   };
 }
 
-/**
- * Detect "floor" containers: children that are containers with same position+size,
- * OR children tagged with "floor".
- */
-function detectFloors(node) {
-  const children = Object.values(node.children || {});
-
-  // Check for explicit floor tags first
-  const taggedFloors = children.filter(c => c.children && (c.tags || []).includes('floor'));
-  if (taggedFloors.length >= 2) return taggedFloors.map(c => ({ id: c.id, name: c.name, char: c.char || null }));
-
-  // Fall back to spatial containers with matching position+size
-  const containers = children.filter(c => c.children && c.x !== undefined);
-  if (containers.length < 2) return null;
-  const groups = {};
-  for (const c of containers) {
-    const key = `${c.x},${c.y},${c.width},${c.height}`;
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(c);
-  }
-  for (const g of Object.values(groups)) {
-    if (g.length >= 2) return g.map(c => ({ id: c.id, name: c.name, char: c.char || null }));
-  }
-  return null;
-}
 
 function collectTree(node, path = '') {
   const isSpatial = node.x !== undefined;
@@ -243,7 +218,7 @@ function serializeChild(c) {
     isSpatial,
     childCount: Object.keys(c.children || {}).length,
   };
-  if (c.elevation !== undefined) out.elevation = c.elevation;
+  if (c.z !== undefined) out.z = c.z;
   if (c.height_3d !== undefined) out.height_3d = c.height_3d;
   return out;
 }
@@ -290,7 +265,6 @@ const server = http.createServer((req, res) => {
     const projection = url.searchParams.get('projection') || 'plan';
 
     const bounds = getEffectiveBounds(node);
-    const floors = detectFloors(node);
     const children = Object.values(node.children || {}).map(serializeChild);
 
     // Collect ALL descendants recursively with absolute coordinates
@@ -318,55 +292,6 @@ const server = http.createServer((req, res) => {
       }
     }
 
-    // For front/side projection with floors: build combined cross-section
-    let floorSectionChildren = null;
-    let floorSectionHeight = null;
-    if (projection !== 'plan' && floors && floors.length > 0) {
-      floorSectionChildren = [];
-      let maxH = 0;
-      for (const floorInfo of floors) {
-        const floorNode = node.children[floorInfo.id];
-        if (!floorNode) continue;
-        const floorY = floorNode.metadata?.floor_y || 0;
-        const floorH = floorNode.metadata?.floor_height || 3;
-        maxH = Math.max(maxH, floorY + floorH);
-
-        floorSectionChildren.push({
-          ...serializeChild(floorNode),
-          elevation: floorY,
-          height_3d: floorH,
-          _floorId: floorInfo.id,
-        });
-
-        for (const child of Object.values(floorNode.children || {})) {
-          if (child.x === undefined) continue; // skip folder children
-          const elev = (child.elevation ?? (child.metadata?.floor_y ?? 0));
-          floorSectionChildren.push({
-            ...serializeChild(child),
-            elevation: floorY + elev,
-            height_3d: child.height_3d ?? child.metadata?.floor_height ?? floorH,
-            _floorId: floorInfo.id,
-          });
-          if (child.children) {
-            for (const gc of Object.values(child.children)) {
-              if (gc.x === undefined) continue; // skip folder grandchildren
-              const gcElev = gc.elevation ?? 0;
-              floorSectionChildren.push({
-                ...serializeChild(gc),
-                x: child.x + gc.x,
-                y: child.y + gc.y,
-                elevation: floorY + gcElev,
-                height_3d: gc.height_3d ?? 0.5,
-                _floorId: floorInfo.id,
-                _depth: 2,
-              });
-            }
-          }
-        }
-      }
-      floorSectionHeight = maxH;
-    }
-
     const { ascii, legend, scaleInfo } = renderAscii(node, maxCols, maxRows, null, projection);
 
     return json(res, {
@@ -375,9 +300,7 @@ const server = http.createServer((req, res) => {
       char: node.char, tags: node.tags || [], metadata: node.metadata || {},
       isContainer: !!node.children,
       isSpatial: node.x !== undefined,
-      scaleInfo, ascii, legend, children, descendants, floors, path, projection,
-      floorSection: floorSectionChildren,
-      floorSectionHeight,
+      scaleInfo, ascii, legend, children, descendants, path, projection,
     });
   }
 

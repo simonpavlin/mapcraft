@@ -6,8 +6,6 @@ import { renderTree } from './tree.js';
 export function navigateTo(path) {
   if (state.currentPath !== path) state.navHistory.push(state.currentPath);
   state.currentPath = path;
-  state.selectedFloor = null;
-  state.selectedFloorData = null;
   state.currentProjection = 'plan';
   state.currentTab = 'floorplan';
   // Expand parent paths
@@ -22,8 +20,6 @@ export function navigateBack() {
   if (state.navHistory.length > 0) {
     const prev = state.navHistory.pop();
     state.currentPath = prev;
-    state.selectedFloor = null;
-    state.selectedFloorData = null;
     state.currentProjection = 'plan';
     fetchNode(prev);
     renderTree();
@@ -55,8 +51,6 @@ export function setupNavigationListeners() {
   window.addEventListener('popstate', () => {
     const urlPath = decodeURIComponent(location.pathname).replace(/^\/+/, '').replace(/\/+$/, '') || '/';
     state.currentPath = urlPath;
-    state.selectedFloor = null;
-    state.selectedFloorData = null;
     state.currentProjection = 'plan';
     state.currentTab = 'floorplan';
     const parts = urlPath.split('/').filter(Boolean);

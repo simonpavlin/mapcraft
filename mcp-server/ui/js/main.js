@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { refresh, selectFloor, deleteNode, setOnDataChanged } from './api.js';
+import { refresh, deleteNode, setOnDataChanged } from './api.js';
 import { renderTree, treeClick } from './tree.js';
 import { navigateTo, navigateBack, setupNavigationListeners } from './navigation.js';
 import { renderContent, switchTab, switchProjection } from './content.js';
@@ -12,7 +12,6 @@ window.treeClick = treeClick;
 window.navigateTo = navigateTo;
 window.switchTab = switchTab;
 window.switchProjection = switchProjection;
-window.selectFloor = selectFloor;
 window.deleteNode = deleteNode;
 
 // Event listeners

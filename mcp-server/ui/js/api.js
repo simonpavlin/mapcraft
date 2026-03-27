@@ -17,31 +17,10 @@ export async function fetchTree() {
 export async function fetchNode(path) {
   try {
     state.nodeData = await (await fetch(`/api/node?path=${encodeURIComponent(path)}&projection=${state.currentProjection}`)).json();
-    if (state.nodeData.floors?.length > 0 && !state.selectedFloor) {
-      await selectFloor(state.nodeData.floors[0].id);
-      return;
-    }
     if (onDataChanged) onDataChanged();
   } catch (err) {
     console.error('fetchNode failed:', err);
   }
-}
-
-export async function selectFloor(id) {
-  state.selectedFloor = id;
-  if (id) {
-    const floorPath = state.currentPath === '/' ? id : `${state.currentPath}/${id}`;
-    try {
-      const res = await fetch(`/api/node?path=${encodeURIComponent(floorPath)}`);
-      state.selectedFloorData = await res.json();
-    } catch (err) {
-      console.error('selectFloor failed:', err);
-      state.selectedFloorData = null;
-    }
-  } else {
-    state.selectedFloorData = null;
-  }
-  if (onDataChanged) onDataChanged();
 }
 
 export async function deleteNode(path, name) {

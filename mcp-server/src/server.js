@@ -29,31 +29,40 @@ Every node can have children. Objects can overlap freely — collision is adviso
 
 ## Unified Node Model
 Everything is a **node**. Two kinds:
-- **Folder node** — no spatial data (x,y,width,height,char). Purely organizational (floors, categories, template groups).
+- **Folder node** — no spatial data (x,y,width,height,char). Purely organizational (categories, template groups).
 - **Spatial node** — has position, dimensions, char. Children coordinates are relative to parent.
 
 ## Getting Started
 1. create_project("Rodinný dům") → creates project
-2. place_object(path="rodinny_dum", id="prizemi", name="Přízemí") → folder for ground floor
-3. place_object(path="rodinny_dum", id="sablony", name="Šablony") → folder for templates
-4. place_object(path="rodinny_dum/prizemi", id="obyvak", name="Obývák", x=0, y=0, width=5, height=4, char="O", tags=["room"]) → spatial room
-5. Use remove_object to delete any node
+2. place_object(path="rodinny_dum", id="sablony", name="Šablony") → folder for templates
+3. place_object(path="rodinny_dum", id="budova", name="Budova", x=0, y=0, width=12, height=10, char="B") → building envelope
+4. place_object(path="rodinny_dum/budova", id="prizemi", name="Přízemí", x=0, y=0, width=12, height=10, char="1", z=0, height_3d=3) → ground floor
+5. place_object(path="rodinny_dum/budova/prizemi", id="obyvak", name="Obývák", x=0, y=0, width=5, height=4, char="O", tags=["room"]) → room
+6. Use remove_object to delete any node
 
 ## Hierarchy example
 \`\`\`
 Projekt (folder)
-├─ Přízemí          (folder)
-│  ├─ Obývák        (spatial 0,0 5×4m)
-│  │  ├─ Pohovka    (spatial 1,1 2×1m)
-│  │  └─ Okno       (spatial 0,2 1.5×0.2m)
-│  ├─ Kuchyně       (spatial 5,0 3.5×4m)
-│  └─ d_obyvak      (spatial 5,2 0.8×0.2m — door)
-├─ 2. Patro         (folder)
-│  └─ ...
+├─ Budova           (spatial 0,0 12×10m — building envelope)
+│  ├─ Přízemí       (spatial 0,0 12×10m, z=0, height_3d=3)
+│  │  ├─ Obývák     (spatial 0,0 5×4m)
+│  │  │  ├─ Pohovka (spatial 1,1 2×1m)
+│  │  │  └─ Okno    (spatial 0,2 1.5×0.2m)
+│  │  ├─ Kuchyně    (spatial 5,0 3.5×4m)
+│  │  └─ d_obyvak   (spatial 5,2 0.8×0.2m — door)
+│  └─ 1. Patro      (spatial 0,0 12×10m, z=3, height_3d=3)
+│     └─ ...
 └─ Šablony          (folder)
    ├─ Dveře 80      (spatial template)
    └─ Okno 150      (spatial template)
 \`\`\`
+
+## Multi-story buildings
+Floors are regular spatial nodes — NOT folders. Each floor is a spatial container with the same x,y,width,height as the building, stacked using z:
+- Ground floor: z=0, height_3d=3
+- First floor: z=3, height_3d=3
+- Second floor: z=6, height_3d=3
+Use front/side projection views to verify vertical stacking.
 
 ## Rotation
 All objects support rotation (0°, 90°, 180°, 270°).
@@ -80,8 +89,8 @@ x = left→right, y = top→bottom on plan. Maps to 3D: plan-x → 3D x, plan-y 
 ## Projection views
 get_ascii supports projection parameter:
 - plan (default) — top-down view (x × y)
-- front — from south (x × elevation) — objects need elevation + height_3d
-- side — from east (y × elevation)
+- front — from south (x × z) — objects need z + height_3d
+- side — from east (y × z)
 
 ## Walls are IMPLICIT — rooms touch edge-to-edge
 - Room dimensions represent INTERIOR space, not including walls
@@ -90,7 +99,7 @@ get_ascii supports projection parameter:
 
 ## Where to place doors vs windows
 - **Windows** → INSIDE the room container they belong to
-- **Doors** → at the FLOOR/APARTMENT level (parent of rooms)
+- **Doors** → at the floor level (parent of rooms, sibling of rooms)
 
 ## Metadata
 Every object can carry arbitrary key-value metadata for 3D generation:
@@ -126,7 +135,7 @@ server.tool(
   },
   async ({ name, description }) => {
     const id = store.createProject(name, description || '');
-    return ok(`Project "${name}" created (id: "${id}"). Use path="${id}/..." to add folders and objects inside.`);
+    return ok(`Project "${name}" created (path: "${id}")`);
   }
 );
 
@@ -162,11 +171,11 @@ server.tool(
 
 server.tool(
   'stamp_object',
-  'Copy a template object (with all children) to a target location. Supports rotation.',
+  'Place a reference to a template at a target location. Stamps stay linked — dimensions and children update when template changes. Supports rotation.',
   {
-    source: z.string().describe('Path to the template object to copy'),
-    target: z.string().describe('Path to the parent where the copy will be placed'),
-    id: z.string().describe('ID for the new copy'),
+    source: z.string().describe('Path to the template object to reference'),
+    target: z.string().describe('Path to the parent where the stamp will be placed'),
+    id: z.string().describe('ID for the new stamp'),
     x: z.number().min(0),
     y: z.number().min(0),
     rotation: z.number().optional().describe('Rotation: 0 (↑), 90 (→), 180 (↓), 270 (←). Default: 0'),
@@ -177,7 +186,7 @@ server.tool(
     const result = store.stampObject(source, target, id, x, y, rot);
     if (result.error) return err(result.error);
     const arrows = { 0: '↑', 90: '→', 180: '↓', 270: '←' };
-    return ok(`Stamped "${result.name}" as "${id}" at (${x},${y}) ${arrows[rot]} ${rot}° (from template: ${source})`);
+    return ok(`Stamped "${result.name}" as "${id}" at (${x},${y}) ${arrows[rot]} ${rot}°`);
   }
 );
 
@@ -202,10 +211,10 @@ server.tool(
     tags: z.array(z.string()).optional(),
     metadata: z.string().optional().describe('Key-value data for 3D generation as JSON string, e.g. {"style":"sliding"}'),
     rotation: z.number().optional().describe('Rotation: 0 (↑), 90 (→), 180 (↓), 270 (←). Default: 0'),
-    elevation: z.number().optional().describe('Height above floor (meters). For front/side projection.'),
-    height_3d: z.number().min(0.01).optional().describe('Vertical height (meters). For front/side projection.'),
+    z: z.number().optional().describe('Vertical position in meters (height above ground). For stacking floors: ground floor z=0, first floor z=3, etc. For front/side projection.'),
+    height_3d: z.number().min(0.01).optional().describe('Vertical height in meters (e.g. floor ceiling height=3). Used with z for multi-story buildings and front/side projection.'),
   },
-  async ({ path, id, name, x, y, width, height, char, shape, description, tags, metadata, rotation, elevation, height_3d }) => {
+  async ({ path, id, name, x, y, width, height, char, shape, description, tags, metadata, rotation, z: zPos, height_3d }) => {
     const parent = store.resolve(path || '/');
     if (!parent) return err(`Parent "${path}" not found`);
     if (!parent.children) return err(`Parent "${path}" cannot hold children`);
@@ -214,52 +223,18 @@ server.tool(
       return err(`"${id}" already exists. Remove first or pick different id.`);
     }
 
-    const meta = parseMeta(metadata);
-    if (meta === null) return err('Invalid metadata JSON');
-    const rot = rotation || 0;
-    if (rot && ![0, 90, 180, 270].includes(rot)) return err('Rotation must be 0, 90, 180, or 270');
+    const result = buildNode({ id, name, x, y, width, height, char, shape, description, tags, metadata, rotation, z: zPos, height_3d });
+    if (result.error) return err(result.error);
 
-    const isSpatial = x !== undefined;
+    parent.children[id] = result.node;
+    store.save();
 
-    if (isSpatial) {
-      const parsedShape = parseShape(shape);
-      let w = width, h = height;
-      if (parsedShape) {
-        const bbox = shapeBBox(parsedShape);
-        w = w || bbox.w;
-        h = h || bbox.h;
-      }
-      if (!w || !h) return err('width and height required (or provide shape)');
-
-      parent.children[id] = {
-        id, name,
-        x, y: y ?? 0, width: w, height: h,
-        char: char || '#',
-        shape: parsedShape || undefined,
-        description: description || '',
-        tags: tags || [],
-        metadata: meta,
-        rotation: rot,
-        children: {},
-        elevation: elevation ?? undefined,
-        height_3d: height_3d ?? undefined,
-      };
-
-      store.save();
+    if (x !== undefined) {
+      const rot = rotation || 0;
       const arrows = { 0: '', 90: ' →', 180: ' ↓', 270: ' ←' };
-      return ok(`Placed "${name}" [${char || '#'}] at (${x},${y ?? 0}) ${w}×${h}m${arrows[rot] || ''}${metadata ? ' +metadata' : ''}${parsedShape ? ' shape:' + parsedShape.length + 'pts' : ''}`);
+      return ok(`Placed "${name}" [${char || '#'}] at (${x},${y ?? 0}) ${result.w}×${result.h}m${arrows[rot] || ''}${metadata ? ' +metadata' : ''}${result.parsedShape ? ' shape:' + result.parsedShape.length + 'pts' : ''}`);
     } else {
-      // Folder node
-      parent.children[id] = {
-        id, name,
-        description: description || '',
-        tags: tags || [],
-        metadata: meta,
-        children: {},
-      };
-
-      store.save();
-      return ok(`Created folder "${name}" (id: "${id}"). Use path="${(path && path !== '/' ? path + '/' : '') + id}" to add children.`);
+      return ok(`Created folder "${name}" (path: "${(path && path !== '/' ? path + '/' : '') + id}")`);
     }
   }
 );
@@ -286,8 +261,8 @@ server.tool(
       tags: z.array(z.string()).optional(),
       metadata: z.string().optional().describe('JSON string, e.g. {"style":"sliding"}'),
       rotation: z.number().optional().describe('0/90/180/270 degrees'),
-      elevation: z.number().optional(),
-      height_3d: z.number().min(0.01).optional(),
+      z: z.number().optional().describe('Vertical position (meters above ground)'),
+      height_3d: z.number().min(0.01).optional().describe('Vertical height (meters)'),
     })).describe('Array of objects to place'),
   },
   async ({ path, objects }) => {
@@ -300,47 +275,20 @@ server.tool(
         results.push(`ERR "${o.id}" — already exists`);
         continue;
       }
-      const rot = o.rotation || 0;
-      const meta = parseMeta(o.metadata);
-      const isSpatial = o.x !== undefined;
+      const result = buildNode(o);
+      if (result.error) {
+        results.push(`ERR "${o.id}" — ${result.error}`);
+        continue;
+      }
 
-      if (isSpatial) {
-        const parsedShape = parseShape(o.shape);
-        let w = o.width, h = o.height;
-        if (parsedShape) {
-          const bbox = shapeBBox(parsedShape);
-          w = w || bbox.w;
-          h = h || bbox.h;
-        }
-        if (!w || !h) {
-          results.push(`ERR "${o.id}" — width and height required`);
-          continue;
-        }
+      parent.children[o.id] = result.node;
 
-        parent.children[o.id] = {
-          id: o.id, name: o.name,
-          x: o.x, y: o.y ?? 0, width: w, height: h,
-          char: o.char || '#',
-          shape: parsedShape || undefined,
-          description: o.description || '',
-          tags: o.tags || [],
-          metadata: meta || {},
-          rotation: rot,
-          children: {},
-          elevation: o.elevation ?? undefined,
-          height_3d: o.height_3d ?? undefined,
-        };
+      if (o.x !== undefined) {
+        const rot = o.rotation || 0;
         const arrows = { 0: '', 90: ' →', 180: ' ↓', 270: ' ←' };
         const metaStr = o.metadata ? ' {…}' : '';
-        results.push(`· [${o.char || '#'}] ${o.id} at (${o.x},${o.y ?? 0}) ${w}×${h}m${arrows[rot] || ''}${metaStr}`);
+        results.push(`· [${o.char || '#'}] ${o.id} at (${o.x},${o.y ?? 0}) ${result.w}×${result.h}m${arrows[rot] || ''}${metaStr}`);
       } else {
-        parent.children[o.id] = {
-          id: o.id, name: o.name,
-          description: o.description || '',
-          tags: o.tags || [],
-          metadata: meta || {},
-          children: {},
-        };
         results.push(`+ folder ${o.id} "${o.name}"`);
       }
     }
@@ -417,12 +365,12 @@ server.tool(
     tags: z.array(z.string()).optional(),
     metadata: z.string().optional().describe('Merged with existing metadata as JSON string. Set key to null to delete it.'),
     rotation: z.number().optional().describe('Rotation: 0, 90, 180, or 270'),
-    elevation: z.number().optional().describe('Height above floor (meters).'),
-    height_3d: z.number().optional().describe('Vertical height (meters).'),
-    clear_elevation: z.boolean().optional().describe('Set to true to remove elevation'),
+    z: z.number().optional().describe('Vertical position in meters (height above ground). For stacking floors and front/side projection.'),
+    height_3d: z.number().optional().describe('Vertical height in meters (e.g. ceiling height). For multi-story buildings and front/side projection.'),
+    clear_z: z.boolean().optional().describe('Set to true to remove z'),
     clear_height_3d: z.boolean().optional().describe('Set to true to remove height_3d'),
   },
-  async ({ path, x, y, width, height, shape, name, char, description, tags, metadata, rotation, elevation, height_3d, clear_elevation, clear_height_3d }) => {
+  async ({ path, x, y, width, height, shape, name, char, description, tags, metadata, rotation, z: zPos, height_3d, clear_z, clear_height_3d }) => {
     const node = store.resolve(path);
     if (!node || node === store.root) return err('Not found or root');
 
@@ -457,9 +405,9 @@ server.tool(
       node.metadata = merged;
     }
     if (rotation !== undefined) node.rotation = rotation;
-    if (elevation !== undefined) node.elevation = elevation;
+    if (zPos !== undefined) node.z = zPos;
     if (height_3d !== undefined) node.height_3d = height_3d;
-    if (clear_elevation) node.elevation = undefined;
+    if (clear_z) node.z = undefined;
     if (clear_height_3d) node.height_3d = undefined;
 
     store.save();
@@ -474,34 +422,33 @@ server.tool(
 
 server.tool(
   'get_objects',
-  'List children of a node. Optionally filter by tag. Use recursive=true to show all descendants.',
+  'List children of a node. Optionally filter by tag. Use recursive=true to show all descendants. Stamps are resolved from their templates. Output is compact (no metadata — use get_info for details).',
   {
     path: z.string().optional(),
     tag: z.string().optional().describe('Filter: only show objects with this tag'),
     recursive: z.boolean().optional().describe('Show all descendants, not just direct children'),
   },
   async ({ path, tag, recursive }) => {
-    const node = store.resolve(path || '/');
-    if (!node) return err('Not found');
+    const raw = store.resolve(path || '/');
+    if (!raw) return err('Not found');
+    const node = store.resolveNode(raw);
     const bounds = store.getEffectiveBounds(node);
 
     const collectChildren = (parent, prefix, depth) => {
-      let children = Object.values(parent.children || {});
+      let children = Object.values(store.getChildren(parent));
       if (tag) children = children.filter(c => (c.tags || []).includes(tag));
       const items = [];
       for (const c of children) {
         const indent = '  '.repeat(depth);
         const isSpatial = c.x !== undefined;
-        const container = c.children ? `[+${Object.keys(c.children).length}]` : '';
+        const childCount = Object.keys(c.children || {}).length;
+        const container = childCount > 0 ? `[+${childCount}]` : '';
         const tags = c.tags?.length ? ` [${c.tags.join(',')}]` : '';
-        const meta = c.metadata && Object.keys(c.metadata).length ? ` {${Object.entries(c.metadata).map(([k,v]) => `${k}:${JSON.stringify(v)}`).join(', ')}}` : '';
-        const rotArrows = { 0: '', 90: ' →', 180: ' ↓', 270: ' ←' };
-        const rotStr = c.rotation ? (rotArrows[c.rotation] || ` ${c.rotation}°`) : '';
 
         if (isSpatial) {
-          items.push(`${indent}[${c.char}] ${prefix}${c.id} "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m${rotStr}${container}${tags}${meta}`);
+          items.push(`${indent}[${c.char}] ${prefix}${c.id} "${c.name}" (${c.x},${c.y}) ${c.width}×${c.height}m${container}${tags}`);
         } else {
-          items.push(`${indent}📁 ${prefix}${c.id} "${c.name}"${container}${tags}${meta}`);
+          items.push(`${indent}📁 ${prefix}${c.id} "${c.name}"${container}${tags}`);
         }
 
         if (recursive && c.children) {
@@ -548,7 +495,7 @@ server.tool(
 
 server.tool(
   'check_connectivity',
-  'Check if all spatial children of a node form one connected object in 3D space (touching/overlapping). Uses x,y,width,height + elevation,height_3d for 3D adjacency.',
+  'Check if all spatial children of a node form one connected object in 3D space (touching/overlapping). Uses x,y,width,height + z,height_3d for 3D adjacency.',
   {
     path: z.string().describe('Path to parent node'),
     exclude_tags: z.array(z.string()).optional().describe('Ignore objects with these tags'),
@@ -653,8 +600,9 @@ server.tool(
     projection: z.enum(['plan', 'front', 'side']).optional().describe('View projection: plan (default), front, side'),
   },
   async ({ path, max_cols, max_rows, recursive, tag, projection }) => {
-    const node = store.resolve(path || '/');
-    if (!node) return err('Not found');
+    const raw = store.resolve(path || '/');
+    if (!raw) return err('Not found');
+    const node = store.resolveNode(raw);
     if (node.x === undefined) return err('Cannot render ASCII for a folder node — folders have no shared coordinate space. Navigate into a spatial child (room, space) instead.');
 
     const proj = projection || 'plan';
@@ -663,7 +611,7 @@ server.tool(
     let renderNode = node;
     if (tag && node.children) {
       renderNode = { ...node, children: {} };
-      for (const [k, v] of Object.entries(node.children)) {
+      for (const [k, v] of Object.entries(store.getChildren(node))) {
         if ((v.tags || []).includes(tag)) renderNode.children[k] = v;
       }
     }
@@ -686,11 +634,12 @@ server.tool(
 
 server.tool(
   'get_info',
-  'Detailed info about a node including metadata',
+  'Detailed info about a single node including metadata. Stamps are resolved from their templates.',
   { path: z.string() },
   async ({ path }) => {
-    const node = store.resolve(path || '/');
-    if (!node) return err('Not found');
+    const raw = store.resolve(path || '/');
+    if (!raw) return err('Not found');
+    const node = store.resolveNode(raw);
     const children = Object.values(node.children || {});
     const meta = node.metadata && Object.keys(node.metadata).length
       ? Object.entries(node.metadata).map(([k, v]) => `  ${k}: ${JSON.stringify(v)}`).join('\n')
@@ -707,6 +656,8 @@ server.tool(
       lines.push(`Size: ${node.width}m × ${node.height}m`);
       lines.push(`Rotation: ${rot}° ${arrows[rot] || ''}`);
       lines.push(`Char: [${node.char}]`);
+      if (node.z !== undefined) lines.push(`Z: ${node.z}m`);
+      if (node.height_3d !== undefined) lines.push(`Height 3D: ${node.height_3d}m`);
     }
     lines.push(`Description: ${node.description || '(none)'}`);
     lines.push(`Tags: ${(node.tags || []).join(', ') || '(none)'}`);
@@ -746,7 +697,7 @@ server.tool(
       if (node.name) o.n = node.name;
       if (node.x !== undefined) { o.x = node.x; o.y = node.y ?? 0; o.w = node.width; o.h = node.height; }
       if (node.rotation) o.r = node.rotation;
-      if (node.elevation !== undefined) o.el = node.elevation;
+      if (node.z !== undefined) o.z = node.z;
       if (node.height_3d !== undefined) o.h3 = node.height_3d;
       if (node.tags?.length) o.t = node.tags;
       if (node.metadata && Object.keys(node.metadata).length) o.m = node.metadata;
@@ -765,7 +716,7 @@ server.tool(
     writeFileSync(abs, json, 'utf-8');
     const countNodes = (n) => 1 + Object.values(n.children || {}).reduce((s, c) => s + countNodes(c), 0);
     const nodes = countNodes(result);
-    return ok(`Exported to ${abs} (${nodes} nodes, ${json.length} bytes).\nKey map: n=name, x/y/w/h=position+size, r=rotation, el=elevation, h3=height_3d, t=tags, m=metadata, sh=shape, c=children, ref=stamp template reference`);
+    return ok(`Exported to ${abs} (${nodes} nodes, ${json.length} bytes).\nKey map: n=name, x/y/w/h=position+size, r=rotation, z=vertical position, h3=height_3d, t=tags, m=metadata, sh=shape, c=children, ref=stamp template reference`);
   }
 );
 
@@ -835,6 +786,54 @@ server.tool(
 
 function ok(text) { return { content: [{ type: 'text', text }] }; }
 function err(text) { return { content: [{ type: 'text', text: `ERROR: ${text}` }], isError: true }; }
+
+/**
+ * Build a node object from input data. Returns { node, error }.
+ * Spatial node if o.x is defined, folder node otherwise.
+ */
+function buildNode(o) {
+  const meta = parseMeta(o.metadata);
+  if (meta === null) return { error: 'Invalid metadata JSON' };
+  const rot = o.rotation || 0;
+  if (rot && ![0, 90, 180, 270].includes(rot)) return { error: 'Rotation must be 0, 90, 180, or 270' };
+
+  if (o.x !== undefined) {
+    const parsedShape = parseShape(o.shape);
+    let w = o.width, h = o.height;
+    if (parsedShape) {
+      const bbox = shapeBBox(parsedShape);
+      w = w || bbox.w;
+      h = h || bbox.h;
+    }
+    if (!w || !h) return { error: 'width and height required (or provide shape)' };
+    return {
+      node: {
+        id: o.id, name: o.name,
+        x: o.x, y: o.y ?? 0, width: w, height: h,
+        char: o.char || '#',
+        shape: parsedShape || undefined,
+        description: o.description || '',
+        tags: o.tags || [],
+        metadata: meta,
+        rotation: rot,
+        children: {},
+        z: o.z ?? undefined,
+        height_3d: o.height_3d ?? undefined,
+      },
+      parsedShape, w, h,
+    };
+  }
+
+  return {
+    node: {
+      id: o.id, name: o.name,
+      description: o.description || '',
+      tags: o.tags || [],
+      metadata: meta,
+      children: {},
+    },
+  };
+}
 
 function parseMeta(s) {
   if (s === undefined || s === null) return {};

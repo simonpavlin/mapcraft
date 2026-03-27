@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { esc, escAttr } from './utils.js';
 import { renderBreadcrumb } from './navigation.js';
-import { fetchNode, selectFloor, deleteNode } from './api.js';
+import { fetchNode, deleteNode } from './api.js';
 import { renderOverview } from './views/overview.js';
 import { renderAscii } from './views/ascii.js';
 import { renderFloorplan } from './views/floorplan.js';
@@ -46,13 +46,6 @@ function renderToolbar() {
     h += '<span class="floor-label" style="margin-left:16px">Pohled:</span>';
     for (const [id, label] of [['plan', '↓ Půdorys'], ['front', '→ Zepředu'], ['side', '→ Z boku']]) {
       h += `<div class="floor-btn ${state.currentProjection === id ? 'active' : ''}" onclick="switchProjection('${id}')">${label}</div>`;
-    }
-  }
-  if (d.floors && d.floors.length > 0) {
-    h += '<span class="floor-label">Patro:</span>';
-    for (const f of d.floors) {
-      const charLabel = f.char ? `[${esc(f.char)}] ` : '';
-      h += `<div class="floor-btn ${state.selectedFloor === f.id ? 'active' : ''}" onclick="selectFloor('${f.id}')">${charLabel}${esc(f.name)}</div>`;
     }
   }
   if (state.currentPath !== '/') {
