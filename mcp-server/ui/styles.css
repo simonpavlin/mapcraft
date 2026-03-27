@@ -55,6 +55,14 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 #ascii-grid span.achar { cursor:crosshair; }
 #ascii-grid span.achar:hover { outline:1px solid var(--ac); outline-offset:-1px; border-radius:1px; }
 
+/* Tag filter */
+.tag-filter { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-bottom:10px; padding:8px 0; border-bottom:1px solid var(--bd); }
+.tag-filter-label { font-size:11px; color:var(--tx2); margin-right:2px; }
+.tag-filter-btn { padding:3px 10px; font-size:11px; cursor:pointer; border:1px solid var(--bd); border-radius:4px; background:transparent; color:var(--tx2); transition:all .15s; font-family:inherit; }
+.tag-filter-btn:hover { border-color:var(--ac); color:var(--tx); }
+.tag-filter-btn.active { background:var(--ac2); color:var(--tx); border-color:var(--ac2); }
+.tag-filter-hint { font-size:10px; color:var(--tx2); opacity:.5; margin-left:8px; }
+
 /* Objects table */
 .children-table { width:100%; border-collapse:collapse; font-size:13px; }
 .children-table th { text-align:left; padding:8px 12px; border-bottom:2px solid var(--bd); color:var(--tx2); font-size:11px; text-transform:uppercase; }

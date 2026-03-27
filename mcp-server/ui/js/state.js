@@ -7,4 +7,5 @@ export const state = {
   currentProjection: 'plan',
   navHistory: [],
   lastUiHash: null,
+  hiddenTags: new Set(),
 };

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createControls } from './controls.js';
 import { updateDoors, setCamera } from './mcp-renderer.js';
+import { updateEntranceDoors, setupEntranceDoorInteraction } from './models/panelak/entrance-door.js';
 import { updatePlayground, setPlaygroundCamera } from './playground-anim.js';
 
 // Scene setup
@@ -40,6 +41,7 @@ scene.add(sunLight);
 const controls = createControls(camera, renderer.domElement);
 setCamera(camera);
 setPlaygroundCamera(camera);
+setupEntranceDoorInteraction(camera);
 
 // Resize handler
 window.addEventListener('resize', () => {
@@ -56,6 +58,7 @@ function animate() {
   const delta = clock.getDelta();
   controls.update(delta);
   updateDoors(delta);
+  updateEntranceDoors(delta);
   updatePlayground(delta);
   renderer.render(scene, camera);
 }

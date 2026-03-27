@@ -43,7 +43,8 @@
       "mcp__mapcraft__validate",
       "mcp__mapcraft__find_objects",
       "mcp__mapcraft__duplicate_object",
-      "mcp__mapcraft__check_connectivity"
+      "mcp__mapcraft__check_connectivity",
+      "Bash(node -e \"import\\(''''./src/ui-server.js''''\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,

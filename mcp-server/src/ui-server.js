@@ -292,7 +292,22 @@ const server = http.createServer((req, res) => {
       }
     }
 
-    const { ascii, legend, scaleInfo } = renderAscii(node, maxCols, maxRows, null, projection);
+    // Tag filtering for ASCII — only affects ascii rendering, not children/descendants
+    const asciiTagsParam = url.searchParams.get('ascii_tags');
+    let filterChildren = null;
+    if (asciiTagsParam) {
+      const activeTags = asciiTagsParam.split(',').filter(Boolean);
+      filterChildren = Object.values(node.children || {}).filter(c =>
+        (c.tags || []).some(t => activeTags.includes(t))
+      );
+    }
+
+    const { ascii, legend, scaleInfo } = renderAscii(node, maxCols, maxRows, filterChildren, projection);
+
+    // Collect all unique tags from children for UI filter
+    const allTags = [...new Set(
+      Object.values(node.children || {}).flatMap(c => c.tags || [])
+    )].sort();
 
     return json(res, {
       id: node.id, name: node.name, description: node.description || '',
@@ -301,6 +316,7 @@ const server = http.createServer((req, res) => {
       isContainer: !!node.children,
       isSpatial: node.x !== undefined,
       scaleInfo, ascii, legend, children, descendants, path, projection,
+      allTags,
     });
   }
 

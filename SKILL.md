@@ -78,9 +78,9 @@ Before placing any objects, define validation rules on the project. This prevent
 ```
 define_rules(path="rodinny_dum", rules=[
   { type: "no_collide", a: "furniture", b: "furniture" },
-  { type: "no_collide", a: "wall", b: "furniture" },
-  { type: "must_collide", a: "door", b: "wall" },
-  { type: "must_collide", a: "window", b: "wall" },
+  { type: "no_collide", a: "furniture", b: "clearance" },
+  { type: "must_collide", a: "opening", b: "wall" },
+  { type: "no_collide", a: "outside", b: "room" },
   { type: "must_touch", a: "bookcase", b: "wall" },
 ])
 ```
@@ -141,16 +141,36 @@ Projekt (folder)
     koupelna/            (spatial — bathroom)
 ```
 
-### Place rooms first, then doors/windows, then furniture
+### Place rooms first, then openings, then furniture
+
+#### Universal `opening` tag — automatic hole cutting
+Any object with tag `opening` that overlaps a `wall`, `floor`, or `ceiling` automatically cuts a hole.
+The vertical extent of the hole is defined by `z` (bottom from floor) and `height_3d` (hole height):
+- **Door**: `z=0, height_3d=2.1` → hole from floor to 2.1m
+- **Window**: `z=0.9, height_3d=1.5` → hole from 0.9m (sill) to 2.4m
+- **No z/h3**: hole spans the full wall height (pass-through)
+
+Objects can have BOTH `opening` and another tag (e.g. `window`, `door`) — `opening` cuts the hole,
+the other tag drives visual generation (glass, door panel, curtains).
+
+#### `outside` marker — exterior direction
+Add a child with tag `outside` to window/door templates to mark which side faces exterior.
+Place it at `y=-0.15` (beyond the wall, on the exterior side). The 3D code reads the stamp's
+rotation to determine interior vs exterior direction for curtains, sills, etc.
+
+Rule: `no_collide(outside, room)` — if the marker overlaps a room, the opening is flipped wrong.
+
 ```
 place_objects(path="rodinny_dum/prizemi", objects=[
   // Rooms — spatial nodes
   { id: "obyvak", name: "Obývák", x: 0, y: 3, width: 10, height: 8, char: "O", tags: ["room"] },
   { id: "vstup",  name: "Vstup",  x: 4, y: 0, width: 4,  height: 3, char: "E", tags: ["structural"] },
-  // Doors — ON the wall line, can overlap rooms
-  { id: "d_vstup_obyvak", name: "Dveře vstup→obývák", x: 5, y: 3, width: 1.2, height: 0.2, char: "D", tags: ["door"], metadata: {"style":"open"} },
-  // Windows — ON the wall line
-  { id: "w_jih", name: "Okno jih", x: 3, y: 11, width: 2.5, height: 0.1, char: "o", tags: ["window"], metadata: {"sill_height":0.4,"win_height":2.2} },
+  // Doors — ON the wall line, tag "opening" cuts the hole, "door" adds the panel
+  { id: "d_vstup_obyvak", name: "Dveře vstup→obývák", x: 5, y: 3, width: 1.2, height: 0.2, char: "D", tags: ["door","opening"], z: 0, height_3d: 2.1 },
+  // Windows — ON the wall line, tag "opening" cuts the hole, "window" adds glass+frame
+  { id: "w_jih", name: "Okno jih", x: 3, y: 11, width: 2.5, height: 0.1, char: "o", tags: ["window","opening"], z: 0.4, height_3d: 2.2 },
+  // Pass-through (no door panel, just a hole in wall)
+  { id: "pruchod", name: "Průchod", x: 8, y: 3, width: 1.5, height: 0.2, char: " ", tags: ["opening"] },
   // Furniture — inside rooms
   { id: "pohovka", name: "Pohovka", x: 6, y: 5, width: 2.2, height: 0.8, char: "c", tags: ["furniture"] },
 ])
@@ -215,9 +235,11 @@ Wall containers appear as thin strips in the room plan view, which is fine.
 
 ## Step 2: Generate 3D using building-utils.js
 
+Place each building model in its own file under `viewer/src/models/` (e.g. `viewer/src/models/rodinny-dum.js`).
+
 Import utilities:
 ```js
-import { wallWithOpenings, addWindow, addDoor, addFloor, addCeiling, addFlatRoof, MAT, box, plane } from './building-utils.js';
+import { wallWithOpenings, addWindow, addDoor, addFloor, addCeiling, addFlatRoof, MAT, box, plane } from '../building-utils.js';
 ```
 
 ### Walls with openings (doors & windows)

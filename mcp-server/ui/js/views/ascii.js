@@ -2,12 +2,21 @@ import { state } from '../state.js';
 import { cc } from '../canvas-utils.js';
 import { esc } from '../utils.js';
 import { updateInfoPanel, buildCharLookup } from '../info-panel.js';
+import { renderTagFilterBar } from '../tag-filter.js';
 
 export function renderAscii() {
   const d = state.nodeData;
-  if (!d.ascii?.length) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Žádná data</h2></div>'; return; }
+  if (!d.ascii?.length) {
+    let h = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px">';
+    h += renderTagFilterBar();
+    h += '<div class="empty-state"><h2>Žádná data</h2></div></div>';
+    document.getElementById('content').innerHTML = h;
+    return;
+  }
+
   let h = '<div class="view-with-panel"><div class="view-main"><div id="ascii-view">';
   if (d.scaleInfo) h += `<p style="margin-bottom:8px;font-size:11px;color:var(--tx2)">${esc(d.scaleInfo)}</p>`;
+  h += renderTagFilterBar();
   h += '<div id="ascii-grid">';
   for (let r = 0; r < d.ascii.length; r++) {
     h += `<span style="color:var(--tx2)">${r.toString().padStart(3)} </span>${colorizeAsciiLine(d.ascii[r])}\n`;

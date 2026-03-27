@@ -23,6 +23,12 @@ export const MAT = {
   doorEntrance: new THREE.MeshLambertMaterial({ color: 0x2a2a2a, side: DS }),
   stairs: new THREE.MeshLambertMaterial({ color: 0x888888, side: DS }),
   stairRail: new THREE.MeshLambertMaterial({ color: 0x444444, side: DS }),
+  windowFrameWhite: new THREE.MeshLambertMaterial({ color: 0xeeeeee, side: DS }),
+  sillOuter: new THREE.MeshLambertMaterial({ color: 0xaaaaaa, side: DS }),
+  sillInner: new THREE.MeshLambertMaterial({ color: 0xf0ece0, side: DS }),
+  curtain: new THREE.MeshLambertMaterial({ color: 0xe8dcc8, side: THREE.DoubleSide }),
+  sheer: new THREE.MeshLambertMaterial({ color: 0xf8f4ee, opacity: 0.2, transparent: true, side: THREE.DoubleSide }),
+  curtainRod: new THREE.MeshLambertMaterial({ color: 0xdddddd, side: DS }),
 };
 
 // ════════════════════════════════════════════════
@@ -137,14 +143,19 @@ export function wallWithOpenings(group, opts) {
 function addWallSeg(group, axis, wx, wz, offset, segLen, segBottom, segH, floorY, thickness, material) {
   if (segLen <= 0.001 || segH <= 0.001) return;
 
+  const mat = material.clone();
+  mat.polygonOffset = true;
+  mat.polygonOffsetFactor = 1;
+  mat.polygonOffsetUnits = 1;
+
   if (axis === 'x') {
     // Wall runs along X, thin in Z
-    const w = box(segLen, segH, thickness, material);
+    const w = box(segLen, segH, thickness, mat);
     w.position.set(wx + offset + segLen / 2, floorY + segBottom + segH / 2, wz);
     group.add(w);
   } else {
     // Wall runs along Z, thin in X
-    const w = box(thickness, segH, segLen, material);
+    const w = box(thickness, segH, segLen, mat);
     w.position.set(wx, floorY + segBottom + segH / 2, wz + offset + segLen / 2);
     group.add(w);
   }
@@ -168,27 +179,143 @@ export function addWindow(group, opts) {
   const {
     axis, x, z, at, width: w, sillHeight, winHeight: h,
     y = 0,
-    glassMat = MAT.window,
-    frameMat = MAT.windowFrame,
+    panes = null,       // '2_leaf_ventilacka', '1_leaf_ventilacka', '3_leaf', null
+    hasSill = true,
+    hasCurtains = true,
+    interiorSide = 1,   // +1 = interior at +z/+x from wall, -1 = interior at -z/-x
   } = opts;
 
+  const fm = MAT.windowFrameWhite;
+  const gm = MAT.window;
+  const frameW = 0.04;
+  const frameD = 0.06;
   const fy = y + sillHeight;
-  const off = 0.08;
+  const s = interiorSide; // shorthand: +1 or -1
+  const off = 0.08 * s;   // glass offset from wall center (toward interior)
 
-  if (axis === 'x') {
-    const glass = plane(w, h, glassMat);
-    glass.position.set(x + at, fy + h / 2, z + off);
-    group.add(glass);
-    frameBox(group, x + at, fy, z + off, w, h, 'x', frameMat);
+  // Place a box (already axis-aware via alignedBox)
+  function addBox(mesh, along, up, depth) {
+    if (axis === 'x') {
+      mesh.position.set(x + along, up, z + depth);
+    } else {
+      mesh.position.set(x + depth, up, z + along);
+    }
+    group.add(mesh);
+  }
+
+  // Place a plane/cylinder (needs rotation for axis='z')
+  function addPlane(mesh, along, up, depth) {
+    if (axis === 'x') {
+      mesh.position.set(x + along, up, z + depth);
+    } else {
+      mesh.position.set(x + depth, up, z + along);
+      mesh.rotation.y = (mesh.rotation.y || 0) + Math.PI / 2;
+    }
+    group.add(mesh);
+  }
+
+  function alignedBox(bw, bh, bd, mat) {
+    return axis === 'x' ? box(bw, bh, bd, mat) : box(bd, bh, bw, mat);
+  }
+
+  // ── OUTER FRAME ──
+  addBox(alignedBox(w + 0.04, frameW, frameD, fm), at, fy + h + frameW / 2, off);
+  addBox(alignedBox(w + 0.04, frameW, frameD, fm), at, fy - frameW / 2, off);
+  addBox(alignedBox(frameW, h + frameW * 2, frameD, fm), at - w / 2, fy + h / 2, off);
+  addBox(alignedBox(frameW, h + frameW * 2, frameD, fm), at + w / 2, fy + h / 2, off);
+
+  // ── PANES ──
+  const innerW = w - frameW * 2;
+  const innerH = h - frameW * 2;
+  const leafFrame = 0.03;
+
+  if (panes === '2_leaf_ventilacka') {
+    addBox(alignedBox(0.05, h, frameD, fm), at, fy + h / 2, off);
+    const leafW = (innerW - 0.05) / 2;
+    const ventH = innerH * 0.25;
+    const mainH = innerH - ventH - leafFrame;
+
+    // Left leaf frame edges
+    addBox(alignedBox(leafFrame, innerH, 0.03, fm), at - innerW / 2 + leafFrame / 2, fy + frameW + innerH / 2, off);
+    addBox(alignedBox(leafFrame, innerH, 0.03, fm), at - 0.025 - leafFrame / 2, fy + frameW + innerH / 2, off);
+    // Ventilačka divider
+    addBox(alignedBox(leafW, leafFrame, 0.03, fm), at - innerW / 4 - 0.025, fy + frameW + mainH + leafFrame / 2, off);
+    // Main glass (left)
+    addPlane(plane(leafW - leafFrame * 2, mainH, gm), at - innerW / 4 - 0.025, fy + frameW + mainH / 2, off);
+    // Ventilačka glass
+    addPlane(plane(leafW - leafFrame * 2, ventH - leafFrame, gm), at - innerW / 4 - 0.025, fy + frameW + mainH + leafFrame + (ventH - leafFrame) / 2, off);
+
+    // Right leaf frame edges
+    addBox(alignedBox(leafFrame, innerH, 0.03, fm), at + 0.025 + leafFrame / 2, fy + frameW + innerH / 2, off);
+    addBox(alignedBox(leafFrame, innerH, 0.03, fm), at + innerW / 2 - leafFrame / 2, fy + frameW + innerH / 2, off);
+    // Right leaf glass
+    addPlane(plane(leafW - leafFrame * 2, innerH - leafFrame * 2, gm), at + innerW / 4 + 0.025, fy + frameW + innerH / 2, off);
+    // Handle
+    addBox(alignedBox(0.01, 0.08, 0.025, fm), at - 0.06, fy + h * 0.45, off + 0.04);
+
+  } else if (panes === '1_leaf_ventilacka') {
+    const ventH = innerH * 0.25;
+    const mainH = innerH - ventH - leafFrame;
+    addBox(alignedBox(innerW, leafFrame, 0.03, fm), at, fy + frameW + mainH + leafFrame / 2, off);
+    addPlane(plane(innerW - leafFrame * 2, mainH, gm), at, fy + frameW + mainH / 2, off);
+    addPlane(plane(innerW - leafFrame * 2, ventH - leafFrame, gm), at, fy + frameW + mainH + leafFrame + (ventH - leafFrame) / 2, off);
+    addBox(alignedBox(0.01, 0.08, 0.025, fm), at + innerW / 2 - 0.06, fy + h * 0.45, off + 0.04);
+
+  } else if (panes === '3_leaf') {
+    const postW = 0.05;
+    const leafW = (innerW - postW * 2) / 3;
+    addBox(alignedBox(postW, h, frameD, fm), at - leafW / 2 - postW / 2, fy + h / 2, off);
+    addBox(alignedBox(postW, h, frameD, fm), at + leafW / 2 + postW / 2, fy + h / 2, off);
+    for (let i = -1; i <= 1; i++) {
+      addPlane(plane(leafW - leafFrame * 2, innerH - leafFrame * 2, gm), at + i * (leafW + postW), fy + frameW + innerH / 2, off);
+    }
+
   } else {
-    const glass = plane(w, h, glassMat);
-    glass.rotation.y = Math.PI / 2;
-    glass.position.set(x + off, fy + h / 2, z + at);
-    group.add(glass);
-    frameBox(group, x + off, fy, z + at, w, h, 'z', frameMat);
+    addPlane(plane(innerW, innerH, gm), at, fy + frameW + innerH / 2, off);
+  }
+
+  // ── SILL / PARAPET ──
+  if (hasSill) {
+    // Outer sill: opposite side from interior
+    addBox(alignedBox(w + 0.06, 0.02, 0.2, MAT.sillOuter), at, fy - 0.01, -0.05 * s);
+    // Inner sill: same side as interior
+    addBox(alignedBox(w, 0.02, 0.15, MAT.sillInner), at, fy - 0.01, off + 0.1 * s);
+  }
+
+  // ── CURTAINS (always on interior side) ──
+  if (hasCurtains) {
+    const curtainH = h + sillHeight * 0.3;
+    const rodLen = w + 0.2;
+    const rodY = fy + h + 0.12;
+    const curtainOff = off + 0.15 * s;
+
+    // Curtain rod (geometry pre-rotated, no mesh rotation needed)
+    const rodGeom = new THREE.CylinderGeometry(0.009, 0.009, rodLen, 6);
+    if (axis === 'x') rodGeom.rotateZ(Math.PI / 2);
+    else rodGeom.rotateX(Math.PI / 2);
+    addBox(new THREE.Mesh(rodGeom, MAT.curtainRod), at, rodY, curtainOff);
+
+    // Rod finials (sphere = symmetric, no rotation needed)
+    for (const side of [-1, 1]) {
+      addBox(new THREE.Mesh(new THREE.SphereGeometry(0.015, 6, 6), MAT.curtainRod), at + side * rodLen / 2, rodY, curtainOff);
+    }
+
+    // Rod brackets
+    for (const bx of [at - w / 2 + 0.05, at + w / 2 - 0.05]) {
+      addBox(alignedBox(0.02, 0.04, 0.03, MAT.curtainRod), bx, rodY + 0.02, curtainOff);
+    }
+
+    // Curtains (gathered to sides)
+    const curtainW = w * 0.22;
+    addPlane(plane(curtainW, curtainH, MAT.curtain), at - w / 2 - 0.02 + curtainW / 2, fy + h - curtainH / 2 + 0.05, curtainOff + 0.01);
+    addPlane(plane(curtainW, curtainH, MAT.curtain), at + w / 2 + 0.02 - curtainW / 2, fy + h - curtainH / 2 + 0.05, curtainOff + 0.01);
+
+    // Sheer
+    addPlane(plane(w, h + 0.05, MAT.sheer), at, fy + h / 2, curtainOff - 0.02);
   }
 }
 
+// Legacy simple frame (kept for non-window uses)
 function frameBox(group, cx, cy, cz, w, h, axis, mat) {
   if (axis === 'x') {
     group.add(pos(box(w + 0.04, 0.03, 0.05, mat), cx, cy + h, cz));
@@ -223,12 +350,24 @@ export function addDoor(group, opts) {
     axis, x, z, at, width: w,
     doorHeight = 2.1, y = 0,
     material = MAT.door,
+    frameMat = MAT.windowFrame,
   } = opts;
 
+  const frameW = 0.04;
+  const frameD = 0.08;
+
   if (axis === 'x') {
-    group.add(pos(box(w, doorHeight, 0.06, material), x + at, y + doorHeight / 2, z));
+    // Door panel
+    group.add(pos(box(w, doorHeight, 0.05, material), x + at, y + doorHeight / 2, z));
+    // Frame — left, right, top (zárubeň)
+    group.add(pos(box(frameW, doorHeight, frameD, frameMat), x + at - w / 2 - frameW / 2, y + doorHeight / 2, z));
+    group.add(pos(box(frameW, doorHeight, frameD, frameMat), x + at + w / 2 + frameW / 2, y + doorHeight / 2, z));
+    group.add(pos(box(w + frameW * 2, frameW, frameD, frameMat), x + at, y + doorHeight + frameW / 2, z));
   } else {
-    group.add(pos(box(0.06, doorHeight, w, material), x, y + doorHeight / 2, z + at));
+    group.add(pos(box(0.05, doorHeight, w, material), x, y + doorHeight / 2, z + at));
+    group.add(pos(box(frameD, doorHeight, frameW, frameMat), x, y + doorHeight / 2, z + at - w / 2 - frameW / 2));
+    group.add(pos(box(frameD, doorHeight, frameW, frameMat), x, y + doorHeight / 2, z + at + w / 2 + frameW / 2));
+    group.add(pos(box(frameD, frameW, w + frameW * 2, frameMat), x, y + doorHeight + frameW / 2, z + at));
   }
 }
 
@@ -237,14 +376,19 @@ export function addDoor(group, opts) {
 // ════════════════════════════════════════════════
 
 export function addFloor(group, x, z, w, d, y = 0, material = MAT.floor) {
-  // Floor slab top at y+0.13 — leaves gap so objects at y+0.15 don't z-fight
-  group.add(pos(box(w, 0.13, d, material), x + w / 2, y + 0.065, z + d / 2));
+  const mat = material.clone();
+  mat.polygonOffset = true;
+  mat.polygonOffsetFactor = 1;
+  mat.polygonOffsetUnits = 1;
+  group.add(pos(box(w, 0.13, d, mat), x + w / 2, y + 0.065, z + d / 2));
 }
 
 export function addCeiling(group, x, z, w, d, floorHeight, y = 0, material = MAT.ceiling) {
   const c = plane(w, d, material);
   c.rotation.x = Math.PI / 2;
-  // Offset down enough so beams/objects at floorHeight don't z-fight
+  c.material.polygonOffset = true;
+  c.material.polygonOffsetFactor = 1;
+  c.material.polygonOffsetUnits = 1;
   c.position.set(x + w / 2, y + floorHeight - 0.03, z + d / 2);
   group.add(c);
 }

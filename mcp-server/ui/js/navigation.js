@@ -8,6 +8,7 @@ export function navigateTo(path) {
   state.currentPath = path;
   state.currentProjection = 'plan';
   state.currentTab = 'floorplan';
+  state.hiddenTags = new Set();
   // Expand parent paths
   const parts = path.split('/').filter(Boolean);
   let p = ''; state.expandedPaths.add('/');

@@ -10,6 +10,7 @@ Read `SKILL.md` before generating any new building.
 
 ## Project Structure
 - `viewer/` — Three.js 3D viewer (Vite, port 3000)
+- `viewer/src/models/` — 3D building models (each building in its own file)
 - `viewer/src/building-utils.js` — shared 3D generation utilities
 - `mcp-server/` — MCP server for spatial planning
 - `mcp-server/ui/` — web UI for browsing plans (port 3001, `npm run ui`)

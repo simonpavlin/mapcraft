@@ -2,6 +2,7 @@ import { state } from '../state.js';
 import { cc, shapePath, drawFloorContent } from '../canvas-utils.js';
 import { updateInfoPanel } from '../info-panel.js';
 import { navigateTo } from '../navigation.js';
+import { renderTagFilterBar, isTagVisible } from '../tag-filter.js';
 
 export function renderFloorplan() {
   const d = state.nodeData;
@@ -15,6 +16,10 @@ export function renderFloorplan() {
     : allChildren.filter(c => c.isSpatial !== false);
   let descendants = allDescendants.filter(c => c.isSpatial !== false);
   let viewWidth = d.width, viewHeight = d.height;
+
+  // Tag filtering — client-side for floorplan
+  children = children.filter(isTagVisible);
+  descendants = descendants.filter(isTagVisible);
 
   // Projection
   if (state.currentProjection !== 'plan') {
@@ -34,7 +39,13 @@ export function renderFloorplan() {
     viewHeight = d.height_3d || Math.max(...[...children, ...descendants].map(c => c.y + c.height), 3);
   }
 
-  if (children.length === 0) { document.getElementById('content').innerHTML = '<div class="empty-state"><h2>Prázdný prostor</h2></div>'; return; }
+  if (children.length === 0) {
+    let h = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px">';
+    h += renderTagFilterBar();
+    h += '<div class="empty-state"><h2>Prázdný prostor</h2></div></div>';
+    document.getElementById('content').innerHTML = h;
+    return;
+  }
 
   // Expand view to include descendants that overflow parent bounds
   let bbMinX = 0, bbMinY = 0, bbMaxX = viewWidth, bbMaxY = viewHeight;
@@ -54,6 +65,7 @@ export function renderFloorplan() {
   const viewNames = { plan: 'Půdorys', front: 'Pohled zepředu', side: 'Pohled z boku' };
   let h = '<div class="view-with-panel"><div class="view-main"><div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow:auto">';
   h += `<p style="margin-bottom:8px;font-size:12px;color:var(--tx2)">${viewNames[state.currentProjection]} — ${Number(vpw).toFixed(1)}m × ${Number(vph).toFixed(1)}m</p>`;
+  h += renderTagFilterBar();
   h += `<canvas id="fp-canvas" width="${cw}" height="${ch}" style="border:1px solid var(--bd);border-radius:4px;cursor:crosshair"></canvas>`;
   if (descendants.length > 0) {
     h += `<p style="margin-top:8px;font-size:11px;color:var(--tx2)"><span style="display:inline-block;width:12px;height:12px;border:2px solid var(--ac);opacity:.6;vertical-align:middle;margin-right:4px"></span> přímé objekty &nbsp; <span style="display:inline-block;width:12px;height:12px;border:1px dashed var(--tx2);opacity:.6;vertical-align:middle;margin-right:4px"></span> vnořené objekty</p>`;
@@ -88,9 +100,14 @@ export function renderFloorplan() {
   ctx.fillText(`${viewWidth}m`, PAD + (-vpOffsetX) * scale + viewWidth * scale / 2, PAD + (-vpOffsetY) * scale + viewHeight * scale + 6);
   ctx.save(); ctx.translate(PAD + (-vpOffsetX) * scale - 8, PAD + (-vpOffsetY) * scale + viewHeight * scale / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = 'bottom'; ctx.fillText(`${viewHeight}m`, 0, 0); ctx.restore();
 
-  // Hit detection
-  const hitChildren = state.currentProjection !== 'plan' ? children.map(c => ({ ...c, y: vph - c.y - c.height })) : children;
-  const hitAll = state.currentProjection !== 'plan' ? [...children, ...descendants].map(c => ({ ...c, y: vph - c.y - c.height })) : [...children, ...descendants];
+  // Hit detection — use ALL children (unfiltered) for clicking/hover
+  const unfilteredChildren = isLeaf
+    ? children
+    : (d.children || []).filter(c => c.isSpatial !== false);
+  const unfilteredAll = [...unfilteredChildren, ...(d.descendants || []).filter(c => c.isSpatial !== false)];
+
+  const hitChildren = state.currentProjection !== 'plan' ? unfilteredChildren.map(c => ({ ...c, y: vph - c.y - c.height })) : unfilteredChildren;
+  const hitAll = state.currentProjection !== 'plan' ? unfilteredAll.map(c => ({ ...c, y: vph - c.y - c.height })) : unfilteredAll;
 
   canvas.onclick = (e) => {
     const rect = canvas.getBoundingClientRect();
