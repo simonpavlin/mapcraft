@@ -524,7 +524,7 @@ export class MapStore {
       width: rotW,
       height: rotH,
       description: source.description || '',
-      tags: ['stamp'],
+      tags: ['stamp', ...(source.tags || []).filter(t => t !== 'template')],
       metadata: { _template: sourcePath },
       rotation: rot,
       children: {},
