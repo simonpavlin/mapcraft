@@ -49,7 +49,7 @@ export function shapePath(ctx, obj, ox, oy, s) {
  * Draw floor content on a canvas context.
  * Used by both renderFloorplan and renderFolderTiles.
  */
-export function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, PAD, offsetX, offsetY, parentColor, parentW, parentH) {
+export function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, scale, PAD, offsetX, offsetY, parentColor, parentW, parentH, activePaths) {
   const ox = offsetX || 0, oy = offsetY || 0;
   const pc = parentColor || '#3a3a5a';
   const prw = parentW || pw, prh = parentH || ph;
@@ -60,6 +60,31 @@ export function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, s
   ctx.fillRect(prx, pry, prw * scale, prh * scale);
   ctx.strokeStyle = pc; ctx.lineWidth = 2;
   ctx.strokeRect(prx, pry, prw * scale, prh * scale);
+
+  const ap = activePaths || new Set();
+  const basePath = typeof window !== 'undefined' ? (window.__currentViewPath || '') : '';
+
+  function drawActiveHighlight(rx, ry, rw, rh) {
+    ctx.save();
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#00ff88';
+    ctx.shadowBlur = 12;
+    ctx.setLineDash([]);
+    ctx.strokeRect(rx, ry, rw, rh);
+    ctx.restore();
+  }
+
+  function isActive(obj) {
+    if (ap.size === 0) return false;
+    const p = basePath ? basePath + '/' + obj.id : obj.id;
+    if (ap.has(p)) return true;
+    // Check if any active path starts with this object's path
+    for (const a of ap) {
+      if (a === p || a.startsWith(p + '/')) return true;
+    }
+    return false;
+  }
 
   // Direct children — sorted largest first
   const sorted = [...floorChildren].sort((a, b) => (b.width * b.height) - (a.width * a.height));
@@ -105,6 +130,7 @@ export function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, s
     if (c.rotation && rw > 14 && rh > 14) {
       drawRotationArrow(ctx, rx, ry, rw, rh, c.rotation, color);
     }
+    if (isActive(c)) drawActiveHighlight(rx, ry, rw, rh);
   }
 
   // Descendants
@@ -152,6 +178,7 @@ export function drawFloorContent(ctx, floorChildren, floorDescendants, pw, ph, s
       if (dc.rotation && rw > 10 && rh > 10) {
         drawRotationArrow(ctx, rx, ry, rw, rh, dc.rotation, color);
       }
+      if (isActive(dc)) drawActiveHighlight(rx, ry, rw, rh);
     }
   }
 }

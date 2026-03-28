@@ -205,20 +205,22 @@ export class MapStore {
     if (!root) return [];
     const results = [];
     const namePattern = filters.name ? filters.name.toLowerCase() : null;
+    const filterTags = filters.tags?.length ? filters.tags : null;
 
     const walk = (node, path) => {
-      for (const [id, child] of Object.entries(node.children || {})) {
+      for (const [id, child] of Object.entries(this.getChildren(node))) {
         const childPath = path ? `${path}/${id}` : id;
+        const tags = child.tags || [];
         let match = true;
-        if (namePattern && !child.name.toLowerCase().includes(namePattern)) match = false;
-        if (filters.tags?.length && !filters.tags.every(t => (child.tags || []).includes(t))) match = false;
+        if (namePattern && !(child.name || '').toLowerCase().includes(namePattern)) match = false;
+        if (filterTags && !filterTags.every(t => tags.includes(t))) match = false;
         if (filters.metadata_key && !(child.metadata && filters.metadata_key in child.metadata)) match = false;
         if (match) {
           results.push({
             path: childPath,
-            id: child.id,
+            id: child.id || id,
             name: child.name,
-            tags: child.tags || [],
+            tags,
             isSpatial: child.x !== undefined,
           });
         }
@@ -334,8 +336,9 @@ export class MapStore {
         const absX = offsetX + child.x, absY = offsetY + child.y;
         const childAncestors = new Set(ancestors);
         childAncestors.add(child.id);
-        const isStamp = (child.tags || []).includes('stamp');
-        // Skip expanded template children — stamp parent represents the placed object
+        const childTags = child.tags || [];
+        const isStamp = childTags.includes('stamp');
+        // Skip expanded stamp children — stamp parent represents the placed object
         if (!insideStamp) {
           allObjects.push({
             id: child.id, name: child.name, tags: child.tags || [],
@@ -406,6 +409,34 @@ export class MapStore {
           }
         }
       }
+
+      if (rule.type === 'must_contain') {
+        // Hierarchical: every node with tag A must have a descendant with tag B
+        const self = this;
+        const hasDescendant = (parent, tag) => {
+          for (const child of Object.values(self.getChildren(parent))) {
+            if ((child.tags || []).includes(tag)) return true;
+            if (child.children || ((child.tags || []).includes('stamp') && child.metadata?._template)) {
+              if (hasDescendant(child, tag)) return true;
+            }
+          }
+          return false;
+        };
+        const checkNode = (parent) => {
+          for (const child of Object.values(self.getChildren(parent))) {
+            const cTags = child.tags || [];
+            if (cTags.includes('template')) continue; // skip templates
+            if (cTags.includes(rule.a)) {
+              if (!hasDescendant(child, rule.b)) {
+                violations.push(`[${rule.a}] "${child.name}" does not contain any [${rule.b}]`);
+              }
+            }
+            checkNode(child);
+          }
+        };
+        checkNode(node);
+      }
+
     }
 
     // Deduplicate symmetric violations (no_collide A↔B)
@@ -567,15 +598,14 @@ export class MapStore {
     const rotW = (rot === 90 || rot === 270) ? bbox.h : bbox.w;
     const rotH = (rot === 90 || rot === 270) ? bbox.w : bbox.h;
 
-    // Store as reference — no deep copy of children
+    // Store as lightweight reference — resolve fills in template properties at runtime
     const stamp = {
       id: newId,
       name: source.name,
       x, y,
       width: rotW,
       height: rotH,
-      description: source.description || '',
-      tags: ['stamp', ...(source.tags || []).filter(t => t !== 'template')],
+      tags: ['stamp'],
       metadata: { _template: sourcePath },
       rotation: rot,
       children: {},
@@ -618,10 +648,31 @@ export class MapStore {
       }
     }
 
-    // Return expanded stamp with dimensions from current template
+    // Build expanded stamp: template as base, stamp overrides
     const rotW = (rot === 90 || rot === 270) ? bbox.h : bbox.w;
     const rotH = (rot === 90 || rot === 270) ? bbox.w : bbox.h;
-    const expanded = { ...stamp, width: rotW, height: rotH, name: source.name, children: {} };
+
+    // Base tags from template, add 'stamp', remove 'template'
+    const baseTags = ['stamp', ...(source.tags || []).filter(t => t !== 'template')];
+    // Stamp can add extra tags (any tag on stamp that's not already in base)
+    const stampExtraTags = (stamp.tags || []).filter(t => t !== 'stamp' && !baseTags.includes(t));
+    const mergedTags = [...baseTags, ...stampExtraTags];
+
+    const expanded = {
+      id: stamp.id,
+      name: stamp.name !== source.name && stamp.name ? stamp.name : source.name,
+      x: stamp.x, y: stamp.y,
+      width: rotW, height: rotH,
+      char: stamp.char || source.char,
+      description: stamp.description || source.description || '',
+      tags: mergedTags,
+      metadata: { ...source.metadata, ...stamp.metadata },
+      rotation: rot,
+      // z/height_3d: stamp overrides template if set, otherwise template value
+      z: stamp.z ?? source.z,
+      height_3d: stamp.height_3d ?? source.height_3d,
+      children: {},
+    };
     for (const part of parts) expanded.children[part.id] = part;
     return expanded;
   }
@@ -874,10 +925,11 @@ function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2) {
   return !(x1 + w1 <= x2 || x2 + w2 <= x1 || y1 + h1 <= y2 || y2 + h2 <= y1);
 }
 
-// Touch = overlap OR share edge (but not gap). Uses <= not <.
+// Touch = overlap OR share edge (but not gap). Uses epsilon tolerance for FP.
 function rectsTouch2D(x1, y1, w1, h1, x2, y2, w2, h2) {
-  const sepX = x1 + w1 < x2 || x2 + w2 < x1;
-  const sepY = y1 + h1 < y2 || y2 + h2 < y1;
+  const eps = 0.001;
+  const sepX = x1 + w1 < x2 - eps || x2 + w2 < x1 - eps;
+  const sepY = y1 + h1 < y2 - eps || y2 + h2 < y1 - eps;
   return !sepX && !sepY;
 }
 

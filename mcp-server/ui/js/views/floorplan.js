@@ -3,6 +3,7 @@ import { cc, shapePath, drawFloorContent } from '../canvas-utils.js';
 import { updateInfoPanel } from '../info-panel.js';
 import { navigateTo } from '../navigation.js';
 import { renderTagFilterBar, isTagVisible } from '../tag-filter.js';
+import { getActivePaths } from '../activity.js';
 
 export function renderFloorplan() {
   const d = state.nodeData;
@@ -79,11 +80,14 @@ export function renderFloorplan() {
   ctx.fillStyle = '#1a1a2e';
   ctx.fillRect(0, 0, cw, ch);
 
+  const activePaths = getActivePaths();
+  window.__currentViewPath = state.currentPath === '/' ? '' : state.currentPath;
+
   if (state.currentProjection !== 'plan') {
     const flipY = (obj) => ({ ...obj, y: vph - obj.y - obj.height });
     const flippedChildren = children.map(flipY);
     const flippedDescendants = descendants.map(flipY);
-    drawFloorContent(ctx, flippedChildren, flippedDescendants, vpw, vph, scale, PAD, vpOffsetX, vpOffsetY, d.char ? cc(d.char) : null, viewWidth, viewHeight);
+    drawFloorContent(ctx, flippedChildren, flippedDescendants, vpw, vph, scale, PAD, vpOffsetX, vpOffsetY, d.char ? cc(d.char) : null, viewWidth, viewHeight, activePaths);
 
     ctx.strokeStyle = '#4a4a6a'; ctx.lineWidth = 2; ctx.setLineDash([]);
     ctx.fillStyle = '#606080'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
@@ -92,7 +96,7 @@ export function renderFloorplan() {
     ctx.textBaseline = 'top';
     ctx.fillText('podlaha', PAD + 4, PAD + vph * scale + 4);
   } else {
-    drawFloorContent(ctx, children, descendants, vpw, vph, scale, PAD, vpOffsetX, vpOffsetY, d.char ? cc(d.char) : null, viewWidth, viewHeight);
+    drawFloorContent(ctx, children, descendants, vpw, vph, scale, PAD, vpOffsetX, vpOffsetY, d.char ? cc(d.char) : null, viewWidth, viewHeight, activePaths);
   }
 
   // Dimension labels

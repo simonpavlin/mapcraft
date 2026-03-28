@@ -3,6 +3,7 @@ import { refresh, deleteNode, setOnDataChanged } from './api.js';
 import { renderTree, treeClick } from './tree.js';
 import { navigateTo, navigateBack, setupNavigationListeners } from './navigation.js';
 import { renderContent, switchTab, switchProjection } from './content.js';
+import './activity.js';
 
 // Wire up data change callback
 setOnDataChanged(() => { renderTree(); renderContent(); });

@@ -11,7 +11,7 @@ scene.background = new THREE.Color(0x87ceeb); // sky blue
 scene.fog = new THREE.Fog(0x87ceeb, 80, 300);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.05, 500);
-camera.position.set(0, 1.7, 5); // eye height
+camera.position.set(60, 40, -20); // overview of obytna ctvrt
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -30,11 +30,11 @@ sunLight.castShadow = true;
 sunLight.shadow.mapSize.width = 2048;
 sunLight.shadow.mapSize.height = 2048;
 sunLight.shadow.camera.near = 0.5;
-sunLight.shadow.camera.far = 200;
-sunLight.shadow.camera.left = -50;
-sunLight.shadow.camera.right = 50;
-sunLight.shadow.camera.top = 50;
-sunLight.shadow.camera.bottom = -50;
+sunLight.shadow.camera.far = 300;
+sunLight.shadow.camera.left = -100;
+sunLight.shadow.camera.right = 100;
+sunLight.shadow.camera.top = 100;
+sunLight.shadow.camera.bottom = -100;
 scene.add(sunLight);
 
 // Controls

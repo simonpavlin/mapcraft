@@ -45,7 +45,9 @@
       "mcp__mapcraft__duplicate_object",
       "mcp__mapcraft__check_connectivity",
       "Bash(node -e \"import\\(''''./src/ui-server.js''''\\)\")",
-      "mcp__mapcraft__find_gaps"
+      "mcp__mapcraft__find_gaps",
+      "mcp__mapcraft__stamp_objects",
+      "mcp__mapcraft__get_tags"
     ]
   },
   "enableAllProjectMcpServers": true,

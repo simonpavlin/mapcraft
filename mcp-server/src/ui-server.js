@@ -7,6 +7,7 @@ import crypto from 'crypto';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, '../../data');
 const MAP_FILE = resolve(DATA_DIR, 'map.json');
+const ACTIVITY_FILE = resolve(DATA_DIR, 'activity.json');
 const UI_DIR = resolve(__dirname, '../ui');
 const UI_FILE = resolve(UI_DIR, 'index.html');
 
@@ -327,6 +328,17 @@ const server = http.createServer((req, res) => {
       hasher.update(f + ':' + statSync(f).mtimeMs);
     }
     return json(res, { hash: hasher.digest('hex') });
+  }
+
+  if (url.pathname === '/api/activity') {
+    try {
+      const since = parseInt(url.searchParams.get('since')) || 0;
+      const data = existsSync(ACTIVITY_FILE) ? JSON.parse(readFileSync(ACTIVITY_FILE, 'utf8')) : [];
+      const filtered = since ? data.filter(e => e.ts > since) : data;
+      return json(res, filtered);
+    } catch {
+      return json(res, []);
+    }
   }
 
   if (url.pathname === '/api/raw') {

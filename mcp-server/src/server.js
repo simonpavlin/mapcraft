@@ -2,8 +2,11 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { writeFileSync } from 'fs';
-import { resolve as pathResolve } from 'path';
+import { resolve as pathResolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { MapStore, normalizeId } from './store.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const store = new MapStore();
 
@@ -11,6 +14,54 @@ const server = new McpServer({
   name: 'mapcraft',
   version: '0.7.0',
 });
+
+// ── Activity log — shared with UI server ──────
+const ACTIVITY_FILE = pathResolve(__dirname, '../../data/activity.json');
+const MAX_ACTIVITY = 50;
+let activityLog = [];
+
+function logActivity(tool, args, status) {
+  const entry = {
+    tool,
+    path: args?.path || null,
+    args: summarizeArgs(args),
+    status, // 'start' | 'done' | 'error'
+    ts: Date.now(),
+  };
+  activityLog.push(entry);
+  if (activityLog.length > MAX_ACTIVITY) activityLog = activityLog.slice(-MAX_ACTIVITY);
+  try { writeFileSync(ACTIVITY_FILE, JSON.stringify(activityLog)); } catch {}
+}
+
+function summarizeArgs(args) {
+  if (!args) return {};
+  const s = {};
+  for (const [k, v] of Object.entries(args)) {
+    if (k === 'objects' && Array.isArray(v)) {
+      s[k] = v.map(o => o.id || o.name).filter(Boolean);
+    } else if (k === 'metadata' || (typeof v === 'object' && v !== null)) {
+      continue; // skip large objects
+    } else {
+      s[k] = v;
+    }
+  }
+  return s;
+}
+
+const _origTool = server.tool.bind(server);
+server.tool = function(name, desc, schema, handler) {
+  _origTool(name, desc, schema, async (args) => {
+    logActivity(name, args, 'start');
+    try {
+      const result = await handler(args);
+      logActivity(name, args, 'done');
+      return result;
+    } catch (e) {
+      logActivity(name, args, 'error');
+      throw e;
+    }
+  });
+};
 
 // ──────────────────────────────────────────────
 // TOOL: get_guide
@@ -152,94 +203,6 @@ server.tool(
 );
 
 // ──────────────────────────────────────────────
-// TOOL: clear_all
-// ──────────────────────────────────────────────
-
-server.tool(
-  'clear_all',
-  'Remove ALL data. Use with caution.',
-  {},
-  async () => {
-    store.clearAll();
-    return ok('All data cleared.');
-  }
-);
-
-// ──────────────────────────────────────────────
-// TOOL: stamp_object
-// ──────────────────────────────────────────────
-
-server.tool(
-  'stamp_object',
-  'Place a reference to a template at a target location. Stamps stay linked — dimensions and children update when template changes. Supports rotation.',
-  {
-    source: z.string().describe('Path to the template object to reference'),
-    target: z.string().describe('Path to the parent where the stamp will be placed'),
-    id: z.string().describe('ID for the new stamp'),
-    x: z.number().min(0),
-    y: z.number().min(0),
-    rotation: z.number().optional().describe('Rotation: 0 (↑), 90 (→), 180 (↓), 270 (←). Default: 0'),
-  },
-  async ({ source, target, id, x, y, rotation }) => {
-    const rot = rotation || 0;
-    if (![0, 90, 180, 270].includes(rot)) return err('Rotation must be 0, 90, 180, or 270');
-    const result = store.stampObject(source, target, id, x, y, rot);
-    if (result.error) return err(result.error);
-    const arrows = { 0: '↑', 90: '→', 180: '↓', 270: '←' };
-    return ok(`Stamped "${result.name}" as "${id}" at (${x},${y}) ${arrows[rot]} ${rot}°`);
-  }
-);
-
-// ──────────────────────────────────────────────
-// TOOL: place_object
-// ──────────────────────────────────────────────
-
-server.tool(
-  'place_object',
-  'Place a node. Without spatial params (x,y,width,height,char) creates a folder. With spatial params creates a spatial object. All children-capable.',
-  {
-    path: z.string().optional().describe('Parent path. "/" = root'),
-    id: z.string().describe('Unique ID within parent'),
-    name: z.string(),
-    x: z.number().optional().describe('X position in meters (omit for folder node)'),
-    y: z.number().optional().describe('Y position in meters (omit for folder node)'),
-    width: z.number().min(0.01).optional().describe('Width in meters. Auto-calculated from shape if shape is provided.'),
-    height: z.number().min(0.01).optional().describe('Height in meters. Auto-calculated from shape if shape is provided.'),
-    char: z.string().max(1).optional().describe('Single character for ASCII visualization (omit for folder node)'),
-    shape: z.string().optional().describe('Polygon shape as JSON: [[x1,y1],[x2,y2],...] — relative to (x,y)'),
-    description: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-    metadata: z.string().optional().describe('Key-value data for 3D generation as JSON string, e.g. {"style":"sliding"}'),
-    rotation: z.number().optional().describe('Rotation: 0 (↑), 90 (→), 180 (↓), 270 (←). Default: 0'),
-    z: z.number().optional().describe('Vertical position in meters (height above ground). For stacking floors: ground floor z=0, first floor z=3, etc. For front/side projection.'),
-    height_3d: z.number().min(0.01).optional().describe('Vertical height in meters (e.g. floor ceiling height=3). Used with z for multi-story buildings and front/side projection.'),
-  },
-  async ({ path, id, name, x, y, width, height, char, shape, description, tags, metadata, rotation, z: zPos, height_3d }) => {
-    const parent = store.resolve(path || '/');
-    if (!parent) return err(`Parent "${path}" not found`);
-    if (!parent.children) return err(`Parent "${path}" cannot hold children`);
-
-    if (parent.children[id]) {
-      return err(`"${id}" already exists. Remove first or pick different id.`);
-    }
-
-    const result = buildNode({ id, name, x, y, width, height, char, shape, description, tags, metadata, rotation, z: zPos, height_3d });
-    if (result.error) return err(result.error);
-
-    parent.children[id] = result.node;
-    store.save();
-
-    if (x !== undefined) {
-      const rot = rotation || 0;
-      const arrows = { 0: '', 90: ' →', 180: ' ↓', 270: ' ←' };
-      return ok(`Placed "${name}" [${char || '#'}] at (${x},${y ?? 0}) ${result.w}×${result.h}m${arrows[rot] || ''}${metadata ? ' +metadata' : ''}${result.parsedShape ? ' shape:' + result.parsedShape.length + 'pts' : ''}`);
-    } else {
-      return ok(`Created folder "${name}" (path: "${(path && path !== '/' ? path + '/' : '') + id}")`);
-    }
-  }
-);
-
-// ──────────────────────────────────────────────
 // TOOL: place_objects (batch)
 // ──────────────────────────────────────────────
 
@@ -295,6 +258,43 @@ server.tool(
 
     store.save();
     return ok(`Placed ${results.length} objects:\n${results.join('\n')}`);
+  }
+);
+
+// ──────────────────────────────────────────────
+// TOOL: stamp_objects (batch)
+// ──────────────────────────────────────────────
+
+server.tool(
+  'stamp_objects',
+  'Stamp multiple templates at once (batch). All stamps go to the same target parent. Saves tokens by avoiding multiple round-trips.',
+  {
+    source: z.string().describe('Path to the template object to reference (shared for all stamps)'),
+    target: z.string().describe('Path to the parent where all stamps will be placed'),
+    stamps: z.array(z.object({
+      id: z.string().describe('ID for the new stamp'),
+      x: z.number(),
+      y: z.number(),
+      rotation: z.number().optional().describe('Rotation: 0 (↑), 90 (→), 180 (↓), 270 (←). Default: 0'),
+    })).describe('Array of stamps to place'),
+  },
+  async ({ source, target, stamps }) => {
+    const results = [];
+    const arrows = { 0: '↑', 90: '→', 180: '↓', 270: '←' };
+    for (const s of stamps) {
+      const rot = s.rotation || 0;
+      if (![0, 90, 180, 270].includes(rot)) {
+        results.push(`ERR "${s.id}" — rotation must be 0, 90, 180, or 270`);
+        continue;
+      }
+      const result = store.stampObject(source, target, s.id, s.x, s.y, rot);
+      if (result.error) {
+        results.push(`ERR "${s.id}" — ${result.error}`);
+      } else {
+        results.push(`· ${s.id} at (${s.x},${s.y}) ${arrows[rot]} ${rot}°`);
+      }
+    }
+    return ok(`Stamped ${results.length}× from "${source}":\n${results.join('\n')}`);
   }
 );
 
@@ -539,7 +539,7 @@ Rule types:
   {
     path: z.string().describe('Project or space path'),
     rules: z.array(z.object({
-      type: z.enum(['no_collide', 'must_collide', 'must_touch', 'no_touch']),
+      type: z.enum(['no_collide', 'must_collide', 'must_touch', 'no_touch', 'must_contain']),
       a: z.string().describe('Subject tag — "every object with this tag..."'),
       b: z.string().describe('Target tag — "...must/must not [verb] an object with this tag"'),
     })).describe('Array of rules'),
@@ -584,6 +584,32 @@ server.tool(
 
     const violations = store.validate(node, rules);
     if (violations.length === 0) return ok(`All ${rules.length} rules passed ✓`);
+    return ok(`${violations.length} violations found:\n${violations.map(v => `  ✗ ${v}`).join('\n')}`);
+  }
+);
+
+// ──────────────────────────────────────────────
+// TOOL: validate_custom
+// ──────────────────────────────────────────────
+
+server.tool(
+  'validate_custom',
+  'Validate a space against custom rules (not stored on the project). Useful for independent verification — a verifier agent can define its own rules without seeing the planner\'s rules. Same rule types as define_rules.',
+  {
+    path: z.string().describe('Path to validate'),
+    rules: z.array(z.object({
+      type: z.enum(['no_collide', 'must_collide', 'must_touch', 'no_touch', 'must_contain']),
+      a: z.string().describe('Subject tag'),
+      b: z.string().describe('Target tag'),
+    })).describe('Array of rules to check'),
+  },
+  async ({ path, rules }) => {
+    const node = store.resolve(path);
+    if (!node) return err('Not found');
+    if (!rules || rules.length === 0) return err('No rules provided');
+
+    const violations = store.validate(node, rules);
+    if (violations.length === 0) return ok(`All ${rules.length} custom rules passed ✓`);
     return ok(`${violations.length} violations found:\n${violations.map(v => `  ✗ ${v}`).join('\n')}`);
   }
 );
@@ -810,6 +836,38 @@ server.tool(
       return `  (${g.x}, ${g.y}) ${g.w}×${g.h}m — neighbors: ${nbrs}`;
     });
     return ok(`${gaps.length} gap(s) found:\n${lines.join('\n')}`);
+  }
+);
+
+// ──────────────────────────────────────────────
+// TOOL: get_tags
+// ──────────────────────────────────────────────
+
+server.tool(
+  'get_tags',
+  'Get all unique tags used within a path (recursive). Shows count per tag. Useful for understanding what tag vocabulary exists.',
+  { path: z.string().optional() },
+  async ({ path }) => {
+    const node = path ? store.resolve(path) : store.root;
+    if (!node) return err('Path not found');
+
+    const tagCounts = {};
+    function walk(n) {
+      const tags = n.tags || [];
+      for (const t of tags) {
+        tagCounts[t] = (tagCounts[t] || 0) + 1;
+      }
+      const children = n.children ? store.getChildren(n) : {};
+      for (const child of Object.values(children)) {
+        walk(child);
+      }
+    }
+    walk(node);
+
+    const sorted = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+    if (sorted.length === 0) return ok('No tags found.');
+    const lines = sorted.map(([tag, count]) => `  ${tag} (${count})`);
+    return ok(`${sorted.length} unique tags in "${node.name || path || 'root'}":\n${lines.join('\n')}`);
   }
 );
 
