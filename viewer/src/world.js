@@ -1,15 +1,11 @@
 import * as THREE from 'three';
-import { createEnglishGarden } from './models/english-garden/model.js';
-import { createPanelak } from './models/panelak/model.js';
-import { createSimpleHouse } from './models/simple-house/model.js';
-import { createObytnaCtvrt } from './models/obytna-ctvrt.js';
 
 export async function createWorld(scene) {
   createGround(scene);
   // createEnglishGarden(scene, 0, 0);
   // createPanelak(scene, 0, 0);
   // createSimpleHouse(scene, 0, 0);
-  await createObytnaCtvrt(scene, 0, 0);
+  //await createObytnaCtvrt(scene, 0, 0);
 }
 
 function createGround(scene) {
